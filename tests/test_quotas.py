@@ -42,6 +42,7 @@ def policy(store: Store, clock: FakeClock, **limits) -> QuotaPolicy:
 class StoreTests(unittest.TestCase):
     def setUp(self):
         self.store = Store(":memory:")
+        self.addCleanup(self.store.close)
 
     def test_one_active_token_per_subject(self):
         self.store.replace_token("user_1", "hash-a")
@@ -79,6 +80,7 @@ class SharedModeQuotaTests(unittest.TestCase):
     def setUp(self):
         self.clock = FakeClock()
         self.store = Store(":memory:")
+        self.addCleanup(self.store.close)
         self.policy = policy(self.store, self.clock)
 
     def test_minute_limit_gives_exact_retry_after(self):
@@ -158,6 +160,7 @@ class PersonalKeysQuotaTests(unittest.TestCase):
     def setUp(self):
         self.clock = FakeClock()
         self.store = Store(":memory:")
+        self.addCleanup(self.store.close)
         self.policy = policy(self.store, self.clock)
 
     def test_only_ip_rate_applies_and_owner_counters_stay_untouched(self):

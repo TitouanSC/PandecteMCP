@@ -62,6 +62,8 @@ jobs:
           python -m py_compile skill/scripts/pandecte/credentials.py
           python -m py_compile mcp_server/store.py
           python -m py_compile mcp_server/quotas.py
+          python -m py_compile mcp_server/access.py
+          python -m py_compile tests/test_access.py
           python -m py_compile tests/test_quotas.py
           python -m py_compile tests/test_credentials.py
           python -m py_compile tests/run_eval.py
