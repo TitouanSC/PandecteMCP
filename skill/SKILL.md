@@ -1,5 +1,5 @@
 ---
-name: recherche-juridique
+name: pandecte-recherche
 description: Méthodologie rigoureuse de recherche en droit français (sources
   primaires Légifrance, vérification de vigueur, citation traçable). Active ce
   skill dès que l'utilisateur cite ou demande un article de loi, code, décret,
@@ -16,7 +16,7 @@ metadata:
   date_derniere_verification_sources: 2026-09-04
   langue: français
 ---
-# Skill : recherche-juridique (v3.5.0)
+# Skill : pandecte-recherche (v3.5.0)
 
 > **Objet** : encoder la méthodologie rigoureuse de recherche en droit
 > français applicable à tout usage professionnel — avocat, juriste,
@@ -61,10 +61,10 @@ n'est pas activé, vérifier discrètement si une mise à jour est disponible av
 contrôle dans la même session et jamais avant une réponse urgente ou une simple
 clarification.
 
-- Si `recherche-juridique` est signalé comme périmé, l'indiquer en une phrase,
+- Si `pandecte-recherche` est signalé comme périmé, l'indiquer en une phrase,
   puis poursuivre immédiatement le travail :
-  « Une mise à jour de recherche-juridique est disponible ; vous pourrez
-  l'installer après cette réponse avec `npx skills update recherche-juridique`. »
+  « Une mise à jour de pandecte-recherche est disponible ; vous pourrez
+  l'installer après cette réponse avec `npx skills update pandecte-recherche`. »
 - Ne pas proposer de mise à jour si le contrôle ne signale rien, si le skill
   n'est pas suivi par le CLI `skills`, ou si le contrôle échoue (réseau, Node,
   droits). Ces situations ne sont pas un problème juridique et ne doivent pas
@@ -80,7 +80,7 @@ de mise à jour ; ne pas présenter la commande `npx` comme un correctif univers
 
 Ce mode est réservé à une installation **globale suivie par le CLI `skills`**.
 L'utilisateur l'active en créant, à la racine du skill, le fichier local non
-versionné `.recherche-juridique-update.json` :
+versionné `.pandecte-recherche-update.json` :
 
 ```json
 { "automatic": true }
@@ -89,7 +89,7 @@ versionné `.recherche-juridique-update.json` :
 Au premier usage après un délai de 24 heures, exécuter à la place du contrôle
 manuel `npx skills check` :
 `scripts/update_skill.py`. Le script détermine le périmètre global, lance
-`npx skills update recherche-juridique -y -g`, conserve `profil.md` et
+`npx skills update pandecte-recherche -y -g`, conserve `profil.md` et
 `scripts/.env`, puis affiche seulement `UPDATE_APPLIED` quand la version a
 changé. Une panne réseau, l'absence de `npx`, une installation locale ou un
 emplacement ambigu ne bloque jamais le travail juridique et n'entraîne aucune

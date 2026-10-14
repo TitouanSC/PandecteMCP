@@ -33,7 +33,7 @@ dist/
 # Profil actif choisi par l'utilisateur (local — voir skill/profils/)
 profil.md
 skill/profil.md
-skill/.recherche-juridique-update.json
+skill/.pandecte-recherche-update.json
 
 # Sorties de travail du benchmark agentique. Les baselines retenues sont
 # commitées explicitement sous tests/bench/baselines/.

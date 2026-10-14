@@ -2,7 +2,7 @@
 """Mise à jour optionnelle et prudente du skill via le CLI ``skills``.
 
 Ce script n'est jamais actif par défaut. Il est appelé au premier usage de la
-journée seulement si ``.recherche-juridique-update.json`` contient
+journée seulement si ``.pandecte-recherche-update.json`` contient
 ``{"automatic": true}``. Les fichiers personnels sont sauvegardés puis
 restaurés, même si la mise à jour échoue.
 """
@@ -18,7 +18,7 @@ from tempfile import TemporaryDirectory
 
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
-CONFIG = SKILL_ROOT / ".recherche-juridique-update.json"
+CONFIG = SKILL_ROOT / ".pandecte-recherche-update.json"
 PERSONAL_FILES = (
     SKILL_ROOT / "profil.md",
     SKILL_ROOT / "scripts" / ".env",
@@ -117,9 +117,9 @@ def main() -> int:
     before = read_version()
     # Chemin résolu, pas "npx" : sous Windows, npx est un npx.cmd que
     # subprocess ne trouve pas sans shell (FileNotFoundError).
-    command = [npx, "skills", "update", "recherche-juridique", "-y", scope]
+    command = [npx, "skills", "update", "pandecte-recherche", "-y", scope]
     launch_error: OSError | None = None
-    with TemporaryDirectory(prefix="recherche-juridique-update-") as tmp:
+    with TemporaryDirectory(prefix="pandecte-recherche-update-") as tmp:
         backups = backup_personal_files(Path(tmp))
         try:
             result = subprocess.run(command, check=False, text=True, capture_output=True)
@@ -139,7 +139,7 @@ def main() -> int:
         return 0
     after = read_version()
     if after != before:
-        print(f"UPDATE_APPLIED recherche-juridique {before} → {after}")
+        print(f"UPDATE_APPLIED pandecte-recherche {before} → {after}")
     return 0
 
 

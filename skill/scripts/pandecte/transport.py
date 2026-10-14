@@ -41,7 +41,7 @@ BACKOFF_BASE_SECONDS = 0.5
 #: Seuls statuts rejoués : saturation et défauts serveur passagers.
 RETRYABLE_STATUSES = frozenset({429, 500, 502, 503, 504})
 
-LOGGER = logging.getLogger("droit_francais.transport")
+LOGGER = logging.getLogger("pandecte.transport")
 
 #: Indirection pour les tests : la suite ne doit jamais dormir réellement.
 _sleep = time.sleep

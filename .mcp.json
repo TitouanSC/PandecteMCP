@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "droit-francais": {
+    "pandecte": {
       "type": "http",
-      "url": "https://droit-francais-skill.onrender.com/mcp"
+      "url": "https://pandecte-a-configurer.invalid/mcp"
     }
   }
 }

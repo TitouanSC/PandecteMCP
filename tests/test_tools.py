@@ -18,16 +18,16 @@ SCRIPTS = ROOT / "skill" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import legifrance as cli  # noqa: E402
-import droit_francais.judilibre as judilibre_client  # noqa: E402
-import droit_francais.legifrance as legifrance_client  # noqa: E402
-from droit_francais.config import (  # noqa: E402
+import pandecte.judilibre as judilibre_client  # noqa: E402
+import pandecte.legifrance as legifrance_client  # noqa: E402
+from pandecte.config import (  # noqa: E402
     judilibre_base,
     legifrance_environment,
     load_dotenv,
 )
-from droit_francais.errors import LegifranceError  # noqa: E402
-import droit_francais.transport as transport  # noqa: E402
-from droit_francais.transport import http_get_json, http_post_json  # noqa: E402
+from pandecte.errors import LegifranceError  # noqa: E402
+import pandecte.transport as transport  # noqa: E402
+from pandecte.transport import http_get_json, http_post_json  # noqa: E402
 
 
 class FakeResponse:
@@ -79,7 +79,7 @@ class ConfigTests(unittest.TestCase):
 
 
 class TransportTests(unittest.TestCase):
-    @mock.patch("droit_francais.transport.urllib.request.urlopen")
+    @mock.patch("pandecte.transport.urllib.request.urlopen")
     def test_post_decodes_json_and_forwards_timeout(self, urlopen):
         urlopen.return_value = FakeResponse(b'{"access_token": "token"}')
         result = http_post_json(
@@ -93,7 +93,7 @@ class TransportTests(unittest.TestCase):
         self.assertEqual("POST", request.get_method())
         self.assertEqual(7, urlopen.call_args.kwargs["timeout"])
 
-    @mock.patch("droit_francais.transport.urllib.request.urlopen")
+    @mock.patch("pandecte.transport.urllib.request.urlopen")
     def test_get_maps_404_to_not_found(self, urlopen):
         urlopen.side_effect = urllib.error.HTTPError(
             "https://example.test/decision",
@@ -107,7 +107,7 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(5, caught.exception.exit_code)
         self.assertEqual(404, caught.exception.http_status)
 
-    @mock.patch("droit_francais.transport.urllib.request.urlopen")
+    @mock.patch("pandecte.transport.urllib.request.urlopen")
     def test_post_keeps_http_failures_as_api_errors(self, urlopen):
         urlopen.side_effect = urllib.error.HTTPError(
             "https://example.test/search",
@@ -120,7 +120,7 @@ class TransportTests(unittest.TestCase):
             http_post_json("https://example.test/search", b"{}", {})
         self.assertEqual(4, caught.exception.exit_code)
 
-    @mock.patch("droit_francais.transport.urllib.request.urlopen")
+    @mock.patch("pandecte.transport.urllib.request.urlopen")
     def test_invalid_json_is_an_api_error(self, urlopen):
         urlopen.return_value = FakeResponse(b"not-json")
         with self.assertRaises(LegifranceError) as caught:
@@ -140,8 +140,8 @@ def _http_error(code: int, body: bytes = b"", headers: dict | None = None):
     )
 
 
-@mock.patch("droit_francais.transport._sleep")
-@mock.patch("droit_francais.transport.urllib.request.urlopen")
+@mock.patch("pandecte.transport._sleep")
+@mock.patch("pandecte.transport.urllib.request.urlopen")
 class TransportRetryTests(unittest.TestCase):
     """Reprise bornée sur erreur transitoire, et message public sans détail amont."""
 
@@ -247,7 +247,7 @@ class LegifranceClientTests(unittest.TestCase):
                 legifrance_client.get_token()
         self.assertEqual(2, caught.exception.exit_code)
 
-    @mock.patch("droit_francais.legifrance.http_post_json")
+    @mock.patch("pandecte.legifrance.http_post_json")
     def test_oauth_token_uses_configured_credentials(self, http_post_json):
         http_post_json.return_value = {"access_token": "oauth-token"}
         env = {
@@ -266,7 +266,7 @@ class LegifranceClientTests(unittest.TestCase):
         self.assertEqual(["client-secret"], parsed["client_secret"])
         self.assertEqual("application/x-www-form-urlencoded", headers["Content-Type"])
 
-    @mock.patch("droit_francais.legifrance.http_post_json")
+    @mock.patch("pandecte.legifrance.http_post_json")
     def test_oauth_transport_failure_is_authentication_error(self, http_post_json):
         http_post_json.side_effect = LegifranceError("denied", exit_code=4)
         env = {
@@ -278,7 +278,7 @@ class LegifranceClientTests(unittest.TestCase):
                 legifrance_client.get_token()
         self.assertEqual(3, caught.exception.exit_code)
 
-    @mock.patch("droit_francais.legifrance.http_post_json")
+    @mock.patch("pandecte.legifrance.http_post_json")
     def test_api_call_builds_bearer_json_request(self, http_post_json):
         http_post_json.return_value = {"ok": True}
         with mock.patch.dict(os.environ, {"LEGIFRANCE_ENV": "prod"}, clear=True):
@@ -289,7 +289,7 @@ class LegifranceClientTests(unittest.TestCase):
         self.assertEqual(b'{"fond": "CODE_DATE"}', payload)
         self.assertEqual("Bearer token", headers["Authorization"])
 
-    @mock.patch("droit_francais.legifrance.http_post_json")
+    @mock.patch("pandecte.legifrance.http_post_json")
     def test_token_is_reused_until_it_nears_expiry(self, http_post_json):
         # Un jeton par opération ajoutait une requête d'authentification à
         # chaque appel, et une panne passagère du serveur PISTE cassait une
@@ -300,8 +300,8 @@ class LegifranceClientTests(unittest.TestCase):
             self.assertEqual("t1", legifrance_client.get_token())
         http_post_json.assert_called_once()
 
-    @mock.patch("droit_francais.legifrance.time.monotonic")
-    @mock.patch("droit_francais.legifrance.http_post_json")
+    @mock.patch("pandecte.legifrance.time.monotonic")
+    @mock.patch("pandecte.legifrance.http_post_json")
     def test_token_is_requested_again_after_expiry(self, http_post_json, monotonic):
         http_post_json.side_effect = [
             {"access_token": "t1", "expires_in": 120},
@@ -319,7 +319,7 @@ class LegifranceClientTests(unittest.TestCase):
             self.assertEqual("t2", legifrance_client.get_token())
         self.assertEqual(2, http_post_json.call_count)
 
-    @mock.patch("droit_francais.legifrance.http_post_json")
+    @mock.patch("pandecte.legifrance.http_post_json")
     def test_short_or_missing_lifetime_is_handled_conservatively(self, http_post_json):
         # Une durée inférieure à la marge n'est pas mise en cache du tout ;
         # une durée absente reçoit une valeur par défaut, courte.
@@ -335,7 +335,7 @@ class LegifranceClientTests(unittest.TestCase):
             self.assertEqual("sans-duree", legifrance_client.get_token())
         self.assertEqual(3, http_post_json.call_count)
 
-    @mock.patch("droit_francais.legifrance.http_post_json")
+    @mock.patch("pandecte.legifrance.http_post_json")
     def test_api_call_renews_the_token_exactly_once_on_401(self, http_post_json):
         http_post_json.side_effect = [
             LegifranceError("expired", exit_code=4, http_status=401),
@@ -358,7 +358,7 @@ class LegifranceClientTests(unittest.TestCase):
         self.assertEqual("frais", legifrance_client.get_token())
         self.assertEqual(3, http_post_json.call_count)
 
-    @mock.patch("droit_francais.legifrance.http_post_json")
+    @mock.patch("pandecte.legifrance.http_post_json")
     def test_a_fresh_token_refused_is_not_retried_again(self, http_post_json):
         http_post_json.side_effect = [
             LegifranceError("expired", exit_code=4, http_status=401),
@@ -371,7 +371,7 @@ class LegifranceClientTests(unittest.TestCase):
         self.assertEqual(401, caught.exception.http_status)
         self.assertEqual(3, http_post_json.call_count)
 
-    @mock.patch("droit_francais.legifrance.http_post_json")
+    @mock.patch("pandecte.legifrance.http_post_json")
     def test_other_http_errors_do_not_touch_the_token(self, http_post_json):
         http_post_json.side_effect = LegifranceError("nope", exit_code=4, http_status=403)
         with mock.patch.dict(os.environ, {**PISTE_ENV, "LEGIFRANCE_ENV": "prod"}, clear=True):
@@ -384,7 +384,7 @@ class JudilibreClientTests(unittest.TestCase):
     def setUp(self):
         judilibre_client.clear_token_cache()
 
-    @mock.patch("droit_francais.legifrance.http_post_json")
+    @mock.patch("pandecte.legifrance.http_post_json")
     def test_judilibre_shares_the_legifrance_token_cache(self, http_post_json):
         # Un seul émetteur, un seul jeton : le cache est commun aux deux
         # clients, et le nom historique reste utilisable.
@@ -395,8 +395,8 @@ class JudilibreClientTests(unittest.TestCase):
         http_post_json.assert_called_once()
         self.assertIs(legifrance_client._TOKEN_CACHE, judilibre_client._TOKEN_CACHE)
 
-    @mock.patch("droit_francais.judilibre.get_token")
-    @mock.patch("droit_francais.judilibre.http_get_json")
+    @mock.patch("pandecte.judilibre.get_token")
+    @mock.patch("pandecte.judilibre.http_get_json")
     def test_oauth_401_renews_the_token_once_then_gives_up(self, http_get_json, get_token):
         # Sans renouvellement, la voie OAuth restait cassée jusqu'au
         # redémarrage du processus une fois le jeton périmé.
@@ -417,8 +417,8 @@ class JudilibreClientTests(unittest.TestCase):
             "Bearer frais", http_get_json.call_args_list[1].args[1]["Authorization"]
         )
 
-    @mock.patch("droit_francais.judilibre.get_token")
-    @mock.patch("droit_francais.judilibre.http_get_json")
+    @mock.patch("pandecte.judilibre.get_token")
+    @mock.patch("pandecte.judilibre.http_get_json")
     def test_oauth_401_then_success_after_renewal(self, http_get_json, get_token):
         get_token.side_effect = ["perime", "frais"]
         http_get_json.side_effect = [
@@ -430,8 +430,8 @@ class JudilibreClientTests(unittest.TestCase):
         self.assertEqual(["ok"], result["results"])
         self.assertEqual(2, get_token.call_count)
 
-    @mock.patch("droit_francais.judilibre.get_token")
-    @mock.patch("droit_francais.judilibre.http_get_json")
+    @mock.patch("pandecte.judilibre.get_token")
+    @mock.patch("pandecte.judilibre.http_get_json")
     def test_keyid_falls_back_to_oauth_and_repeats_list_params(
         self,
         http_get_json,
@@ -459,7 +459,7 @@ class JudilibreClientTests(unittest.TestCase):
         self.assertEqual("key-id", first_headers["KeyId"])
         self.assertEqual("Bearer oauth-token", second_headers["Authorization"])
 
-    @mock.patch("droit_francais.judilibre.http_get_json")
+    @mock.patch("pandecte.judilibre.http_get_json")
     def test_non_authentication_error_does_not_retry(self, http_get_json):
         http_get_json.side_effect = LegifranceError(
             "server error",

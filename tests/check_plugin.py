@@ -314,13 +314,13 @@ def main() -> int:
     if "[TODO:" in json.dumps(manifest, ensure_ascii=False):
         fail("le manifeste contient encore un marqueur TODO", problems)
 
-    adapter = ROOT / "skills" / "recherche-juridique" / "SKILL.md"
+    adapter = ROOT / "skills" / "pandecte-recherche" / "SKILL.md"
     legacy = ROOT / "skill" / "SKILL.md"
     if not adapter.is_file():
-        fail("adaptateur plugin absent : skills/recherche-juridique/SKILL.md", problems)
+        fail("adaptateur plugin absent : skills/pandecte-recherche/SKILL.md", problems)
     else:
         adapter_text = adapter.read_text(encoding="utf-8")
-        if "name: recherche-juridique" not in adapter_text:
+        if "name: pandecte-recherche" not in adapter_text:
             fail("le nom de l'adaptateur ne correspond pas à son dossier", problems)
         if "../../skill/SKILL.md" not in adapter_text:
             fail("l'adaptateur ne charge pas le skill historique", problems)
@@ -351,9 +351,9 @@ def main() -> int:
             if not isinstance(servers, dict) or not servers:
                 fail(".mcp.json.mcpServers doit être un objet non vide", problems)
             else:
-                legal_server = servers.get("droit-francais")
+                legal_server = servers.get("pandecte")
                 if not isinstance(legal_server, dict):
-                    fail("serveur MCP droit-francais absent", problems)
+                    fail("serveur MCP pandecte absent", problems)
                 elif legal_server.get("type") in {"http", "sse"}:
                     url = legal_server.get("url")
                     if not isinstance(url, str) or not url.startswith("https://"):

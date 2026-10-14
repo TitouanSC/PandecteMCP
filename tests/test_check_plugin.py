@@ -26,19 +26,19 @@ VERSION = "1.2.3"
 
 
 def manifeste(**surcharges) -> dict:
-    base = {"name": "droit-francais-skill", "version": VERSION}
+    base = {"name": "pandecte", "version": VERSION}
     base.update(surcharges)
     return base
 
 
 def marketplace(**surcharges) -> dict:
     entree = {
-        "name": "droit-francais-skill",
+        "name": "pandecte",
         "source": "./",
         "version": VERSION,
     }
     entree.update(surcharges.pop("entree", {}))
-    base = {"owner": {"name": "brissonjo-sudo"}, "plugins": [entree]}
+    base = {"owner": {"name": "TitouanSC"}, "plugins": [entree]}
     base.update(surcharges)
     return base
 

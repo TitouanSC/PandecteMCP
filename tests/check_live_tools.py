@@ -14,7 +14,7 @@ ligne de commande, qui serait visible dans l'historique du shell et dans la
 liste des processus.
 
     export MCP_ACCESS_TOKEN="…"
-    python tests/check_live_tools.py https://droit-francais-skill.onrender.com/mcp
+    python tests/check_live_tools.py https://<votre-serveur>/mcp
 
 Attention : cette sonde consomme le quota PISTE du titulaire des clés, comme
 n'importe quel appel réel.
@@ -384,10 +384,12 @@ def main() -> int:
     parser.add_argument(
         "url",
         nargs="?",
-        default="https://droit-francais-skill.onrender.com/mcp",
+        default=os.environ.get("PANDECTE_MCP_URL") or None,
         help="URL complète du endpoint MCP.",
     )
     args = parser.parse_args()
+    if not args.url:
+        parser.error("URL du endpoint MCP requise : argument ou PANDECTE_MCP_URL.")
 
     token = os.environ.get("MCP_ACCESS_TOKEN", "").strip()
     if not token:

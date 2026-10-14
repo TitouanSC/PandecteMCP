@@ -1,13 +1,13 @@
 {
-  "name": "droit-francais-skill",
+  "name": "pandecte",
   "version": "0.9.0",
   "description": "Méthodologie rigoureuse de recherche en droit français, distribuée comme plugin OpenAI.",
   "author": {
-    "name": "brissonjo-sudo",
-    "url": "https://github.com/brissonjo-sudo"
+    "name": "TitouanSC",
+    "url": "https://github.com/TitouanSC"
   },
-  "homepage": "https://github.com/brissonjo-sudo/droit-francais-skill",
-  "repository": "https://github.com/brissonjo-sudo/droit-francais-skill",
+  "homepage": "https://github.com/TitouanSC/PandecteMCP",
+  "repository": "https://github.com/TitouanSC/PandecteMCP",
   "license": "CC-BY-SA-4.0",
   "keywords": [
     "droit-français",
@@ -18,19 +18,19 @@
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {
-    "displayName": "Droit français",
+    "displayName": "PandecteMCP",
     "shortDescription": "Rechercher le droit français",
     "longDescription": "Applique une méthode anti-hallucination fondée sur les sources primaires, la vérification de vigueur et des citations traçables.",
-    "developerName": "brissonjo-sudo",
+    "developerName": "TitouanSC",
     "category": "Productivity",
     "capabilities": [
       "Interactive",
       "MCP"
     ],
-    "websiteURL": "https://github.com/brissonjo-sudo/droit-francais-skill",
-    "supportURL": "https://github.com/brissonjo-sudo/droit-francais-skill/issues",
-    "privacyPolicyURL": "https://github.com/brissonjo-sudo/droit-francais-skill/blob/main/docs/privacy-policy.md",
-    "termsOfServiceURL": "https://github.com/brissonjo-sudo/droit-francais-skill/blob/main/docs/terms-of-use.md",
+    "websiteURL": "https://github.com/TitouanSC/PandecteMCP",
+    "supportURL": "https://github.com/TitouanSC/PandecteMCP/issues",
+    "privacyPolicyURL": "https://github.com/TitouanSC/PandecteMCP/blob/main/docs/privacy-policy.md",
+    "termsOfServiceURL": "https://github.com/TitouanSC/PandecteMCP/blob/main/docs/terms-of-use.md",
     "defaultPrompt": [
       "Recherche cet article dans Légifrance.",
       "Trouve et lis cette décision judiciaire.",

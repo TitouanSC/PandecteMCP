@@ -29,7 +29,7 @@ import update_skill  # noqa: E402
 #: reprendre : ``subprocess.run(["npx", ...])`` sans shell ne trouve pas
 #: ``npx.cmd`` et lève ``FileNotFoundError`` (constaté le 14 septembre 2026).
 NPX_RESOLU = r"C:\node\npx.CMD"
-COMMANDE_ATTENDUE = [NPX_RESOLU, "skills", "update", "recherche-juridique", "-y", "-g"]
+COMMANDE_ATTENDUE = [NPX_RESOLU, "skills", "update", "pandecte-recherche", "-y", "-g"]
 
 
 class FauxSkill(unittest.TestCase):
@@ -39,10 +39,10 @@ class FauxSkill(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.home = Path(tmp.name).resolve()
-        self.racine = self.home / ".claude" / "skills" / "recherche-juridique"
+        self.racine = self.home / ".claude" / "skills" / "pandecte-recherche"
         (self.racine / "scripts").mkdir(parents=True)
         self.ecrire_version("3.4.0")
-        self.config = self.racine / ".recherche-juridique-update.json"
+        self.config = self.racine / ".pandecte-recherche-update.json"
         self.profil = self.racine / "profil.md"
         self.env = self.racine / "scripts" / ".env"
         for patch in (
@@ -56,7 +56,7 @@ class FauxSkill(unittest.TestCase):
 
     def ecrire_version(self, version: str) -> None:
         (self.racine / "SKILL.md").write_text(
-            f"---\nname: recherche-juridique\nmetadata:\n  version: {version}\n---\n",
+            f"---\nname: pandecte-recherche\nmetadata:\n  version: {version}\n---\n",
             encoding="utf-8",
         )
 
@@ -131,16 +131,16 @@ class PerimetreTests(FauxSkill):
     def test_installation_globale_reconnue(self):
         for dossier in (".claude", ".codex", ".cursor", ".copilot"):
             with self.subTest(dossier=dossier):
-                racine = self.home / dossier / "skills" / "recherche-juridique"
+                racine = self.home / dossier / "skills" / "pandecte-recherche"
                 with mock.patch.object(update_skill, "SKILL_ROOT", racine):
                     self.assertEqual(update_skill.scope_argument(), "-g")
 
     def test_emplacements_ambigus_refuses(self):
         ailleurs = Path(tempfile.gettempdir()).resolve().parent / "hors-home"
         for racine in (
-            self.home / "projet" / ".claude" / "skills" / "recherche-juridique",
-            self.home / ".claude" / "recherche-juridique",
-            self.home / ".autre" / "skills" / "recherche-juridique",
+            self.home / "projet" / ".claude" / "skills" / "pandecte-recherche",
+            self.home / ".claude" / "pandecte-recherche",
+            self.home / ".autre" / "skills" / "pandecte-recherche",
             ailleurs,
         ):
             with self.subTest(racine=racine), mock.patch.object(update_skill, "SKILL_ROOT", racine):
@@ -196,7 +196,7 @@ class LanceurTests(FauxSkill):
 
     def test_installation_non_globale_ignoree(self):
         self.activer()
-        locale = self.home / "projet" / ".claude" / "skills" / "recherche-juridique"
+        locale = self.home / "projet" / ".claude" / "skills" / "pandecte-recherche"
         with mock.patch.object(update_skill, "SKILL_ROOT", locale):
             code, sortie = self.lancer()
         self.assertEqual(code, 0)
@@ -225,7 +225,7 @@ class LanceurTests(FauxSkill):
         code, sortie = self.lancer()
 
         self.assertEqual(code, 0)
-        self.assertEqual(sortie.strip(), "UPDATE_APPLIED recherche-juridique 3.4.0 → 3.5.0")
+        self.assertEqual(sortie.strip(), "UPDATE_APPLIED pandecte-recherche 3.4.0 → 3.5.0")
         self.assertEqual(self.run.call_args.args[0], COMMANDE_ATTENDUE)
         self.assertEqual(self.profil.read_text(encoding="utf-8"), "profil de Jo")
         self.assertIsNotNone(self.derniere_tentative())

@@ -1,9 +1,9 @@
 {
-  "name": "droit-francais",
-  "interface": {"displayName": "Droit français"},
+  "name": "pandecte",
+  "interface": {"displayName": "PandecteMCP"},
   "plugins": [
     {
-      "name": "droit-francais-skill",
+      "name": "pandecte",
       "source": {"source": "local", "path": "./"},
       "policy": {"installation": "AVAILABLE", "authentication": "ON_USE"},
       "category": "Productivity"

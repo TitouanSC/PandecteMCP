@@ -15,8 +15,8 @@ SCRIPTS = ROOT / "skill" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(ROOT))
 
-from droit_francais.errors import LegifranceError  # noqa: E402
-from droit_francais import tools as legal_tools  # noqa: E402
+from pandecte.errors import LegifranceError  # noqa: E402
+from pandecte import tools as legal_tools  # noqa: E402
 from mcp import ClientSession, StdioServerParameters  # noqa: E402
 from mcp.client.stdio import stdio_client  # noqa: E402
 from mcp_server import server as mcp_app  # noqa: E402
@@ -50,8 +50,8 @@ def _schema_enum(node: dict) -> list[str]:
 
 
 class LegalToolsTests(unittest.TestCase):
-    @mock.patch("droit_francais.tools.get_token", return_value="token")
-    @mock.patch("droit_francais.tools.api_call")
+    @mock.patch("pandecte.tools.get_token", return_value="token")
+    @mock.patch("pandecte.tools.api_call")
     def test_article_search_normalizes_official_results(self, api_call, get_token):
         api_call.return_value = {
             "results": [
@@ -97,8 +97,8 @@ class LegalToolsTests(unittest.TestCase):
         self.assertEqual("L2212-2", body["recherche"]["champs"][0]["criteres"][0]["valeur"])
         get_token.assert_called_once_with()
 
-    @mock.patch("droit_francais.tools.get_token", return_value="token")
-    @mock.patch("droit_francais.tools.api_call")
+    @mock.patch("pandecte.tools.get_token", return_value="token")
+    @mock.patch("pandecte.tools.api_call")
     def test_get_article_returns_fetch_contract(self, api_call, _get_token):
         api_call.return_value = {
             "article": {
@@ -121,8 +121,8 @@ class LegalToolsTests(unittest.TestCase):
         )
         self.assertTrue(article["metadata"]["applicable_at_as_of_date"])
 
-    @mock.patch("droit_francais.tools.get_token", return_value="token")
-    @mock.patch("droit_francais.tools.api_call")
+    @mock.patch("pandecte.tools.get_token", return_value="token")
+    @mock.patch("pandecte.tools.api_call")
     def test_historical_article_is_not_presented_as_current(self, api_call, _get_token):
         api_call.return_value = {
             "article": {
@@ -144,7 +144,7 @@ class LegalToolsTests(unittest.TestCase):
         self.assertEqual("2014-12-22", metadata["version_end_date"])
         self.assertIn("n'est pas applicable", metadata["caveat"])
 
-    @mock.patch("droit_francais.tools.judilibre_get")
+    @mock.patch("pandecte.tools.judilibre_get")
     def test_case_law_search_and_fetch_are_traceable(self, judilibre_get):
         judilibre_get.side_effect = [
             {
@@ -182,7 +182,7 @@ class LegalToolsTests(unittest.TestCase):
         self.assertEqual("untrusted_source_data", decision["metadata"]["content_trust"])
         self.assertEqual("https://www.courdecassation.fr/decision/abc123", decision["url"])
 
-    @mock.patch("droit_francais.tools.judilibre_get")
+    @mock.patch("pandecte.tools.judilibre_get")
     def test_case_law_search_refuses_a_jurisdiction_name(self, judilibre_get):
         # Le nom en clair produisait un HTTP 400 opaque venu de Judilibre.
         with self.assertRaises(LegifranceError) as caught:
@@ -192,13 +192,13 @@ class LegalToolsTests(unittest.TestCase):
         self.assertIn("Cour de cassation", message)
         judilibre_get.assert_not_called()
 
-    @mock.patch("droit_francais.tools.judilibre_get")
+    @mock.patch("pandecte.tools.judilibre_get")
     def test_case_law_search_normalises_the_jurisdiction_code(self, judilibre_get):
         judilibre_get.return_value = {"total": 0, "results": []}
         legal_tools.search_case_law("responsabilité", jurisdiction="  CC ")
         self.assertEqual("cc", judilibre_get.call_args.args[1]["jurisdiction"])
 
-    @mock.patch("droit_francais.tools.judilibre_get")
+    @mock.patch("pandecte.tools.judilibre_get")
     def test_case_law_search_keeps_the_historic_sort_by_default(self, judilibre_get):
         judilibre_get.return_value = {"total": 0, "results": []}
         legal_tools.search_case_law("responsabilité")
@@ -206,7 +206,7 @@ class LegalToolsTests(unittest.TestCase):
         self.assertEqual("score", params["sort"])
         self.assertEqual("desc", params["order"])
 
-    @mock.patch("droit_francais.tools.judilibre_get")
+    @mock.patch("pandecte.tools.judilibre_get")
     def test_case_law_search_maps_the_date_sort(self, judilibre_get):
         judilibre_get.return_value = {"total": 0, "results": []}
         legal_tools.search_case_law("responsabilité", sort="date")
@@ -214,13 +214,13 @@ class LegalToolsTests(unittest.TestCase):
         self.assertEqual("date", params["sort"])
         self.assertEqual("desc", params["order"])
 
-    @mock.patch("droit_francais.tools.judilibre_get")
+    @mock.patch("pandecte.tools.judilibre_get")
     def test_case_law_search_refuses_an_unknown_sort(self, judilibre_get):
         with self.assertRaises(LegifranceError):
             legal_tools.search_case_law("responsabilité", sort="popularité")
         judilibre_get.assert_not_called()
 
-    @mock.patch("droit_francais.tools.search_case_law")
+    @mock.patch("pandecte.tools.search_case_law")
     def test_standard_search_leaves_case_law_defaults_untouched(self, search_case_law):
         # Garde-fou : le routeur générique ne doit jamais imposer de juridiction
         # ni de tri. Une dérive des défauts se verrait ici.
@@ -228,7 +228,7 @@ class LegalToolsTests(unittest.TestCase):
         legal_tools.search("responsabilité contractuelle")
         search_case_law.assert_called_once_with("responsabilité contractuelle")
 
-    @mock.patch("droit_francais.tools.judilibre_get")
+    @mock.patch("pandecte.tools.judilibre_get")
     def test_temporarily_suppressed_decision_is_never_redistributed(self, judilibre_get):
         judilibre_get.return_value = {
             "total": 2,
@@ -250,7 +250,7 @@ class LegalToolsTests(unittest.TestCase):
         self.assertIn("temporairement indisponible", str(caught.exception))
         judilibre_get.assert_called_once()
 
-    @mock.patch("droit_francais.tools.judilibre_get")
+    @mock.patch("pandecte.tools.judilibre_get")
     def test_suppression_ignores_the_case_copied_into_the_variable(self, judilibre_get):
         """Un identifiant recopié en majuscules doit retirer la décision quand même.
 
@@ -295,7 +295,7 @@ class LegalToolsTests(unittest.TestCase):
             {"MCP_JUDILIBRE_SUPPRESSED_IDS": f"{A_RETIRER},{VISIBLE}"},
             clear=False,
         ):
-            with self.assertLogs("droit_francais.mcp", level="INFO") as journal:
+            with self.assertLogs("pandecte.mcp", level="INFO") as journal:
                 self.assertEqual(2, mcp_app._load_suppression_list())
         rendu = " | ".join(journal.output)
         self.assertIn("judilibre_suppression_list count=2", rendu)
@@ -306,7 +306,7 @@ class LegalToolsTests(unittest.TestCase):
             with self.assertRaises(RuntimeConfigurationError):
                 mcp_app._load_suppression_list()
 
-    @mock.patch("droit_francais.tools.judilibre_get")
+    @mock.patch("pandecte.tools.judilibre_get")
     def test_upstream_prompt_injection_remains_untrusted_text(self, judilibre_get):
         judilibre_get.return_value = {
             "id": "texte-piege",
@@ -319,7 +319,7 @@ class LegalToolsTests(unittest.TestCase):
         self.assertEqual("untrusted_source_data", decision["metadata"]["content_trust"])
         judilibre_get.assert_called_once()
 
-    @mock.patch("droit_francais.tools.search_articles")
+    @mock.patch("pandecte.tools.search_articles")
     def test_standard_search_routes_explicit_articles(self, search_articles):
         search_articles.return_value = {
             "results": [
@@ -338,7 +338,7 @@ class LegalToolsTests(unittest.TestCase):
         )
         search_articles.assert_called_once_with("L. 1", code=None, date=None)
 
-    @mock.patch("droit_francais.tools.search_articles")
+    @mock.patch("pandecte.tools.search_articles")
     def test_standard_search_preserves_known_code_and_french_date(self, search_articles):
         search_articles.return_value = {
             "results": [],
@@ -353,7 +353,7 @@ class LegalToolsTests(unittest.TestCase):
             "1240", code="Code civil", date="2010-01-01"
         )
 
-    @mock.patch("droit_francais.tools.search_articles")
+    @mock.patch("pandecte.tools.search_articles")
     def test_standard_search_filters_on_the_official_code_label(self, search_articles):
         """« article 1240 du Code civil » ne doit pas ramener le 1240 du CPC."""
         search_articles.return_value = {
@@ -367,7 +367,7 @@ class LegalToolsTests(unittest.TestCase):
 
         search_articles.assert_called_once_with("1240", code="Code civil", date=None)
 
-    @mock.patch("droit_francais.tools.search_articles")
+    @mock.patch("pandecte.tools.search_articles")
     def test_standard_search_does_not_guess_an_unknown_code(self, search_articles):
         """Un code non répertorié reste non filtré plutôt qu'approximé."""
         search_articles.return_value = {
@@ -381,7 +381,7 @@ class LegalToolsTests(unittest.TestCase):
 
         search_articles.assert_called_once_with("12", code=None, date=None)
 
-    @mock.patch("droit_francais.tools.search_articles")
+    @mock.patch("pandecte.tools.search_articles")
     def test_standard_search_routes_bare_prefixed_article(self, search_articles):
         search_articles.return_value = {
             "results": [],
@@ -396,7 +396,7 @@ class LegalToolsTests(unittest.TestCase):
             "L. 2212-2", code="Code général des collectivités territoriales", date=None
         )
 
-    @mock.patch("droit_francais.tools.get_article")
+    @mock.patch("pandecte.tools.get_article")
     def test_standard_search_verifies_an_exact_article_identifier(self, get_article):
         get_article.return_value = {
             "id": "LEGIARTI000032041571",
@@ -409,7 +409,7 @@ class LegalToolsTests(unittest.TestCase):
         get_article.assert_called_once_with("LEGIARTI000032041571", date=None)
         self.assertTrue(result["provenance"]["verified"])
 
-    @mock.patch("droit_francais.tools.get_article")
+    @mock.patch("pandecte.tools.get_article")
     def test_standard_search_verifies_an_identifier_embedded_in_text(self, get_article):
         get_article.return_value = {
             "id": "LEGIARTI000032041571",
@@ -421,7 +421,7 @@ class LegalToolsTests(unittest.TestCase):
 
         get_article.assert_called_once_with("LEGIARTI000032041571", date=None)
 
-    @mock.patch("droit_francais.tools.get_article")
+    @mock.patch("pandecte.tools.get_article")
     def test_standard_search_keeps_the_date_asked_with_an_identifier(self, get_article):
         """Une date exprimée avec l'identifiant vise la version évaluée."""
         get_article.return_value = {
@@ -436,7 +436,7 @@ class LegalToolsTests(unittest.TestCase):
             "LEGIARTI000032041571", date="2010-01-01"
         )
 
-    @mock.patch("droit_francais.tools.search_case_law")
+    @mock.patch("pandecte.tools.search_case_law")
     def test_standard_search_refuses_a_malformed_article_identifier(self, search_case_law):
         with self.assertRaises(LegifranceError):
             legal_tools.search("Vérifie LEGIARTI0000")
@@ -460,7 +460,7 @@ class LegalToolsTests(unittest.TestCase):
             {"LEGIFRANCE_CLIENT_SECRET": "super-secret"},
             clear=False,
         ):
-            with self.assertLogs("droit_francais.mcp", level="WARNING") as journal:
+            with self.assertLogs("pandecte.mcp", level="WARNING") as journal:
                 with self.assertRaises(mcp_app.ToolError) as caught:
                     mcp_app._safe_call(fail)
         self.assertNotIn("super-secret", str(caught.exception))
@@ -485,7 +485,7 @@ class LegalToolsTests(unittest.TestCase):
                 detail='HTTP 503 sur https://api.piste.gouv.fr/x?q=1\n{"trace": "stack-interne-42"}',
             )
 
-        with self.assertLogs("droit_francais.mcp", level="WARNING") as journal:
+        with self.assertLogs("pandecte.mcp", level="WARNING") as journal:
             with self.assertRaises(mcp_app.ToolError) as caught:
                 mcp_app._safe_call(fail)
         reply = str(caught.exception)

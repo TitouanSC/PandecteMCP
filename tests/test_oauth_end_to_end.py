@@ -333,7 +333,7 @@ class AccesAutoriseTests(OAuthServerCase):
         pour autant révéler ni le jeton ni le sujet en clair.
         """
         with mock.patch.object(mcp_app.legal_tools, "search", return_value={}):
-            with self.assertLogs("droit_francais.mcp", level="INFO") as journal:
+            with self.assertLogs("pandecte.mcp", level="INFO") as journal:
                 self.call_tool(
                     self.token(sub="auth0|alice", scope="legal:read openid"),
                     "search",
@@ -347,7 +347,7 @@ class AccesAutoriseTests(OAuthServerCase):
         self.assertNotIn("auth0|alice", ligne)
 
     def test_l_erreur_metier_ne_reexpose_aucun_secret(self):
-        from droit_francais.errors import LegifranceError
+        from pandecte.errors import LegifranceError
 
         def echouer(*_args, **_kwargs):
             raise LegifranceError("cle valeur-tres-secrete refusee", exit_code=3)
@@ -424,7 +424,7 @@ class PorteeDesactiveeTests(OAuthServerCase):
         journaux de production, qui dira si le contrôle de portée peut être
         réactivé sans casser le connecteur."""
         with mock.patch.object(mcp_app.legal_tools, "search", return_value={}):
-            with self.assertLogs("droit_francais.mcp", level="INFO") as journal:
+            with self.assertLogs("pandecte.mcp", level="INFO") as journal:
                 self.call_tool(self.token(scope=""), "search", {"query": "x"})
 
         lignes = [ligne for ligne in journal.output if "tool_call" in ligne]

@@ -7,7 +7,7 @@ import unittest
 from unittest import mock
 
 from tests.test_text_consultation import DATE, SECTION, TEXT, text
-from droit_francais import texts, tools
+from pandecte import texts, tools
 
 
 def milliseconds(value: str) -> int:

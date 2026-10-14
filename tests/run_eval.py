@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""run_eval.py — harnais d'évaluation du skill recherche-juridique.
+"""run_eval.py — harnais d'évaluation du skill pandecte-recherche.
 
 Lit `eval-modes-erreur.csv` (une sonde par mode d'erreur + contrôles
 transverses) et vérifie le comportement du skill.
@@ -220,7 +220,7 @@ def run_live(cases: list[dict], model: str, use_judge: bool, judge_model: str) -
 
 
 def main(argv=None) -> int:
-    p = argparse.ArgumentParser(description="Éval du skill recherche-juridique.")
+    p = argparse.ArgumentParser(description="Éval du skill pandecte-recherche.")
     p.add_argument("--live", action="store_true", help="Appeler l'API Anthropic.")
     p.add_argument(
         "--model",

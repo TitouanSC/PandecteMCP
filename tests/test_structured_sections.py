@@ -8,8 +8,8 @@ import unittest
 from unittest import mock
 
 from tests.test_text_consultation import ARTICLE, DATE, SECTION, TEXT, text
-from droit_francais import sections, texts, tools
-from droit_francais.errors import LegifranceError
+from pandecte import sections, texts, tools
+from pandecte.errors import LegifranceError
 
 
 def context():

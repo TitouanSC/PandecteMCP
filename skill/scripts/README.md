@@ -1,6 +1,6 @@
 # `scripts/` — outillage de récupération en source primaire
 
-Ce dossier matérialise le **Palier 3** du skill `recherche-juridique` :
+Ce dossier matérialise le **Palier 3** du skill `pandecte-recherche` :
 remplacer le scraping fragile de Légifrance par un accès **aux API
 officielles**, de sorte que P1 (primarité) et la **règle de provenance**
 (v2.3.0) soient satisfaits par un appel d'outil déterministe plutôt que par
@@ -59,7 +59,7 @@ Légifrance et Judilibre exposées via la plateforme **PISTE** de la DILA.
 
 `legifrance.py` reste le point d'entrée public et conserve ses commandes et
 codes de sortie. Les fondations partagées sont progressivement extraites dans
-le paquet voisin `droit_francais/`, inclus dans toute copie autonome de
+le paquet voisin `pandecte/`, inclus dans toute copie autonome de
 `skill/` :
 
 - `errors.py` — exception commune et codes de sortie ;

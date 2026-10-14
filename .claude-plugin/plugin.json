@@ -1,14 +1,14 @@
 {
-  "name": "droit-francais-skill",
-  "displayName": "Droit français",
+  "name": "pandecte",
+  "displayName": "PandecteMCP",
   "version": "0.9.0",
-  "description": "Méthodologie rigoureuse de recherche en droit français, distribuée comme plugin Claude Code : sources primaires Légifrance et Judilibre, vérification de vigueur, citations traçables.",
+  "description": "Méthodologie de recherche en droit français : sources primaires, contrôle de vigueur et citations traçables. Skill et serveur MCP distant.",
   "author": {
-    "name": "brissonjo-sudo",
-    "url": "https://github.com/brissonjo-sudo"
+    "name": "TitouanSC",
+    "url": "https://github.com/TitouanSC"
   },
-  "homepage": "https://github.com/brissonjo-sudo/droit-francais-skill",
-  "repository": "https://github.com/brissonjo-sudo/droit-francais-skill",
+  "homepage": "https://github.com/TitouanSC/PandecteMCP",
+  "repository": "https://github.com/TitouanSC/PandecteMCP",
   "license": "CC-BY-SA-4.0",
   "keywords": [
     "droit-français",

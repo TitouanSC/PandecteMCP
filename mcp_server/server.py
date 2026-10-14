@@ -30,9 +30,9 @@ except ImportError:  # SDK MCP v1.27, encore largement installé
     MCP_V2 = False
 from mcp.types import ToolAnnotations
 
-from droit_francais.config import load_dotenv
-from droit_francais.errors import LegifranceError
-from droit_francais import tools as legal_tools
+from pandecte.config import load_dotenv
+from pandecte.errors import LegifranceError
+from pandecte import tools as legal_tools
 from mcp_server.runtime import (
     PrincipalRateLimiter,
     RequestGovernor,
@@ -47,14 +47,14 @@ logging.basicConfig(
     level=getattr(logging, SETTINGS.log_level),
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
-LOGGER = logging.getLogger("droit_francais.mcp")
+LOGGER = logging.getLogger("pandecte.mcp")
 # L'image de production tourne en WARNING pour faire taire le SDK MCP et le
 # serveur HTTP. Le journal métier, lui, est la seule trace d'imputabilité des
 # appels d'outils : il doit survivre à ce réglage. Le niveau du logger
 # d'origine décide seul de l'émission, indépendamment du logger racine.
 if LOGGER.level in (logging.NOTSET,) or LOGGER.getEffectiveLevel() > logging.INFO:
     LOGGER.setLevel(logging.INFO)
-logging.getLogger("droit_francais.mcp.auth").setLevel(logging.INFO)
+logging.getLogger("pandecte.mcp.auth").setLevel(logging.INFO)
 GOVERNOR = RequestGovernor(
     SETTINGS.max_concurrent_requests,
     SETTINGS.tool_calls_per_minute,
@@ -151,7 +151,7 @@ if MCP_V2:
 else:
     server_options.update(host=SETTINGS.host, port=SETTINGS.port)
 server_options.update(_build_auth_options())
-server = MCPServer("Droit français", **server_options)
+server = MCPServer("PandecteMCP", **server_options)
 
 READ_ONLY = ToolAnnotations(
     readOnlyHint=True,
@@ -512,7 +512,7 @@ def check_issuer() -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Serveur MCP Droit français")
+    parser = argparse.ArgumentParser(description="Serveur MCP PandecteMCP")
     parser.add_argument(
         "--transport",
         choices=("stdio", "streamable-http"),

@@ -16,8 +16,8 @@ sys.path.insert(0, str(ROOT))
 
 from tests.test_structured_sections import body, structure  # noqa: E402
 from tests.test_text_consultation import ARTICLE, DATE, SECTION, TEXT  # noqa: E402
-from droit_francais import article_versions, sections, texts  # noqa: E402
-from droit_francais.errors import LegifranceError  # noqa: E402
+from pandecte import article_versions, sections, texts  # noqa: E402
+from pandecte.errors import LegifranceError  # noqa: E402
 
 DEAD = "LEGIARTI000000000002"
 CHILD = "LEGISCTA000000000002"

@@ -155,7 +155,7 @@ contexte, jamais des certitudes — voir [`skill/profils/`](skill/profils/)) :
 **Activation** (après installation) :
 
 ```bash
-cd ~/.claude/skills/recherche-juridique
+cd ~/.claude/skills/pandecte-recherche
 cp profils/avocat.md profil.md      # remplacer par votre profil
 # puis compléter les champs [à compléter] du profil.md
 ```
@@ -173,7 +173,7 @@ Pour que le CLI conserve la source du skill et puisse le mettre à jour sans
 recopie manuelle :
 
 ```bash
-npx skills add https://github.com/brissonjo-sudo/droit-francais-skill/tree/main/skill --skill recherche-juridique
+npx skills add https://github.com/brissonjo-sudo/droit-francais-skill/tree/main/skill --skill pandecte-recherche
 ```
 
 Le skill vérifie une fois par session si une nouvelle version est disponible,
@@ -181,7 +181,7 @@ sans interrompre une recherche juridique. Si une mise à jour est signalée,
 l'utilisateur garde la main :
 
 ```bash
-npx skills update recherche-juridique
+npx skills update pandecte-recherche
 ```
 
 La commande ne doit pas être lancée automatiquement par l'agent. Pour mettre
@@ -190,7 +190,7 @@ La commande ne doit pas être lancée automatiquement par l'agent. Pour mettre
 #### Mises à jour automatiques (facultatif)
 
 Pour une installation **globale** suivie par le CLI `skills`, créez le fichier
-`.recherche-juridique-update.json` à la racine installée du skill :
+`.pandecte-recherche-update.json` à la racine installée du skill :
 
 ```json
 { "automatic": true }
@@ -204,7 +204,7 @@ ce comportement, remplacez `true` par `false` ou supprimez le fichier.
 ### Comme plugin OpenAI — candidat v0.9.0
 
 Le dépôt contient désormais un manifeste `.codex-plugin/plugin.json` et un
-point d'entrée natif `skills/recherche-juridique/`. L'adaptateur charge le
+point d'entrée natif `skills/pandecte-recherche/`. L'adaptateur charge le
 noyau historique depuis `skill/` : il n'existe donc qu'une seule source de
 vérité méthodologique.
 
@@ -249,7 +249,7 @@ identifiant distant fictif n'est placé dans le dépôt.
 > Installer le paquet ne suffit donc pas à utiliser ses outils distants.
 
 Le manifeste `.claude-plugin/plugin.json` réutilise les mêmes briques que le
-plugin OpenAI : le point d'entrée `skills/recherche-juridique/` (adaptateur
+plugin OpenAI : le point d'entrée `skills/pandecte-recherche/` (adaptateur
 vers le noyau `skill/`). Le serveur MCP est déclaré une seule fois, dans le
 `.mcp.json` de la racine que Claude Code reprend automatiquement, en
 **connexion distante** vers le service déployé. Le dépôt sert aussi de
@@ -316,20 +316,20 @@ indisponibles.
 ```powershell
 # Cloner puis copier uniquement skill/ dans le dossier skills Claude Code
 git clone https://github.com/brissonjo-sudo/droit-francais-skill
-Copy-Item -Recurse droit-francais-skill\skill "$env:USERPROFILE\.claude\skills\recherche-juridique"
+Copy-Item -Recurse droit-francais-skill\skill "$env:USERPROFILE\.claude\skills\pandecte-recherche"
 ```
 
 ### macOS / Linux
 
 ```bash
 git clone https://github.com/brissonjo-sudo/droit-francais-skill
-cp -r droit-francais-skill/skill ~/.claude/skills/recherche-juridique
+cp -r droit-francais-skill/skill ~/.claude/skills/pandecte-recherche
 ```
 
 ### Installation manuelle
 
 Copier le dossier `skill/` (contenu, pas le dossier lui-même) dans
-`~/.claude/skills/recherche-juridique/`. Le champ `name:` dans
+`~/.claude/skills/pandecte-recherche/`. Le champ `name:` dans
 `skill/SKILL.md` doit correspondre au nom du dossier d'installation.
 
 ### Sur d'autres plateformes
@@ -383,7 +383,7 @@ droit-francais-skill/
 │   ├── server.py                   ← outils MCP stdio ou HTTP /mcp
 │   └── catalog.py                  ← liste des outils publiés (source unique)
 ├── skills/
-│   └── recherche-juridique/
+│   └── pandecte-recherche/
 │       └── SKILL.md               ← adaptateur plugin vers le noyau
 ├── skill/                          ← paquet autonome et source de vérité
 │   ├── SKILL.md                    ← noyau méthodologique (universel)
@@ -408,7 +408,7 @@ droit-francais-skill/
 │   └── scripts/                    ← outillage Palier 3
 │       ├── legifrance.py           ← API Légifrance + Judilibre (via PISTE)
 │       ├── update_skill.py          ← mise à jour automatique optionnelle
-│       ├── droit_francais/         ← bibliothèque réutilisable embarquée
+│       ├── pandecte/         ← bibliothèque réutilisable embarquée
 │       │   ├── errors.py           ← erreurs et codes de sortie communs
 │       │   ├── config.py           ← environnements et chargement .env
 │       │   ├── transport.py        ← transport HTTP JSON

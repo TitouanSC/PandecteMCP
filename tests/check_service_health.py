@@ -31,6 +31,7 @@ import argparse
 import contextlib
 import io
 import json
+import os
 import socket
 import sys
 import time
@@ -47,7 +48,9 @@ from check_oauth_metadata import MetadataError, verify  # noqa: E402
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-BASE_PAR_DEFAUT = "https://droit-francais-skill.onrender.com"
+#: URL publique du service, sans /mcp. Aucune valeur par défaut : le projet
+#: ne présume pas de l'adresse de déploiement.
+BASE_PAR_DEFAUT = os.environ.get("PANDECTE_PUBLIC_URL", "").strip().rstrip("/")
 
 #: Au-delà, la première requête a probablement réveillé une instance en veille.
 #: Ce n'est pas une panne : c'est le comportement documenté d'une instance
@@ -189,7 +192,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Surveille la disponibilité et la latence du service déployé"
     )
-    parser.add_argument("base_url", nargs="?", default=BASE_PAR_DEFAUT)
+    parser.add_argument("base_url", nargs="?", default=BASE_PAR_DEFAUT or None)
     parser.add_argument(
         "--json",
         action="store_true",
@@ -200,6 +203,8 @@ def main() -> int:
         help="Horodatage ISO à inscrire dans la sortie JSON (fourni par l'appelant).",
     )
     args = parser.parse_args()
+    if not args.base_url:
+        parser.error("URL du service requise : argument ou PANDECTE_PUBLIC_URL.")
 
     rapport = sonder(args.base_url)
     if args.horodatage:

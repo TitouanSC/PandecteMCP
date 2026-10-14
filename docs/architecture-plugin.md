@@ -15,7 +15,7 @@ Le dépôt évolue selon une approche **skill-first, plugin-ready** :
 
 - `skill/` reste la source de vérité et le paquet autonome historique ;
 - le dépôt devient aussi un plugin OpenAI grâce à `.codex-plugin/plugin.json` ;
-- `skills/recherche-juridique/` sert d'adaptateur de découverte, sans copie du noyau ;
+- `skills/pandecte-recherche/` sert d'adaptateur de découverte, sans copie du noyau ;
 - l'outillage API est extrait progressivement dans le paquet autonome avant d'être exposé par une app ou un serveur MCP.
 
 La méthode juridique, l'interface du CLI et les variables d'environnement existantes restent stables.
@@ -54,7 +54,7 @@ droit-francais-skill/
 ├── .codex-plugin/
 │   └── plugin.json                 # identité et capacités réellement livrées
 ├── skills/
-│   └── recherche-juridique/
+│   └── pandecte-recherche/
 │       └── SKILL.md                # adaptateur vers le noyau historique
 ├── skill/                          # compatibilité autonome, source de vérité
 │   ├── SKILL.md
@@ -62,7 +62,7 @@ droit-francais-skill/
 │   ├── profils/
 │   └── scripts/
 │       ├── legifrance.py           # façade CLI compatible
-│       └── droit_francais/         # bibliothèque incluse dans skill/
+│       └── pandecte/         # bibliothèque incluse dans skill/
 │           ├── errors.py           # erreurs et codes de sortie
 │           ├── config.py           # environnement et secrets
 │           ├── transport.py        # HTTP, délais, erreurs réseau
@@ -86,9 +86,9 @@ droit-francais-skill/
 ```text
 Utilisateur
     ↓
-Plugin → skill recherche-juridique → méthode et règles de provenance
+Plugin → skill pandecte-recherche → méthode et règles de provenance
     ↓
-App / outils MCP → bibliothèque skill/scripts/droit_francais
+App / outils MCP → bibliothèque skill/scripts/pandecte
     ↓
 API officielles Légifrance et Judilibre
 ```
@@ -109,7 +109,7 @@ Critère de sortie : le validateur du plugin, le validateur du skill et tous les
 
 ### Étape 2 — bibliothèque d'outils (implémentée)
 
-- **2a — implémentée :** extraire erreurs, configuration et transport dans `skill/scripts/droit_francais/`.
+- **2a — implémentée :** extraire erreurs, configuration et transport dans `skill/scripts/pandecte/`.
 - **2b — implémentée :** extraire les clients Légifrance et Judilibre dans ce même paquet.
 - Conserver `skill/scripts/legifrance.py` comme façade compatible vers la nouvelle bibliothèque.
 - Ajouter des tests unitaires avec réponses HTTP simulées, sans dépendance au réseau ni aux clés PISTE.
@@ -153,7 +153,7 @@ de distribution de l'étape 4 : aucune URL distante n'est inventée dans le dép
 #### Distribution Claude Code (implémentée, 1ᵉʳ septembre 2026)
 
 - `.claude-plugin/plugin.json` réutilise les mêmes briques que le plugin
-  OpenAI — adaptateur `skills/recherche-juridique/` — sans dupliquer le noyau.
+  OpenAI — adaptateur `skills/pandecte-recherche/` — sans dupliquer le noyau.
   Le serveur MCP est désormais déclaré en **connexion distante** (`type:
   "http"`, `url: https://droit-francais-skill.onrender.com/mcp`) plutôt qu'en
   lancement local : l'installation ne requiert plus Python ni les dépendances
@@ -191,7 +191,7 @@ des versions du skill et sont conservés tels quels.
 ## Tests actifs
 
 - validation officielle de `.codex-plugin/plugin.json` ;
-- validation du frontmatter de `skills/recherche-juridique/SKILL.md` ;
+- validation du frontmatter de `skills/pandecte-recherche/SKILL.md` ;
 - contrôle local `tests/check_plugin.py` ;
 - tests unitaires hors réseau `tests/test_tools.py` ;
 - tests du service et du protocole MCP `tests/test_mcp_app.py` ;

@@ -7,8 +7,8 @@ import unittest
 from unittest import mock
 
 from tests.test_text_consultation import DATE, SECTION, TEXT, article, server, text
-from droit_francais import texts, tools
-from droit_francais.errors import LegifranceError
+from pandecte import texts, tools
+from pandecte.errors import LegifranceError
 
 
 class ConsultationLimitTests(unittest.TestCase):
@@ -186,7 +186,7 @@ class ConsultationLimitTests(unittest.TestCase):
         self.api.return_value["extra"] = "canari-source-confidentielle-" * 20
         with (
             mock.patch.object(texts, "MAX_RESPONSE_BYTES", 100),
-            self.assertLogs("droit_francais.mcp", level="WARNING") as logs,
+            self.assertLogs("pandecte.mcp", level="WARNING") as logs,
         ):
             with self.assertRaises(server.ToolError) as error:
                 server.get_section(SECTION, TEXT, DATE)

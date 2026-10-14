@@ -9,8 +9,8 @@ import unittest
 from unittest import mock
 
 from tests.test_text_consultation import text, DATE as OTHER_DATE
-from droit_francais import texts, text_diagnostics as diag
-from droit_francais.errors import LegifranceError
+from pandecte import texts, text_diagnostics as diag
+from pandecte.errors import LegifranceError
 
 
 def sample():

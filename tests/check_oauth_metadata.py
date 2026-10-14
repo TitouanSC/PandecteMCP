@@ -12,7 +12,7 @@ contre la production :
     python tests/check_oauth_metadata.py http://127.0.0.1:8000 \\
         --issuer https://exemple.eu.auth0.com/
 
-    python tests/check_oauth_metadata.py https://droit-francais-skill.onrender.com \\
+    python tests/check_oauth_metadata.py https://<votre-serveur> \\
         --discover
 
 Aucun jeton n'est présenté et aucun secret n'est lu : seules des routes

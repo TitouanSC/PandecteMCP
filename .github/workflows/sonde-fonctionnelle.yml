@@ -24,7 +24,7 @@ on:
       url:
         description: "URL complète du endpoint MCP à sonder (sert aussi d'audience du jeton)"
         required: false
-        default: "https://droit-francais-skill.onrender.com/mcp"
+        default: "https://pandecte.example.com/mcp"
       issuer:
         description: "Émetteur OAuth qui délivre le jeton"
         required: false

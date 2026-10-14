@@ -66,7 +66,7 @@ erreur de source.
 
 ## 4. Journalisation et vie privée
 
-Le journal métier (`droit_francais.mcp`) est la seule trace permettant de
+Le journal métier (`pandecte.mcp`) est la seule trace permettant de
 rattacher un appel d'outil à un utilisateur — donc de tenir l'engagement
 d'imputabilité pris envers PISTE. Il reste en `INFO` même lorsque l'image
 tourne en `WARNING`.

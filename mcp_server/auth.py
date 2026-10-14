@@ -35,7 +35,7 @@ import jwt
 from jwt import PyJWKClient
 from mcp.server.auth.provider import AccessToken
 
-LOGGER = logging.getLogger("droit_francais.mcp.auth")
+LOGGER = logging.getLogger("pandecte.mcp.auth")
 
 #: Algorithme exact configuré dans le tenant Auth0 de production. Une liste
 #: générique d'algorithmes asymétriques élargirait inutilement la politique de

@@ -46,14 +46,14 @@ jobs:
       - name: Compiler les scripts Python (py_compile)
         run: |
           python -m py_compile skill/scripts/legifrance.py
-          python -m py_compile skill/scripts/droit_francais/__init__.py
-          python -m py_compile skill/scripts/droit_francais/errors.py
-          python -m py_compile skill/scripts/droit_francais/config.py
-          python -m py_compile skill/scripts/droit_francais/transport.py
-          python -m py_compile skill/scripts/droit_francais/legifrance.py
-          python -m py_compile skill/scripts/droit_francais/judilibre.py
-          python -m py_compile skill/scripts/droit_francais/tools.py
-          python -m py_compile skill/scripts/droit_francais/texts.py
+          python -m py_compile skill/scripts/pandecte/__init__.py
+          python -m py_compile skill/scripts/pandecte/errors.py
+          python -m py_compile skill/scripts/pandecte/config.py
+          python -m py_compile skill/scripts/pandecte/transport.py
+          python -m py_compile skill/scripts/pandecte/legifrance.py
+          python -m py_compile skill/scripts/pandecte/judilibre.py
+          python -m py_compile skill/scripts/pandecte/tools.py
+          python -m py_compile skill/scripts/pandecte/texts.py
           python -m py_compile mcp_server/runtime.py
           python -m py_compile mcp_server/auth.py
           python -m py_compile mcp_server/skills.py
@@ -151,7 +151,7 @@ jobs:
           done
 
       - name: Construire l'image de déploiement
-        run: docker build --tag droit-francais-mcp:test .
+        run: docker build --tag pandecte-mcp:test .
 
       - name: Démarrer l'image et interroger /health
         run: |
@@ -159,7 +159,7 @@ jobs:
           # démarrer sans émetteur. On bascule en development le temps de la
           # sonde : le but est de prouver que l'environnement Python de l'image
           # est intact et que le serveur répond, pas de rejouer la production.
-          docker run -d --name mcp-sonde -e MCP_ENV=development -p 8000:8000 droit-francais-mcp:test
+          docker run -d --name mcp-sonde -e MCP_ENV=development -p 8000:8000 pandecte-mcp:test
           for _ in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:8000/health; then
               echo "" && echo "OK : l'image démarre et répond."
@@ -176,7 +176,7 @@ jobs:
       - name: Inventorier toutes les CVE élevées et critiques de l'image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: droit-francais-mcp:test
+          image-ref: pandecte-mcp:test
           format: table
           exit-code: "0"
           severity: HIGH,CRITICAL
@@ -185,7 +185,7 @@ jobs:
       - name: Bloquer les CVE élevées et critiques corrigeables
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: droit-francais-mcp:test
+          image-ref: pandecte-mcp:test
           format: table
           exit-code: "1"
           ignore-unfixed: true

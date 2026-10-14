@@ -1,5 +1,5 @@
 ---
-name: recherche-juridique
+name: pandecte-recherche
 description: Méthodologie rigoureuse de recherche en droit français avec sources primaires, vérification de vigueur et citations traçables. À utiliser pour rechercher ou vérifier un texte, une jurisprudence, une qualification juridique ou rédiger un acte fondé en droit français.
 ---
 

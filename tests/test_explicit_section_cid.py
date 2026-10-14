@@ -5,8 +5,8 @@ from unittest import mock
 
 from tests.test_structured_sections import structure, body
 from tests.test_text_consultation import DATE, SECTION, TEXT, text
-from droit_francais import sections, texts, tools
-from droit_francais.errors import LegifranceError
+from pandecte import sections, texts, tools
+from pandecte.errors import LegifranceError
 from mcp_server import server
 
 VERSION = "LEGISCTA000000000002"

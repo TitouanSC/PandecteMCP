@@ -1,19 +1,19 @@
 {
-  "name": "droit-francais",
+  "name": "pandecte",
   "owner": {
-    "name": "brissonjo-sudo",
-    "url": "https://github.com/brissonjo-sudo"
+    "name": "TitouanSC",
+    "url": "https://github.com/TitouanSC"
   },
-  "description": "Recherche juridique en droit français : skill méthodologique anti-hallucination et serveur MCP Légifrance/Judilibre.",
+  "description": "Recherche juridique en droit français : skill méthodologique anti-hallucination et serveur MCP.",
   "plugins": [
     {
-      "name": "droit-francais-skill",
+      "name": "pandecte",
       "source": "./",
-      "displayName": "Droit français",
-      "description": "Méthodologie de recherche en droit français : sources primaires, contrôle de vigueur et citations traçables. Skill et connexion MCP distante avec OAuth ; candidat en qualification.",
+      "displayName": "PandecteMCP",
+      "description": "Méthodologie de recherche en droit français : sources primaires, contrôle de vigueur et citations traçables. Skill et serveur MCP distant.",
       "version": "0.9.0",
       "license": "CC-BY-SA-4.0",
-      "repository": "https://github.com/brissonjo-sudo/droit-francais-skill"
+      "repository": "https://github.com/TitouanSC/PandecteMCP"
     }
   ]
 }

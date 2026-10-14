@@ -47,7 +47,7 @@ claude plugin install droit-francais-skill@droit-francais
 claude plugin list
 ~~~
 
-Ouvrir une nouvelle session. Contrôler la présence du skill recherche-juridique
+Ouvrir une nouvelle session. Contrôler la présence du skill pandecte-recherche
 et du serveur dans /mcp. Demander une recherche puis une lecture d'article ;
 conserver l'identifiant, la date et les appels observés. Une réponse rappelant
 la méthode, sans appel réel, ne prouve pas que le connecteur fonctionne.
@@ -133,8 +133,8 @@ guide OAuth et les issues
 ## Skill autonome
 
 ~~~powershell
-npx skills add https://github.com/brissonjo-sudo/droit-francais-skill/tree/main/skill --skill recherche-juridique
-npx skills update recherche-juridique
+npx skills add https://github.com/brissonjo-sudo/droit-francais-skill/tree/main/skill --skill pandecte-recherche
+npx skills update pandecte-recherche
 ~~~
 
 La méthode est utilisable sans le plugin. La gestion et le retrait dépendent

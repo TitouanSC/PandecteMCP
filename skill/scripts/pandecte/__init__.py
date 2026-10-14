@@ -1,4 +1,4 @@
-"""Fondations réutilisables de l'outillage droit-francais-skill."""
+"""Fondations réutilisables de l'outillage pandecte."""
 
 from .config import legifrance_environment, load_dotenv, judilibre_base
 from .errors import LegifranceError

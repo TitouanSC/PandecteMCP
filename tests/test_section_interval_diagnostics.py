@@ -11,8 +11,8 @@ from unittest import mock
 
 from tests.test_structured_sections import structure, body
 from tests.test_text_consultation import SECTION, TEXT, DATE, text
-from droit_francais import sections, texts, tools, section_diagnostics as diag
-from droit_francais.errors import LegifranceError
+from pandecte import sections, texts, tools, section_diagnostics as diag
+from pandecte.errors import LegifranceError
 from mcp_server import server
 
 
@@ -169,7 +169,7 @@ class IntervalPipelineTests(unittest.TestCase):
 
     def test_existing_server_logs_safe_detail_without_publishing_it(self):
         self.section["listSection"][0].update(dateFin="2020-01-01", titre="SECRET", texte="SECRET")
-        with self.assertLogs("droit_francais.mcp", level="WARNING") as log:
+        with self.assertLogs("pandecte.mcp", level="WARNING") as log:
             with self.assertRaises(server.ToolError) as caught:
                 server._safe_call(self.read)
         journal, public = " ".join(log.output), str(caught.exception)

@@ -27,7 +27,7 @@ from typing import Any, Iterable
 ROOT = Path(__file__).resolve().parent.parent
 
 #: Espace de noms du serveur dans les identifiants ``skill://<serveur>/…``.
-SERVER_NAMESPACE = "droit-francais"
+SERVER_NAMESPACE = "pandecte"
 
 #: Capacité à déclarer à l'initialisation, le jour où le SDK la supporte.
 EXTENSION_CAPABILITY: dict[str, dict[str, Any]] = {

@@ -200,7 +200,7 @@ l'interprétant pas.
 
 La tolérance aux liens non résolus **n'est pas une liste dans le
 vérificateur** : elle est dérivée de la section « Fichiers supprimés (remplacés
-par agrégats) » de `index-recherche-juridique.md`, où ces notions sont écrites
+par agrégats) » de `index-pandecte-recherche.md`, où ces notions sont écrites
 en `code`. Déclarer une notion agrégée dans l'index suffit à la faire accepter ;
 l'oublier fait échouer le contrôle. `tests/test_check_vault.py` éprouve chaque
 invariant sur un vault de test qui le viole — un vérificateur qui passe toujours
@@ -240,7 +240,7 @@ citer une valeur d'époque. Une entrée devenue fausse y reçoit une mention de
 péremption, à la main — même logique que `skill/CHANGELOG.md` ci-dessus.
 
 **`check_plugin.py`** — vérifie le manifeste, son identité, son interface, le
-point de découverte `skills/recherche-juridique/` et la présence intacte du
+point de découverte `skills/pandecte-recherche/` et la présence intacte du
 skill historique `skill/SKILL.md`. Il interdit aussi de déclarer une app ou un
 serveur MCP sans fichier compagnon.
 

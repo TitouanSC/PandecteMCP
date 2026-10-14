@@ -3,7 +3,7 @@
 
 Objet
 -----
-Matérialise le « Palier 3 » du skill *recherche-juridique*. Convertit
+Matérialise le « Palier 3 » du skill *pandecte-recherche*. Convertit
 l'exigence P1 (primarité / lecture documentée) et la **règle de provenance**
 en appel d'outil déterministe : tout identifiant ``LEGIARTI``, toute date de
 version en vigueur et tout statut (en vigueur / modifié / abrogé) provient
@@ -109,19 +109,19 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from droit_francais.config import (
+from pandecte.config import (
     judilibre_base as _judilibre_base,
     legifrance_environment as _env,
     load_dotenv,
 )
-from droit_francais.errors import LegifranceError
-from droit_francais.judilibre import (
+from pandecte.errors import LegifranceError
+from pandecte.judilibre import (
     _TOKEN_CACHE,
     auth_modes as _judilibre_auth_modes,
     get_token_cached,
     judilibre_get,
 )
-from droit_francais.legifrance import api_call, get_token
+from pandecte.legifrance import api_call, get_token
 
 # Judilibre — valeurs de référence (spécification OpenAPI JUDILIBRE-public.json).
 # Les listes dépendantes de la juridiction (chamber, formation, theme) se

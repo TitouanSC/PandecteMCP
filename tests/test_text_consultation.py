@@ -14,8 +14,8 @@ import jwt
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "skill" / "scripts"))
 sys.path.insert(0, str(ROOT))
-from droit_francais import texts, tools  # noqa: E402
-from droit_francais.errors import LegifranceError  # noqa: E402
+from pandecte import texts, tools  # noqa: E402
+from pandecte.errors import LegifranceError  # noqa: E402
 from mcp_server import server  # noqa: E402
 
 # Identifiants de forme valide, exclusivement synthétiques : pas des preuves.

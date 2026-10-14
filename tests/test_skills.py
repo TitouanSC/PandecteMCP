@@ -50,9 +50,9 @@ class MiseAJourSkillTests(unittest.TestCase):
         noyau = (ROOT / "skill" / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("## Mise à jour — contrôle par session, automatique sur option", noyau)
         self.assertIn("`npx skills check`", noyau)
-        self.assertIn("`npx skills update recherche-juridique`", noyau)
+        self.assertIn("`npx skills update pandecte-recherche`", noyau)
         self.assertIn("Mode automatique explicite", noyau)
-        self.assertIn(".recherche-juridique-update.json", noyau)
+        self.assertIn(".pandecte-recherche-update.json", noyau)
 
 
 class CatalogueTests(unittest.TestCase):
@@ -109,7 +109,7 @@ class CatalogueTests(unittest.TestCase):
 
     def test_ressource_hors_catalogue_refusee(self):
         with self.assertRaises(KeyError):
-            read_resource("skill://droit-francais/recherche-juridique/inconnu.md")
+            read_resource("skill://pandecte/pandecte-recherche/inconnu.md")
 
     def test_catalogue_stable_entre_deux_appels(self):
         self.assertEqual(build_catalogue(), build_catalogue())

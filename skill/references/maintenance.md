@@ -1,4 +1,4 @@
-# Maintenance du skill `recherche-juridique`
+# Maintenance du skill `pandecte-recherche`
 
 Procédure de revue annuelle obligatoire à exécuter **chaque 1er septembre**
 (rentrée juridique), priorisée par les **domaines prioritaires du profil
@@ -17,7 +17,7 @@ actif** (section 3 de `profil.md`).
 1. Ouvrir le SKILL.md courant et vérifier l'en-tête YAML : `version`,
    `date_derniere_revue_methodologique`, `date_derniere_verification_sources`.
 2. L'historique Git et la note de version du vault
-   (`vault/recherche-juridique vX.Y.Z.md`) tiennent lieu d'archive : le
+   (`vault/pandecte-recherche vX.Y.Z.md`) tiennent lieu d'archive : le
    dépôt ne conserve pas de copie datée du SKILL.md.
 3. Préparer un brouillon d'entrée CHANGELOG datée du jour.
 

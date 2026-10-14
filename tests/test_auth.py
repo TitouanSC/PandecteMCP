@@ -39,12 +39,12 @@ from mcp_server.runtime import (  # noqa: E402
 )
 
 ISSUER = "https://exemple-idp.eu.auth0.com"
-RESOURCE = "https://droit-francais-skill.onrender.com/mcp"
+RESOURCE = "https://pandecte.example.com/mcp"
 
 BASE_ENV = {
     "MCP_ENV": "production",
     "MCP_AUTH_MODE": "oauth",
-    "MCP_PUBLIC_URL": "https://droit-francais-skill.onrender.com",
+    "MCP_PUBLIC_URL": "https://pandecte.example.com",
     "MCP_OAUTH_ISSUER": ISSUER,
 }
 
@@ -65,7 +65,7 @@ class AuthSettingsTests(unittest.TestCase):
         self.assertEqual(settings.oauth_required_scopes, ("legal:read",))
 
     def test_trailing_slash_never_produces_a_double_separator(self):
-        env = dict(BASE_ENV, MCP_PUBLIC_URL="https://droit-francais-skill.onrender.com/")
+        env = dict(BASE_ENV, MCP_PUBLIC_URL="https://pandecte.example.com/")
         self.assertEqual(RuntimeSettings.from_env(env).resource_url, RESOURCE)
 
     def test_scopes_accept_commas_and_spaces(self):
@@ -173,7 +173,7 @@ class IssuerCanonicalisationTests(unittest.TestCase):
         # La troncature reste indispensable là où l'URL sert de préfixe.
         env = dict(
             BASE_ENV,
-            MCP_PUBLIC_URL="https://droit-francais-skill.onrender.com/",
+            MCP_PUBLIC_URL="https://pandecte.example.com/",
             MCP_OAUTH_ISSUER=self.AVEC_BARRE,
         )
         self.assertEqual(RuntimeSettings.from_env(env).resource_url, RESOURCE)
@@ -523,7 +523,7 @@ class JwksTokenVerifierTests(unittest.TestCase):
             side_effect=jwt.PyJWKClientConnectionError("résolution DNS impossible")
         )
         token = _sign(self._payload(), self.key, kid=KID)
-        with self.assertLogs("droit_francais.mcp.auth", level="WARNING") as journal:
+        with self.assertLogs("pandecte.mcp.auth", level="WARNING") as journal:
             access = self._verify_with(verifier, token)
         self.assertIsNone(access)
         self.assertTrue(
@@ -915,7 +915,7 @@ class DatingTests(unittest.TestCase):
     """La date qui sert de référence doit être explicite dans la réponse."""
 
     def setUp(self):
-        from droit_francais.tools import _dating
+        from pandecte.tools import _dating
 
         self._dating = _dating
 
