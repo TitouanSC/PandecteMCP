@@ -118,6 +118,40 @@ class ExchangeCodeTests(unittest.TestCase):
                     account.exchange_code("https://api.workos.com", CLIENT_ID, "c", "v")
 
 
+class CookieSecurityTests(unittest.TestCase):
+    """HTTPS : cookies Secure et préfixe __Host- ; http://localhost : ni l'un ni
+    l'autre, sans quoi Safari ne renvoie jamais le cookie de connexion."""
+
+    def login_cookie_header(self, public_url: str, environment: str) -> tuple[str, str]:
+        from starlette.requests import Request
+
+        from mcp_server.runtime import RuntimeSettings
+
+        settings = RuntimeSettings.from_env({
+            "MCP_ENV": environment, "MCP_AUTH_MODE": "oauth", "MCP_PUBLIC_URL": public_url,
+            "MCP_OAUTH_ISSUER": "https://exemple.authkit.app", "WORKOS_CLIENT_ID": CLIENT_ID,
+        })
+        pages = account.AccountPages(
+            settings=settings, store=lambda: None, quotas=lambda: None,
+            pepper=lambda: b"p" * 32,
+        )
+        request = Request({"type": "http", "method": "GET", "path": "/compte/connexion",
+                           "headers": [], "query_string": b""})
+        response = asyncio.run(pages.login(request))
+        return pages.login_cookie, response.headers["set-cookie"].lower()
+
+    def test_https_uses_secure_host_prefixed_cookies(self):
+        name, header = self.login_cookie_header("https://pandecte.example.com", "production")
+        self.assertEqual(account.LOGIN_COOKIE, name)
+        self.assertIn("; secure", header)
+
+    def test_localhost_development_drops_secure_for_safari(self):
+        name, header = self.login_cookie_header("http://localhost:8765", "development")
+        self.assertEqual("pandecte_login", name)
+        self.assertNotIn("secure", header)
+        self.assertIn("httponly", header)
+
+
 class AccountCase(OAuthServerCase):
     extra_env = {"WORKOS_CLIENT_ID": CLIENT_ID}
 
@@ -337,6 +371,23 @@ class PersonalTokenTests(AccountCase):
         statuts = [reponse.status_code for reponse in self.run_flow(flow)]
         self.assertEqual([401, 403, 403, 403, 403], statuts)
         self.assertFalse(self.store.has_token(USER_ID))
+
+    def test_browser_form_with_same_origin_headers_is_accepted(self):
+        # Ce qu'envoie un vrai navigateur depuis la page : Origin du site et
+        # Sec-Fetch-Site same-origin. La politique de référent doit le permettre.
+        async def flow(client):
+            session = await self.sign_in(client)
+            cookie = {"Cookie": f"{account.SESSION_COOKIE}={session}"}
+            page = await client.get("/compte", headers=cookie)
+            self.assertEqual("same-origin", page.headers["referrer-policy"])
+            return await client.post(
+                "/compte/jeton", data={"csrf": self.csrf(page)},
+                headers=dict(cookie, Origin="https://exemple.test",
+                             **{"Sec-Fetch-Site": "same-origin"}),
+            )
+
+        self.assertEqual(200, self.run_flow(flow).status_code)
+        self.assertTrue(self.store.has_token(USER_ID))
 
     def test_logout_clears_the_session(self):
         async def flow(client):

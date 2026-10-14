@@ -49,6 +49,7 @@ from mcp_server.store import Store
 
 LOGGER = logging.getLogger("pandecte.mcp.account")
 
+#: Noms des cookies en HTTPS (voir ``AccountPages._secure``).
 SESSION_COOKIE = "__Host-pandecte_session"
 LOGIN_COOKIE = "__Host-pandecte_login"
 SESSION_TTL_SECONDS = 30 * 60
@@ -208,6 +209,13 @@ class AccountPages:
         self._clock = clock
         parsed = urllib.parse.urlsplit(settings.public_url)
         self._origin = f"{parsed.scheme}://{parsed.netloc}"
+        #: En HTTPS (toujours en production) : cookies ``Secure`` à préfixe
+        #: ``__Host-``. En développement sur http://localhost, Safari refuse les
+        #: cookies ``Secure`` : ils sont alors posés sans ce drapeau ni préfixe.
+        self._secure = parsed.scheme == "https"
+        prefix = "__Host-" if self._secure else ""
+        self.session_cookie = prefix + "pandecte_session"
+        self.login_cookie = prefix + "pandecte_login"
 
     # -- Outils ---------------------------------------------------------------
 
@@ -233,15 +241,20 @@ class AccountPages:
         return self._settings.resource_url
 
     def _session(self, request: Request) -> dict[str, Any] | None:
-        session = self._cookies().load("session", request.cookies.get(SESSION_COOKIE))
+        session = self._cookies().load("session", request.cookies.get(self.session_cookie))
         if session is None or not USER_ID_RE.match(str(session.get("sub", ""))):
             return None
         return session
 
-    @staticmethod
-    def _set_cookie(response: Response, name: str, value: str, max_age: int) -> None:
+    def _set_cookie(self, response: Response, name: str, value: str, max_age: int) -> None:
         response.set_cookie(
-            name, value, max_age=max_age, path="/", secure=True, httponly=True, samesite="lax"
+            name, value, max_age=max_age, path="/", secure=self._secure, httponly=True,
+            samesite="lax",
+        )
+
+    def _delete_cookie(self, response: Response, name: str) -> None:
+        response.delete_cookie(
+            name, path="/", secure=self._secure, httponly=True, samesite="lax"
         )
 
     def _page(
@@ -255,7 +268,7 @@ class AccountPages:
         html = f"""<!doctype html>
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="referrer" content="no-referrer">
+<meta name="referrer" content="same-origin">
 <title>{escape(title)} · PandecteMCP</title>
 <style nonce="{nonce}">{_STYLE}</style></head>
 <body>{nav}
@@ -277,7 +290,10 @@ Les données proviennent de Légifrance et de la base Open Data de la Cour de ca
             "img-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
         )
         response.headers["Cache-Control"] = "no-store"
-        response.headers["Referrer-Policy"] = "no-referrer"
+        # « same-origin » et non « no-referrer » : avec ce dernier, Safari et
+        # Chrome envoient « Origin: null » sur les formulaires, que le contrôle
+        # d'origine refuserait. Aucun référent ne part vers un autre site.
+        response.headers["Referrer-Policy"] = "same-origin"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         return response
@@ -366,7 +382,7 @@ Les données proviennent de Légifrance et de la base Open Data de la Cour de ca
         response.headers["Cache-Control"] = "no-store"
         self._set_cookie(
             response,
-            LOGIN_COOKIE,
+            self.login_cookie,
             self._cookies().dump("login", {"s": state}, LOGIN_TTL_SECONDS),
             LOGIN_TTL_SECONDS,
         )
@@ -377,7 +393,7 @@ Les données proviennent de Légifrance et de la base Open Data de la Cour de ca
         if params.get("error"):
             LOGGER.info("account_login outcome=denied")
             return self._error("Connexion annulée ou refusée. Vous pouvez réessayer.", 400)
-        login = self._cookies().load("login", request.cookies.get(LOGIN_COOKIE))
+        login = self._cookies().load("login", request.cookies.get(self.login_cookie))
         state, code = params.get("state", ""), params.get("code", "")
         if (
             login is None
@@ -406,11 +422,11 @@ Les données proviennent de Légifrance et de la base Open Data de la Cour de ca
         response = RedirectResponse("/compte", status_code=303)
         self._set_cookie(
             response,
-            SESSION_COOKIE,
+            self.session_cookie,
             self._cookies().dump("session", session, SESSION_TTL_SECONDS),
             SESSION_TTL_SECONDS,
         )
-        response.delete_cookie(LOGIN_COOKIE, path="/", secure=True, httponly=True, samesite="lax")
+        self._delete_cookie(response, self.login_cookie)
         LOGGER.info("account_login outcome=success principal=%s", _pseudonym(user["id"]))
         return response
 
@@ -437,9 +453,7 @@ Les données proviennent de Légifrance et de la base Open Data de la Cour de ca
         if session is None:
             return fields  # type: ignore[return-value]
         response = RedirectResponse("/compte", status_code=303)
-        response.delete_cookie(
-            SESSION_COOKIE, path="/", secure=True, httponly=True, samesite="lax"
-        )
+        self._delete_cookie(response, self.session_cookie)
         return response
 
     async def personal_key(self, request: Request) -> Response:
