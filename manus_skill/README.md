@@ -64,11 +64,11 @@ ni d'emplacement fixe à respecter :
 Pour la voie prioritaire (connecteur MCP), connecter séparément le serveur de
 ce dépôt : **Settings → Integrations → Custom MCP Servers**, en pointant vers
 une instance auto-hébergée (`python mcp_server/server.py --transport
-streamable-http`, voir [`docs/mcp-app.md`](../docs/mcp-app.md)) ou vers
+streamable-http`, voir `docs/mcp-app.md`) ou vers
 l'instance déployée documentée dans
 [`docs/deployment.md`](../docs/deployment.md). Cette dernière exige une
-authentification OAuth 2.1 ([`docs/oauth.md`](../docs/oauth.md),
-[`docs/validation-chatgpt.md`](../docs/validation-chatgpt.md) pour l'obtention
+authentification OAuth 2.1 (`docs/oauth.md`,
+`docs/validation-chatgpt.md` pour l'obtention
 d'un jeton) — vérifier que la configuration des connecteurs personnalisés de
 Manus prend en charge un jeton porteur avant de s'y fier ; ce point n'est pas
 confirmé par la documentation publique de Manus au moment de l'écriture.

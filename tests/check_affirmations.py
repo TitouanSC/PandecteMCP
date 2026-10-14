@@ -51,7 +51,7 @@ ENV_EXAMPLE = ROOT / "skill" / "scripts" / ".env.example"
 #: version du plugin : un fichier « Keep a Changelog » n'existe que pour porter
 #: les entrées des versions passées, et leur exiger la version courante rendait
 #: toute montée impossible. Chacune de ses lignes est datée par construction.
-JOURNAUX = {"docs/roadmap-chatgpt-plugin.md", "skill/CHANGELOG.md"}
+JOURNAUX = {"skill/CHANGELOG.md"}
 
 #: Répertoires sans prose opposable : wikilinks Obsidian, copies de travail.
 EXCLUDE_DIRS = {".git", ".claude", ".venv", "vault", "__pycache__"}

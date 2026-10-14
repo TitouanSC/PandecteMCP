@@ -3,7 +3,7 @@
 ## État de cette étape
 
 **Candidat local v0.9.0 — non déployé** : l'extension à huit outils est en
-préparation dans [livraison-0.9.0.md](livraison-0.9.0.md). Les observations
+préparation dans livraison-0.9.0.md. Les observations
 datées ci-dessous concernent le service antérieur à six outils et ne valident
 pas les nouvelles consultations. Ne pas exécuter le déploiement sans accord.
 
@@ -72,12 +72,12 @@ la connexion soumise à ChatGPT doit être une URL publique `https://…/mcp`.
 | `JUDILIBRE_ENV=prod` | Interdit le sandbox sur le service public |
 | `MCP_AUTH_MODE=oauth` | Exige un jeton OAuth 2.1 valide sur `/mcp` |
 | `MCP_PUBLIC_URL` | URL publique du service, sans `/mcp` (https obligatoire) |
-| `MCP_OAUTH_ISSUER` | Émetteur, recopié **à l'identique** depuis le champ `issuer` du document de découverte, barre oblique finale comprise (https obligatoire) — voir [oauth.md](oauth.md) |
+| `MCP_OAUTH_ISSUER` | Émetteur, recopié **à l'identique** depuis le champ `issuer` du document de découverte, barre oblique finale comprise (https obligatoire) — voir oauth.md |
 
 Le démarrage échoue si `MCP_ENV=production` et `MCP_AUTH_MODE=disabled` :
 une passerelle MCP publique anonyme consommerait les quotas Légifrance et
 Judilibre sous la seule responsabilité du titulaire des clés PISTE. La
-procédure de configuration de l'émetteur figure dans [`oauth.md`](oauth.md).
+procédure de configuration de l'émetteur figure dans `oauth.md`.
 
 ### Facultatives — authentification
 
@@ -147,7 +147,7 @@ conditions attachés aux abonnements PISTE utilisés. La correction des findings
 critiques et élevés de l'audit conditionne la publication dans l'annuaire.
 La [politique de confidentialité](privacy-policy.md), les
 [conditions d'utilisation](terms-of-use.md) et le
-[guide de soumission ChatGPT](chatgpt-submission.md) décrivent l'état public.
+guide de soumission ChatGPT décrivent l'état public.
 
 ## Passage en mode développeur ChatGPT
 
@@ -191,7 +191,7 @@ rattacher.
   *constater* l'état ; c'est un **ping externe toutes les cinq minutes** qui
   maintient l'instance éveillée, en service depuis le 3 septembre 2026 entre
   14:24 et 18:32 UTC. Voir [exploitation.md](exploitation.md) et
-  [pieces-humaines.md](pieces-humaines.md) § 11 ;
+  pieces-humaines.md § 11 ;
 - **quota d'heures d'instance Render** : une instance maintenue éveillée en
   permanence consomme des heures en continu, là où une instance endormie les
   économise. Le plan gratuit borne ce total par mois et le partage entre les

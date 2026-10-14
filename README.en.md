@@ -9,7 +9,7 @@
 The local version prepares two additional reading tools: code sections and
 consolidated legislation. The remote service still runs the earlier published
 version; the new tools become available only after an explicitly authorized
-deployment and qualification. See the [preparation notes (in French)](docs/livraison-0.9.0.md).
+deployment and qualification. See the preparation notes (in French).
 
 [![CI](https://github.com/brissonjo-sudo/droit-francais-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/brissonjo-sudo/droit-francais-skill/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/brissonjo-sudo/droit-francais-skill)](https://github.com/brissonjo-sudo/droit-francais-skill/releases)
@@ -222,7 +222,7 @@ docker build -t droit-francais-mcp .
 ```
 
 PISTE credentials are supplied through environment variables or `.env`, never
-through the manifest. See the [MCP guide (in French)](docs/mcp-app.md) and
+through the manifest. See the MCP guide (in French) and
 [progressive architecture (in French)](docs/architecture-plugin.md).
 
 This version can be tested directly as a local plugin in Codex. A distinct
@@ -232,11 +232,11 @@ six tools; the local candidate exposes eight. Testing this service does not
 qualify the local candidate. The service has configuration checks, rate
 limiting and logs without arguments or secrets. See the
 [deployment guide (in French)](docs/deployment.md) and
-[ChatGPT connection/submission guide (in French)](docs/chatgpt-submission.md). Public access
+ChatGPT connection/submission guide (in French). Public access
 is protected by OAuth 2.1: the server verifies a bearer token issued by an
 external authorization server and enforces a per-user quota, so that the
 owner's PISTE keys cannot be used anonymously — see the
-[OAuth guide (in French)](docs/oauth.md). The `.app.json` mapping will be added only after
+OAuth guide (in French). The `.app.json` mapping will be added only after
 a real integration is created; the repository contains no fictitious remote
 identifier.
 
@@ -265,7 +265,7 @@ droit-francais-skill@droit-francais`.
 
 **No local installation required**: no Python, dependencies or PISTE credentials.
 The remote service holds its own keys and access is protected by OAuth 2.1
-with a per-user quota — see the [OAuth guide (in French)](docs/oauth.md).
+with a per-user quota — see the OAuth guide (in French).
 
 **Connection: a client identifier must be entered.** The authorization server
 does not allow automatic registration of new clients; connection therefore
@@ -278,7 +278,7 @@ uses a predefined client.
 - **From Claude Code**: the plugin's `.mcp.json` declaration does not yet
   include a client identifier, and connection will fail with “Incompatible
   auth server: does not support dynamic client registration”. This route is
-  not yet configured — see section 4 of the [OAuth guide (in French)](docs/oauth.md).
+  not yet configured — see section 4 of the OAuth guide (in French).
 
 #### Variant — local MCP server
 

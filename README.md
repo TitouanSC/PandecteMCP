@@ -9,7 +9,7 @@
 La version locale prépare deux lectures supplémentaires : sections de code et
 textes consolidés. Le service distant reste à la version publiée antérieure ;
 les nouvelles lectures ne sont disponibles qu'après un déploiement explicitement
-autorisé et leur qualification. Voir [la préparation](docs/livraison-0.9.0.md).
+autorisé et leur qualification. Voir la préparation.
 
 [![CI](https://github.com/brissonjo-sudo/droit-francais-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/brissonjo-sudo/droit-francais-skill/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/brissonjo-sudo/droit-francais-skill)](https://github.com/brissonjo-sudo/droit-francais-skill/releases)
@@ -223,7 +223,7 @@ docker build -t droit-francais-mcp .
 ```
 
 Les identifiants PISTE restent fournis par variables d'environnement ou `.env`,
-jamais dans le manifeste. Voir le [guide MCP](docs/mcp-app.md) et
+jamais dans le manifeste. Voir le guide MCP et
 l'[architecture progressive](docs/architecture-plugin.md).
 
 Cette version est directement testable comme plugin local dans Codex. Un service
@@ -233,11 +233,11 @@ outils ; le candidat local en expose huit. Une recette de ce service ne qualifie
 pas le candidat local. Le service comporte un contrôle de configuration,
 limitation de charge et journaux sans arguments ni secrets. Voir le
 [guide de déploiement](docs/deployment.md) et le
-[guide de connexion/soumission ChatGPT](docs/chatgpt-submission.md). L'accès
+guide de connexion/soumission ChatGPT. L'accès
 public est protégé par OAuth 2.1 : le serveur vérifie un jeton porteur émis par
 un serveur d'autorisation externe et applique un quota par utilisateur, afin
 que les clés PISTE du titulaire ne soient jamais consommées anonymement — voir
-le [guide OAuth](docs/oauth.md). Le mapping
+le guide OAuth. Le mapping
 `.app.json` ne sera ajouté qu'après création d'une intégration réelle ; aucun
 identifiant distant fictif n'est placé dans le dépôt.
 
@@ -266,7 +266,7 @@ droit-francais-skill@droit-francais`.
 
 **Aucune installation locale requise** : ni Python, ni dépendances, ni identifiants
 PISTE. Le service distant porte ses propres clés et l'accès est protégé par
-OAuth 2.1 avec quota par utilisateur — voir le [guide OAuth](docs/oauth.md).
+OAuth 2.1 avec quota par utilisateur — voir le guide OAuth.
 
 **Connexion : un identifiant de client à saisir.** Le serveur d'autorisation
 n'accepte pas l'enregistrement automatique de nouveaux clients ; la connexion
@@ -279,7 +279,7 @@ passe donc par un client prédéfini.
 - **Depuis Claude Code** : la déclaration `.mcp.json` du plugin ne porte pas
   encore d'identifiant de client, et la connexion échouera avec « Incompatible
   auth server: does not support dynamic client registration ». Voie non encore
-  configurée — voir le [guide OAuth](docs/oauth.md) § 4.
+  configurée — voir le guide OAuth § 4.
 
 #### Variante — serveur MCP local
 

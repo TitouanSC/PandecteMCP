@@ -32,9 +32,8 @@ Corollaire sur les motifs interdits — les sondes 1 et P interdisent
 être qu'une invention. **Ce critère s'inverse dès que le modèle dispose des
 outils** : un LEGIARTI récupéré par `search_articles` ou `get_article` est
 alors le comportement attendu, et l'interdit deviendrait un faux négatif.
-Le harnais agentique (`run_bench.py`, corpus `bench-cases.csv`) juge donc la
-provenance sur la trace d'appels — l'identifiant cité doit figurer dans un
-résultat d'outil de la session — et non sur son absence.
+Avec outils, la provenance se juge sur la trace d'appels — l'identifiant cité
+doit figurer dans un résultat d'outil de la session — et non sur son absence.
 
 Heuristique de réussite (par sonde)
 -----------------------------------

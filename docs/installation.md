@@ -13,7 +13,7 @@ vides : installation, liste et retrait sur les deux CLI, réinstallation
 Codex et contrôle de mise à jour Claude sans changement de version. Il porte
 sur une copie locale des fichiers du dépôt, pas sur l'acquisition GitHub,
 la mise à niveau vers une autre version, une nouvelle session ou OAuth.
-Voir les [preuves et limites du correctif](correctifs-pr115.md).
+Voir les preuves et limites du correctif.
 
 Le noyau présent dans le dépôt est 3.5.0 ; le plugin 0.9.0 est un candidat.
 La dernière release plugin relevée lors de l'audit porte le numéro 0.7.0.
@@ -116,8 +116,8 @@ codex plugin list --json
 Les nouveaux clients Claude Code et ChatGPT restent en qualification.
 Pour Codex, l'installation complète et le parcours OAuth de cette version
 restent également à qualifier ; un succès dans un autre client ne les valide pas.
-Voir la [proposition de recette OAuth](recette-oauth-clients.md), le
-[guide OAuth](oauth.md) et les issues
+Voir la proposition de recette OAuth, le
+guide OAuth et les issues
 [#88](https://github.com/brissonjo-sudo/droit-francais-skill/issues/88) et
 [#89](https://github.com/brissonjo-sudo/droit-francais-skill/issues/89).
 

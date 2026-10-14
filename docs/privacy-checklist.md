@@ -48,7 +48,7 @@ publication dans l'annuaire (le serveur est déjà exposé au réseau avec OAuth
   grille de sévérité et livrables. Les findings critiques et élevés doivent
   être corrigés avant la publication ;
 - la [procédure d'incident](incident-response.md) et la
-  [checklist Auth0](auth0-security-checklist.md).
+  checklist Auth0.
 
 ## Test de sortie
 
