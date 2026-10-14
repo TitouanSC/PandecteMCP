@@ -37,6 +37,7 @@ from pandecte.credentials import mask_secrets, use_credentials
 from pandecte.errors import LegifranceError
 from pandecte import tools as legal_tools
 from mcp_server.access import AccessGrant, AccessVerifier
+from mcp_server.cache import ResponseCache
 from mcp_server.http_guard import HttpGuard, client_ip
 from mcp_server.quotas import QuotaExceeded, QuotaPolicy
 from mcp_server.store import Store
@@ -72,6 +73,7 @@ GOVERNOR = RequestGovernor(
 #: gouverneur d'instance s'applique.
 STORE: Store | None = None
 QUOTAS: QuotaPolicy | None = None
+CACHE: ResponseCache | None = None
 if SETTINGS.auth_enabled:
     STORE = Store(Path(SETTINGS.data_dir) / "pandecte.sqlite3")
     QUOTAS = QuotaPolicy(
@@ -80,6 +82,13 @@ if SETTINGS.auth_enabled:
         user_per_day=SETTINGS.user_calls_per_day,
         global_per_day=SETTINGS.global_calls_per_day,
         keys_per_minute_per_ip=SETTINGS.keys_calls_per_minute,
+    )
+    CACHE = ResponseCache(
+        STORE,
+        text_ttl=SETTINGS.cache_text_ttl,
+        decision_ttl=SETTINGS.cache_decision_ttl,
+        max_bytes=SETTINGS.cache_max_mb * 1024 * 1024,
+        suppressed=legal_tools._suppressed_decision_ids,
     )
 
 
@@ -301,15 +310,24 @@ def _guarded_call(
     mode = grant.mode if grant is not None else "local"
     try:
         _check_quota(grant)
-        with GOVERNOR.slot():
-            result = operation(*args, **kwargs)
+        plan = CACHE.plan(operation_name, args, kwargs) if CACHE is not None else None
+        result = CACHE.get(plan) if plan is not None else None
+        cache_state = "hit" if result is not None else ("miss" if plan else "-")
+        if result is None:
+            with GOVERNOR.slot():
+                result = operation(*args, **kwargs)
+            if plan is not None:
+                # Atteint seulement après un succès : une erreur n'est jamais
+                # mise en cache.
+                CACHE.put(plan, result)
         LOGGER.info(
             "tool_call tool=%s mode=%s principal=%s scopes=%s outcome=success "
-            "duration_ms=%d",
+            "cache=%s duration_ms=%d",
             operation_name,
             mode,
             _pseudonym(principal),
             _current_scopes(),
+            cache_state,
             int((time.monotonic() - started) * 1000),
         )
         return result

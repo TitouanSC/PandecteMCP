@@ -159,6 +159,10 @@ class RuntimeSettings:
     #: passe par PKCE ; aucune clé API WorkOS n'est nécessaire au serveur.
     workos_client_id: str = ""
     workos_api_base: str = "https://api.workos.com"
+    #: Durées du cache des réponses, en secondes (0 désactive) ; plafond en Mo.
+    cache_text_ttl: int = 6 * 3600
+    cache_decision_ttl: int = 24 * 3600
+    cache_max_mb: int = 200
 
     @property
     def auth_enabled(self) -> bool:
@@ -284,6 +288,11 @@ class RuntimeSettings:
             trusted_proxy_hops=_non_negative_int(values, "MCP_TRUSTED_PROXY_HOPS", 0),
             workos_client_id=workos_client_id,
             workos_api_base=workos_api_base,
+            cache_text_ttl=_non_negative_int(values, "PANDECTE_CACHE_TEXT_TTL", 6 * 3600),
+            cache_decision_ttl=_non_negative_int(
+                values, "PANDECTE_CACHE_DECISION_TTL", 24 * 3600
+            ),
+            cache_max_mb=_positive_int(values, "PANDECTE_CACHE_MAX_MB", 200),
         )
 
     def validate_public(self, env: Mapping[str, str] | None = None) -> None:

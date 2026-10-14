@@ -123,6 +123,17 @@ class AuthSettingsTests(unittest.TestCase):
                 RuntimeSettings.from_env(dict(BASE_ENV, **bad))
             self.assertNotIn("sk_test", str(raised.exception))
 
+    def test_cache_settings(self):
+        settings = RuntimeSettings.from_env(BASE_ENV)
+        self.assertEqual((6 * 3600, 24 * 3600, 200), (
+            settings.cache_text_ttl, settings.cache_decision_ttl, settings.cache_max_mb))
+        env = dict(BASE_ENV, PANDECTE_CACHE_TEXT_TTL="0", PANDECTE_CACHE_DECISION_TTL="600")
+        settings = RuntimeSettings.from_env(env)
+        self.assertEqual((0, 600), (settings.cache_text_ttl, settings.cache_decision_ttl))
+        for bad in ({"PANDECTE_CACHE_TEXT_TTL": "-1"}, {"PANDECTE_CACHE_MAX_MB": "0"}):
+            with self.assertRaises(RuntimeConfigurationError):
+                RuntimeSettings.from_env(dict(BASE_ENV, **bad))
+
     def test_production_refuses_an_anonymous_public_gateway(self):
         env = dict(BASE_ENV, MCP_AUTH_MODE="disabled")
         settings = RuntimeSettings.from_env(env)

@@ -8,7 +8,10 @@ Ce qui est stocké, et rien d'autre :
 
 * ``personal_tokens`` : l'empreinte HMAC d'un jeton personnel (jamais le jeton
   lui-même) et le sujet WorkOS auquel il appartient ;
-* ``daily_counters`` : le nombre d'appels d'outils par portée et par jour UTC.
+* ``daily_counters`` : le nombre d'appels d'outils par portée et par jour UTC ;
+* ``response_cache`` : des réponses publiques des API juridiques (articles,
+  textes, décisions), indexées par une empreinte de la demande — jamais par
+  utilisateur.
 
 Aucun identifiant PISTE n'est jamais écrit ici.
 """
@@ -33,6 +36,13 @@ CREATE TABLE IF NOT EXISTS daily_counters (
     count INTEGER NOT NULL,
     PRIMARY KEY (scope, day)
 );
+CREATE TABLE IF NOT EXISTS response_cache (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    stored_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS response_cache_stored ON response_cache (stored_at);
 """
 
 
@@ -137,3 +147,55 @@ class Store:
         """Les compteurs passés n'ont plus d'usage : ils ne sont pas conservés."""
         with self._lock:
             self._db.execute("DELETE FROM daily_counters WHERE day < ?", (day,))
+
+    # -- Cache des réponses --------------------------------------------------
+
+    def cache_get(self, key: str, now: int) -> tuple[str, int] | None:
+        """Valeur encore valide et sa date d'enregistrement, ou ``None``."""
+        with self._lock:
+            row = self._db.execute(
+                "SELECT value, stored_at FROM response_cache WHERE key = ? AND expires_at > ?",
+                (key, now),
+            ).fetchone()
+        return (row[0], row[1]) if row else None
+
+    def cache_put(self, key: str, value: str, stored_at: int, expires_at: int) -> None:
+        with self._lock:
+            self._db.execute(
+                "INSERT OR REPLACE INTO response_cache (key, value, stored_at, expires_at) "
+                "VALUES (?, ?, ?, ?)",
+                (key, value, stored_at, expires_at),
+            )
+
+    def cache_delete(self, key: str) -> None:
+        with self._lock:
+            self._db.execute("DELETE FROM response_cache WHERE key = ?", (key,))
+
+    def cache_trim(self, now: int, max_bytes: int) -> None:
+        """Retire les entrées expirées, puis les plus anciennes au-delà du plafond."""
+        with self._lock:
+            self._db.execute("DELETE FROM response_cache WHERE expires_at <= ?", (now,))
+            total = self._db.execute(
+                "SELECT COALESCE(SUM(LENGTH(value)), 0) FROM response_cache"
+            ).fetchone()[0]
+            if total <= max_bytes:
+                return
+            excess = total - max_bytes
+            rows = self._db.execute(
+                "SELECT key, LENGTH(value) FROM response_cache ORDER BY stored_at"
+            ).fetchall()
+            doomed = []
+            for key, size in rows:
+                if excess <= 0:
+                    break
+                doomed.append((key,))
+                excess -= size
+            self._db.executemany("DELETE FROM response_cache WHERE key = ?", doomed)
+
+    def cache_size(self) -> tuple[int, int]:
+        """Nombre d'entrées et taille totale des valeurs, en octets."""
+        with self._lock:
+            row = self._db.execute(
+                "SELECT COUNT(*), COALESCE(SUM(LENGTH(value)), 0) FROM response_cache"
+            ).fetchone()
+        return row[0], row[1]
