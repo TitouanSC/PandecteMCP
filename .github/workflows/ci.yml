@@ -60,6 +60,9 @@ jobs:
           python -m py_compile mcp_server/catalog.py
           python -m py_compile mcp_server/server.py
           python -m py_compile skill/scripts/pandecte/credentials.py
+          python -m py_compile mcp_server/store.py
+          python -m py_compile mcp_server/quotas.py
+          python -m py_compile tests/test_quotas.py
           python -m py_compile tests/test_credentials.py
           python -m py_compile tests/run_eval.py
           python -m py_compile tests/check_links.py
