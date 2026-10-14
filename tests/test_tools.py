@@ -344,6 +344,9 @@ class LegifranceClientTests(unittest.TestCase):
         ]
         with mock.patch.dict(os.environ, {**PISTE_ENV, "LEGIFRANCE_ENV": "prod"}, clear=True):
             result = legifrance_client.api_call("/search", {}, "perime")
+            # Le jeton renouvelé remplace l'ancien dans le cache de ces
+            # identifiants (le cache est indexé par identifiants).
+            self.assertEqual("frais", legifrance_client.get_token())
         self.assertTrue(result["ok"])
         self.assertEqual(3, http_post_json.call_count)
         # 1. appel API avec le jeton périmé ; 2. renouvellement ; 3. rejeu.
@@ -354,9 +357,6 @@ class LegifranceClientTests(unittest.TestCase):
         self.assertEqual(
             "Bearer frais", http_post_json.call_args_list[2].args[2]["Authorization"]
         )
-        # Le jeton renouvelé remplace l'ancien dans le cache.
-        self.assertEqual("frais", legifrance_client.get_token())
-        self.assertEqual(3, http_post_json.call_count)
 
     @mock.patch("pandecte.legifrance.http_post_json")
     def test_a_fresh_token_refused_is_not_retried_again(self, http_post_json):

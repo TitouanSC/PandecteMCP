@@ -31,6 +31,7 @@ except ImportError:  # SDK MCP v1.27, encore largement installé
 from mcp.types import ToolAnnotations
 
 from pandecte.config import load_dotenv
+from pandecte.credentials import mask_secrets
 from pandecte.errors import LegifranceError
 from pandecte import tools as legal_tools
 from mcp_server.runtime import (
@@ -204,22 +205,9 @@ def _current_scopes() -> str:
     return ",".join(access_token.scopes) if access_token.scopes else "aucune"
 
 
-#: Variables dont la valeur ne doit apparaître ni dans une réponse ni dans le
-#: journal. Le masquage porte sur la valeur, pas sur le nom.
-SECRET_VARIABLES = (
-    "LEGIFRANCE_CLIENT_ID",
-    "LEGIFRANCE_CLIENT_SECRET",
-    "JUDILIBRE_KEY_ID",
-    "PISTE_KEY_ID",
-)
-
-
-def _mask_secrets(text: str) -> str:
-    for key in SECRET_VARIABLES:
-        secret = os.environ.get(key)
-        if secret:
-            text = text.replace(secret, "[secret masqué]")
-    return text
+#: Masquage des identifiants PISTE — ceux du titulaire comme ceux transmis par
+#: la requête en mode « clés personnelles » — avant toute réponse ou journal.
+_mask_secrets = mask_secrets
 
 
 def _safe_call(operation: Callable[..., dict[str, Any]], *args: Any, **kwargs: Any) -> dict[str, Any]:

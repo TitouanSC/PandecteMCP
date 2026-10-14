@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import os
 import urllib.parse
 
 from .config import judilibre_base
+from .credentials import judilibre_key_id
 from .errors import LegifranceError
 from .legifrance import _TOKEN_CACHE, clear_token_cache, get_token  # noqa: F401
 from .transport import http_get_json
@@ -23,7 +23,7 @@ def _bearer(token: str) -> dict:
 def auth_modes() -> list:
     """Construit les modes d'authentification à essayer, dans l'ordre."""
     modes = []
-    key_id = os.environ.get("JUDILIBRE_KEY_ID") or os.environ.get("PISTE_KEY_ID")
+    key_id = judilibre_key_id()
     if key_id:
         modes.append(("KeyId", {"KeyId": key_id, "Accept": "application/json"}))
     modes.append(("OAuth", None))
