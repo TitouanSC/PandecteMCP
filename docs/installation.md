@@ -15,7 +15,7 @@ sur une copie locale des fichiers du dépôt, pas sur l'acquisition GitHub,
 la mise à niveau vers une autre version, une nouvelle session ou OAuth.
 Voir les preuves et limites du correctif.
 
-Le noyau présent dans le dépôt est 3.5.0 ; le plugin 0.9.0 est un candidat.
+Le noyau présent dans le dépôt est 0.1.0 ; le plugin 0.1.0 est un candidat.
 La dernière release plugin relevée lors de l'audit porte le numéro 0.7.0.
 Une installation depuis main prend le candidat, pas une release stable figée.
 Pour une recette reproductible, noter le commit et la version réellement installés.
@@ -82,7 +82,7 @@ Pour tester une branche de recette, remplacer la source GitHub par son
 checkout absolu, ou figer la source Git avec --ref COMMIT.
 
 Le catalogue indique l'origine, le nom et la politique d'installation. La
-version 0.9.0 et la description du plugin se trouvent dans
+version 0.1.0 et la description du plugin se trouvent dans
 .codex-plugin/plugin.json, conformément aux exemples officiels OpenAI ;
 elles ne sont pas dupliquées dans les entrées du catalogue. Le chemin ./
 est relatif à la racine de la marketplace, pas à .agents/plugins/.
@@ -133,7 +133,7 @@ guide OAuth et les issues
 ## Skill autonome
 
 ~~~powershell
-npx skills add https://github.com/brissonjo-sudo/droit-francais-skill/tree/main/skill --skill pandecte-recherche
+npx skills add https://github.com/TitouanSC/PandecteMCP/tree/main/skill --skill pandecte-recherche
 npx skills update pandecte-recherche
 ~~~
 

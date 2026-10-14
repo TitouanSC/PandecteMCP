@@ -2,9 +2,9 @@
 
 # droit-francais-skill
 
-**LLM skill — French legal research methodology (v3.5.0)**
+**LLM skill — French legal research methodology (v0.1.0)**
 
-**Standalone distribution + OpenAI and Claude Code plugins with MCP tools (plugin candidate v0.9.0, unpublished)**
+**Standalone distribution + OpenAI and Claude Code plugins with MCP tools (plugin candidate v0.1.0, unpublished)**
 
 The local version prepares two additional reading tools: code sections and
 consolidated legislation. The remote service still runs the earlier published
@@ -26,8 +26,8 @@ then check the methodology and access to tools separately.
 
 | Channel | Status on 10 October 2026 | Tools |
 |---|---|---|
-| Standalone skill | Core 3.5.0 present in `main`; published package is separate | Official websites if the client supports access; PISTE optional |
-| Repository plugin | Candidate 0.9.0; remote connection in `.mcp.json` | Earlier published service, six tools; OAuth must be qualified for each client |
+| Standalone skill | Core 0.1.0 present in `main`; published package is separate | Official websites if the client supports access; PISTE optional |
+| Repository plugin | Candidate 0.1.0; remote connection in `.mcp.json` | Earlier published service, six tools; OAuth must be qualified for each client |
 | Local candidate server | Eight tools in the code, with Python and PISTE | Articles, decisions, sections and legislation; measured separately from the remote service |
 
 The new Claude Code and ChatGPT OAuth flows are tracked in
@@ -173,7 +173,7 @@ context and asks when the missing information affects the decision.
 To let the CLI retain the skill's source and update it without manual copying:
 
 ```bash
-npx skills add https://github.com/brissonjo-sudo/droit-francais-skill/tree/main/skill --skill pandecte-recherche
+npx skills add https://github.com/TitouanSC/PandecteMCP/tree/main/skill --skill pandecte-recherche
 ```
 
 The skill checks once per session whether a newer version is available,
@@ -201,7 +201,7 @@ your `profil.md` and `scripts/.env` files; it stays silent if no new version
 exists or the network is unavailable. To disable this behavior, change `true`
 to `false` or delete the file.
 
-### As an OpenAI plugin — candidate v0.9.0
+### As an OpenAI plugin — candidate v0.1.0
 
 The repository contains a `.codex-plugin/plugin.json` manifest and a native
 entry point at `skills/pandecte-recherche/`. The adapter loads the historical
@@ -240,7 +240,7 @@ OAuth guide (in French). The `.app.json` mapping will be added only after
 a real integration is created; the repository contains no fictitious remote
 identifier.
 
-### As a Claude Code plugin — candidate v0.9.0
+### As a Claude Code plugin — candidate v0.1.0
 
 > **Claude Code OAuth remains blocked on a fresh installation**: the
 > predefined client and callback are not yet configured in the plugin
@@ -367,7 +367,7 @@ The skill activates automatically when you:
 
 ---
 
-## Directory tree (skill v3.5.0 / plugin candidate v0.9.0)
+## Directory tree (skill v0.1.0 / plugin candidate v0.1.0)
 
 ```
 droit-francais-skill/

@@ -2,8 +2,8 @@
 
 ## État de cette étape
 
-**Candidat local v0.9.0 — non déployé** : l'extension à huit outils est en
-préparation dans livraison-0.9.0.md. Les observations
+**Candidat local v0.1.0 — non déployé** : l'extension à huit outils est en
+préparation dans livraison-0.1.0.md. Les observations
 datées ci-dessous concernent le service antérieur à six outils et ne valident
 pas les nouvelles consultations. Ne pas exécuter le déploiement sans accord.
 
