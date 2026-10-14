@@ -84,7 +84,7 @@ Gemini doit mobiliser ses outils selon l'ordre de priorité suivant :
    En l'absence de connecteur MCP, mobiliser les outils de recherche web ou de grounding en restreignant impérativement les requêtes aux domaines officiels listés dans [`references/sources-autorisees.md`](references/sources-autorisees.md) (ex: `site:legifrance.gouv.fr`, `site:courdecassation.fr`, `site:conseil-etat.fr`). Ne jamais citer un texte sans en avoir lu l'extrait officiel.
 
 3. **Voie 3 : Code Execution / Client Python SDK**  
-   Dans les environnements autorisant l'exécution de code Python, faire appel aux scripts et bibliothèques embarqués du dépôt ou au client [`gemini_agent`](../gemini_agent).
+   Dans les environnements autorisant l'exécution de code Python, faire appel aux scripts et bibliothèques embarqués du dépôt ou au client `gemini_agent/` (retiré de PandecteMCP).
 
 4. **Voie 4 : Abstention informée (P7)**  
    Si aucune des voies ci-dessus ne permet de confirmer la source primaire, refuser de produire une référence spéculative.

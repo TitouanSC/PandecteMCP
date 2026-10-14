@@ -1,62 +1,136 @@
-# Déploiement public du serveur MCP
+# Déploiement du serveur MCP
 
-## État de cette étape
-
-**Candidat local v0.1.0 — non déployé** : l'extension à huit outils est en
-préparation dans livraison-0.1.0.md. Les observations
-datées ci-dessous concernent le service antérieur à six outils et ne valident
-pas les nouvelles consultations. Ne pas exécuter le déploiement sans accord.
-
-Le serveur est déployé sur Render à l'adresse
-`https://droit-francais-skill.onrender.com/mcp`. Le 30 août 2026, la sonde de
-santé, la découverte des six outils MCP et un appel réel vers chacune des API
-Légifrance et Judilibre ont réussi. Le skill historique et le serveur local
-déclaré dans `.mcp.json` restent inchangés dans leur mode d'installation.
+Ce guide met en ligne votre propre instance de PandecteMCP sur
+[Render](https://render.com), avec [WorkOS AuthKit](https://workos.com) pour la
+connexion des utilisateurs. Comptez une heure la première fois.
 
 ```text
-ChatGPT / Codex
-      │ HTTPS — Streamable HTTP
-      ▼
-    /mcp
-      │ outils en lecture seule
-      ▼
-Serveur MCP non-root
-      │ limite concurrence + débit par instance
-      ▼
-API PISTE Légifrance et Judilibre
+claude.ai, ChatGPT…        Claude Code, Cursor…          Claude Code, Cursor…
+   (OAuth WorkOS)          (jeton personnel pdt_…)       (clé personnelle pk1.…)
+        │                          │                              │
+        └──────────── HTTPS : https://<service>.onrender.com/mcp ─┘
+                                   │
+                    Garde HTTP (débit par IP, échecs d'authentification)
+                                   │
+              Mode « serveur partagé »          Mode « clés personnelles »
+              identifiants PISTE du titulaire   identifiants PISTE de l'appelant,
+              quotas par personne et global     le temps de l'appel ; débit par IP
+                                   │
+                         API PISTE : Légifrance, Judilibre
 ```
 
-Les identifiants PISTE sont des secrets **du serveur**. Ils ne sont ni des
-paramètres d'outil, ni copiés dans l'image Docker, ni renvoyés à OpenAI ou aux
-utilisateurs.
+Le disque persistant contient la base SQLite : empreintes des jetons
+personnels, compteurs de quotas et cache des réponses publiques. Aucun
+identifiant PISTE n'y est écrit.
 
-## Construire et vérifier l'image
+## Coût
 
-```bash
-docker build -t droit-francais-mcp .
-```
+| Élément | Offre | Prix indicatif |
+|---|---|---|
+| Render, service web | Starter (toujours allumé) | 7 $/mois |
+| Render, disque persistant | 1 Go | 0,25 $/mois |
+| WorkOS AuthKit | gratuit jusqu'à 1 million d'utilisateurs actifs mensuels | 0 $ |
+| PISTE (Légifrance, Judilibre) | gratuit, avec quotas | 0 $ |
 
-Pour un test local du conteneur, fournir les secrets au démarrage depuis un
-gestionnaire de secrets ou un fichier local ignoré par Git :
+Vérifiez les tarifs en vigueur sur les sites des fournisseurs.
 
-```bash
-docker run --rm -p 8000:8000 --env-file .env.production droit-francais-mcp
-```
+## 1. Prérequis
 
-Le conteneur démarre en utilisateur non privilégié, écoute sur le port indiqué
-par `PORT` et expose :
+- Le dépôt sur GitHub, branche `main` à jour.
+- Une application PISTE abonnée aux API **Légifrance** et **Judilibre**
+  (https://piste.gouv.fr → Applications). Notez son *client ID*, son *client
+  secret* et sa clé d'API (*KeyId*). Consultez ses quotas : Applications →
+  Actions → Consulter les quotas.
+- Un compte WorkOS.
+- Un compte Render.
 
-- `POST /mcp` : transport MCP Streamable HTTP ;
-- `GET /health` : sonde minimale (`status` et version, sans secret) ;
-- `GET /.well-known/openai-apps-challenge` : vérification de domaine OpenAI,
-  inactive tant que `OPENAI_APPS_CHALLENGE` n'est pas défini ;
-- `GET /.well-known/oauth-protected-resource/mcp` : métadonnées de ressource
-  protégée (RFC 9728), publiées dès que `MCP_AUTH_MODE=oauth`. La même charge
-  utile est servie sur `/.well-known/oauth-protected-resource` pour les clients
-  qui interrogent la racine.
+## 2. WorkOS
 
-Le TLS doit être terminé par la plateforme d'hébergement ou un reverse proxy :
-la connexion soumise à ChatGPT doit être une URL publique `https://…/mcp`.
+Le tableau de bord WorkOS a deux environnements. **Staging** sert aux essais
+(y compris en local) ; **Production** sert au service public. Les réglages
+ci-dessous se font dans chacun.
+
+1. **Authentication → Methods** : activez *Email + Password* et *Magic Auth*,
+   puis les fournisseurs souhaités (Google, Microsoft, Apple, GitHub…). En
+   Production, chaque fournisseur social demande ses propres identifiants
+   OAuth (console Google, portail Azure…) ; WorkOS le guide pas à pas.
+2. **Connect → Configuration** : activez **Client ID Metadata Document
+   (CIMD)** et **Dynamic Client Registration (DCR)**. C'est ce qui permet à
+   claude.ai et ChatGPT de s'inscrire seuls.
+3. Ajoutez l'**indicateur de ressource** (*resource indicator*) :
+   `https://<service>.onrender.com/mcp`. Les jetons émis porteront cette valeur
+   dans `aud`, que le serveur exige.
+4. **Applications → votre application → Redirects → Redirect URIs** : ajoutez
+   `https://<service>.onrender.com/compte/callback` (et, en Staging,
+   `http://localhost:8765/compte/callback` pour les essais locaux).
+5. Relevez le **domaine AuthKit** (*Domains*, de la forme
+   `xxxx.authkit.app`) et le **Client ID** (`client_01…`, onglet *API keys*).
+   Ces deux valeurs sont publiques. La clé secrète `sk_…` n'est **pas**
+   nécessaire : la page de compte se connecte en PKCE.
+
+Contrôle : `https://<domaine>.authkit.app/.well-known/oauth-authorization-server`
+doit répondre avec `client_id_metadata_document_supported: true` et un
+`registration_endpoint`.
+
+## 3. Render
+
+1. **New → Blueprint**, choisissez le dépôt. Render lit `render.yaml` :
+   service Docker `pandecte-mcp`, offre Starter, région Francfort, disque de
+   1 Go monté sur `/var/data`.
+2. Render demande les valeurs marquées `sync: false` :
+
+   | Variable | Valeur |
+   |---|---|
+   | `MCP_PUBLIC_URL` | `https://<service>.onrender.com` (sans `/mcp`, sans barre finale) |
+   | `MCP_OAUTH_ISSUER` | `https://<domaine>.authkit.app`, recopié **à l'identique** du champ `issuer` des métadonnées |
+   | `WORKOS_CLIENT_ID` | `client_01…` |
+   | `LEGIFRANCE_CLIENT_ID` | client ID PISTE |
+   | `LEGIFRANCE_CLIENT_SECRET` | client secret PISTE |
+   | `JUDILIBRE_KEY_ID` | KeyId PISTE |
+
+   L'URL exacte du service n'est connue qu'après sa création : si besoin,
+   mettez une valeur provisoire, puis corrigez `MCP_PUBLIC_URL` (et les
+   réglages WorkOS de l'étape 2) dans *Environment* une fois l'URL affichée.
+3. `PANDECTE_TOKEN_PEPPER` est tiré au hasard par Render. **Ne le changez
+   jamais ensuite** : tous les jetons personnels et toutes les sessions
+   deviendraient invalides.
+4. Lancez le déploiement. Le conteneur refuse de démarrer si une variable
+   obligatoire manque ou si la configuration de production est incohérente ; le
+   message d'erreur nomme la variable, sans jamais afficher de valeur.
+
+## 4. Vérifications après le premier déploiement
+
+1. **Santé** : `https://<service>.onrender.com/health` →
+   `{"status":"ok", "auth":"oauth", "personal_keys":true, "account":true, …}`.
+2. **Métadonnées OAuth** :
+   `https://<service>.onrender.com/.well-known/oauth-protected-resource/mcp`
+   doit annoncer `resource` = `https://<service>.onrender.com/mcp` et
+   `authorization_servers` = l'émetteur, caractère pour caractère.
+3. **Adresse IP cliente.** Les limites par adresse (mode clés, garde HTTP)
+   supposent que le serveur lit la vraie adresse du client derrière le proxy
+   de Render, dont le comportement n'est pas documenté de façon fiable.
+   Ouvrez `https://<service>.onrender.com/diagnostic-ip` et comparez
+   `resolved_ip` à votre adresse publique (affichée par n'importe quel site
+   « quelle est mon IP ») :
+   - identiques : rien à changer ;
+   - différentes : repérez votre adresse dans `headers`. Si elle figure seule
+     dans `cf-connecting-ip` ou `true-client-ip`, définissez
+     `MCP_CLIENT_IP_HEADER` avec ce nom ; si elle figure dans
+     `x-forwarded-for`, réglez `MCP_TRUSTED_PROXY_HOPS` sur sa position
+     comptée depuis la **droite** (1 = dernière entrée).
+
+   Une fois le réglage confirmé, passez **`MCP_IP_DIAGNOSTIC` à `false`**.
+4. **Page de compte** : `https://<service>.onrender.com/compte` → connexion
+   WorkOS → « Générer mon jeton ».
+5. **Client MCP** :
+   `claude mcp add --transport http pandecte https://<service>.onrender.com/mcp --header "Authorization: Bearer pdt_…"`,
+   puis une recherche réelle (par exemple « article 1240 du code civil »).
+6. **claude.ai** : *Paramètres → Connecteurs → Ajouter un connecteur
+   personnalisé*, URL `https://<service>.onrender.com/mcp` ; la connexion
+   passe par WorkOS.
+
+Enfin, reportez l'URL réelle dans `.mcp.json` et dans les manifests du dépôt
+(valeur provisoire : `https://pandecte-a-configurer.invalid/mcp`).
 
 ## Variables d'environnement
 
@@ -64,145 +138,90 @@ la connexion soumise à ChatGPT doit être une URL publique `https://…/mcp`.
 
 | Variable | Rôle |
 |---|---|
-| `MCP_ENV=production` | Active les contrôles de démarrage stricts |
-| `LEGIFRANCE_CLIENT_ID` | Identifiant OAuth PISTE Légifrance |
-| `LEGIFRANCE_CLIENT_SECRET` | Secret OAuth PISTE Légifrance |
-| `JUDILIBRE_KEY_ID` | Clé Judilibre (`PISTE_KEY_ID` reste accepté comme alias) |
-| `LEGIFRANCE_ENV=prod` | Interdit le sandbox sur le service public |
-| `JUDILIBRE_ENV=prod` | Interdit le sandbox sur le service public |
-| `MCP_AUTH_MODE=oauth` | Exige un jeton OAuth 2.1 valide sur `/mcp` |
-| `MCP_PUBLIC_URL` | URL publique du service, sans `/mcp` (https obligatoire) |
-| `MCP_OAUTH_ISSUER` | Émetteur, recopié **à l'identique** depuis le champ `issuer` du document de découverte, barre oblique finale comprise (https obligatoire) — voir oauth.md |
+| `MCP_ENV=production` | Contrôles de démarrage stricts (déjà défini par l'image) |
+| `MCP_AUTH_MODE=oauth` | Authentification obligatoire sur `/mcp` |
+| `MCP_PUBLIC_URL` | URL publique, https, sans `/mcp` |
+| `MCP_OAUTH_ISSUER` | Émetteur WorkOS, identique au champ `issuer` publié |
+| `PANDECTE_TOKEN_PEPPER` | Poivre des jetons personnels, 32 caractères aléatoires minimum |
+| `LEGIFRANCE_CLIENT_ID`, `LEGIFRANCE_CLIENT_SECRET` | Identifiants PISTE du titulaire |
+| `JUDILIBRE_KEY_ID` | KeyId PISTE (`PISTE_KEY_ID` reste accepté) |
+| `LEGIFRANCE_ENV=prod`, `JUDILIBRE_ENV=prod` | Interdisent le bac à sable |
 
-Le démarrage échoue si `MCP_ENV=production` et `MCP_AUTH_MODE=disabled` :
-une passerelle MCP publique anonyme consommerait les quotas Légifrance et
-Judilibre sous la seule responsabilité du titulaire des clés PISTE. La
-procédure de configuration de l'émetteur figure dans `oauth.md`.
+Le démarrage échoue en production sans authentification : une passerelle
+publique anonyme consommerait les quotas PISTE du titulaire.
 
-### Facultatives — authentification
+### Comptes et accès
 
 | Variable | Défaut | Effet |
 |---|---|---|
-| `MCP_OAUTH_AUDIENCE` | `MCP_PUBLIC_URL` + `/mcp` | Audience exigée dans le jeton (RFC 8707) |
-| `MCP_OAUTH_JWKS_URL` | `MCP_OAUTH_ISSUER` sans barre finale + `/.well-known/jwks.json` | Clés publiques de vérification |
-| `MCP_OAUTH_REQUIRED_SCOPES` | `legal:read` | Portées exigées, séparées par des virgules ou des espaces. Seules les valeurs `-`, `none` et `aucune` désactivent le contrôle de portée, sans jamais désactiver l'authentification. **Vider la variable ou la supprimer ne la désactive pas** : le repli est la valeur par défaut `legal:read`, et le service répondra `403` à tout jeton qui ne la porte pas. Le comportement est volontairement fermant (`mcp_server/runtime.py:73-89`) |
-| `MCP_JUDILIBRE_SUPPRESSED_IDS` | vide | Identifiants Judilibre retirés temporairement, séparés par des virgules (24 caractères hexadécimaux chacun, casse indifférente). Une entrée malformée refuse le démarrage ; le nombre d'identifiants chargés est journalisé, jamais leur valeur. Voir `incident-response.md` |
+| `WORKOS_CLIENT_ID` | vide | Active la page `/compte` (sinon absente) |
+| `WORKOS_API_BASE` | `https://api.workos.com` | API WorkOS (sans objet en usage normal) |
+| `MCP_PERSONAL_KEYS_ENABLED` | `true` | Accepte les clés personnelles `pk1.…` et publie `/cle` |
+| `MCP_OAUTH_AUDIENCE` | `MCP_PUBLIC_URL` + `/mcp` | Audience exigée dans les jetons OAuth |
+| `MCP_OAUTH_JWKS_URL` | émetteur + `/oauth2/jwks` | Clés publiques de l'émetteur (WorkOS) |
+| `MCP_OAUTH_REQUIRED_SCOPES` | aucune | Portées exigées ; WorkOS ne délivre que des portées OpenID |
 
-Le conteneur définit déjà `MCP_ENV=production`, `MCP_HOST=0.0.0.0` et
-`PORT=8000`. La commande suivante permet de contrôler la configuration sans
-lancer le service :
-
-```bash
-python mcp_server/server.py --check-config
-```
-
-### Garde-fous réglables
+### Quotas
 
 | Variable | Défaut | Effet |
 |---|---:|---|
-| `MCP_MAX_CONCURRENT_REQUESTS` | `8` | Nombre maximal d'appels d'outils simultanés par instance |
-| `MCP_TOOL_CALLS_PER_MINUTE` | `120` | Budget glissant d'appels d'outils par instance |
-| `MCP_USER_CALLS_PER_MINUTE` | `20` | Budget glissant d'appels d'outils par utilisateur authentifié |
-| `MCP_QUEUE_TIMEOUT_SECONDS` | `2` | Attente maximale avant une erreur de surcharge explicite |
-| `MCP_MAX_REQUEST_BODY_BYTES` | `1048576` | Taille maximale d'une requête HTTP MCP |
-| `MCP_LOG_LEVEL` | `INFO` local, `WARNING` dans l'image | Niveau des journaux applicatifs et du SDK MCP |
-| `OPENAI_APPS_CHALLENGE` | absent | Jeton temporaire de vérification du domaine |
+| `MCP_USER_CALLS_PER_MINUTE` | `10` | Mode partagé, par personne |
+| `MCP_USER_CALLS_PER_DAY` | `100` | Mode partagé, par personne, remise à zéro à 00:00 UTC |
+| `MCP_GLOBAL_CALLS_PER_DAY` | `2000` | Mode partagé, tous utilisateurs confondus : protège le quota PISTE |
+| `MCP_KEYS_CALLS_PER_MINUTE` | `30` | Mode clés personnelles, par adresse IP |
+| `MCP_TOOL_CALLS_PER_MINUTE` | `120` | Plafond de l'instance, tous modes |
+| `MCP_MAX_CONCURRENT_REQUESTS` | `8` | Appels d'outils simultanés |
 
-La limite est locale à chaque instance et est remise à zéro au redémarrage.
-Tant qu'aucun limiteur global atomique n'est déployé, conserver **un seul
-réplica**. Avec plusieurs réplicas, ajouter une limite globale au niveau de la
-plateforme afin de rester dans les quotas PISTE.
-Le budget porte sur les appels d'outils ; une opération peut effectuer plusieurs
-requêtes techniques (authentification puis lecture). Régler donc cette valeur de
-façon conservatrice selon les quotas réellement accordés à l'application PISTE.
+Réglez `MCP_GLOBAL_CALLS_PER_DAY` sous le quota journalier de votre
+application PISTE : un appel d'outil peut faire plusieurs requêtes amont.
 
-## Confidentialité et exploitation
+### Cache, données, réseau
 
-Le journal métier ajouté par l'application ne contient que le nom technique de
-l'opération, son résultat (`success`, `upstream_error` ou `throttled`), sa
-durée et une empreinte tronquée du sujet authentifié. Une ligne
-`upstream_error` porte en plus un identifiant de corrélation (`ref=`), rendu
-au client dans le message d'erreur, et le détail technique de l'erreur amont
-(hôte, URL, fragment de réponse), secrets masqués — ce détail ne quitte jamais
-le journal. Cette empreinte est une
-donnée personnelle pseudonymisée, et non anonyme. Le jeton, sa charge utile
-et l'identifiant brut du compte ne sont jamais journalisés. Il ne journalise ni les arguments, ni les textes juridiques, ni les
-résultats, ni les clés. L'image utilise `WARNING` par défaut afin de supprimer
-les journaux informatifs du SDK MCP et du serveur HTTP. Si `INFO` est réactivé
-pour diagnostiquer un incident, ces composants peuvent journaliser une adresse
-réseau, un chemin HTTP et un identifiant de session MCP éphémère. Les journaux
-d'accès de l'hébergeur peuvent contenir les mêmes métadonnées : leur durée de
-conservation doit être réglée et décrite dans la politique de confidentialité.
+| Variable | Défaut | Effet |
+|---|---:|---|
+| `PANDECTE_DATA_DIR` | `/var/data` dans l'image | Dossier de la base SQLite (point de montage du disque) |
+| `PANDECTE_CACHE_TEXT_TTL` | `21600` (6 h) | Articles, sections, textes ; `0` désactive |
+| `PANDECTE_CACHE_DECISION_TTL` | `86400` (24 h) | Décisions Judilibre ; `0` désactive |
+| `PANDECTE_CACHE_MAX_MB` | `200` | Plafond du cache, éviction des plus anciennes entrées |
+| `MCP_TRUSTED_PROXY_HOPS` | `0` (`1` dans `render.yaml`) | Position de l'IP cliente dans X-Forwarded-For, depuis la droite |
+| `MCP_CLIENT_IP_HEADER` | vide | En-tête posé par le proxy portant l'IP cliente (prioritaire) |
+| `MCP_IP_DIAGNOSTIC` | `false` | Publie `/diagnostic-ip` le temps du réglage |
+| `MCP_JUDILIBRE_SUPPRESSED_IDS` | vide | Retrait d'urgence de décisions, voir `incident-response.md` |
+| `MCP_LOG_LEVEL` | `WARNING` dans l'image | Niveau des journaux du SDK et du serveur HTTP |
 
-Les réponses Judilibre peuvent contenir des données personnelles présentes
-dans des décisions publiques. Le service doit conserver les mécanismes de
-pseudonymisation et les restrictions de réutilisation de la source ; il ne doit
-pas servir au profilage des magistrats ou des greffiers.
+## Essai local
 
-Le service est déjà exposé au réseau public, avec OAuth obligatoire. Avant sa
-publication dans l'annuaire OpenAI, finaliser la [checklist de confidentialité](privacy-checklist.md),
-dérouler le [plan d'audit sécurité](audit-securite.md) et le
-[registre des obligations CGU](obligations-cgu.md), puis vérifier les quotas et
-conditions attachés aux abonnements PISTE utilisés. La correction des findings
-critiques et élevés de l'audit conditionne la publication dans l'annuaire.
-La [politique de confidentialité](privacy-policy.md), les
-[conditions d'utilisation](terms-of-use.md) et le
-guide de soumission ChatGPT décrivent l'état public.
+Sans Docker, depuis la racine du dépôt :
 
-## Passage en mode développeur ChatGPT
+```bash
+cp .env.example .env        # puis remplacer les valeurs factices
+python mcp_server/server.py --transport streamable-http
+```
 
-1. Utiliser l'origine HTTPS stable
-   `https://droit-francais-skill.onrender.com`. Le changement ultérieur de
-   l'origine (`scheme`, hôte ou port) peut imposer une nouvelle soumission.
-2. Tester `/mcp` avec MCP Inspector, puis chaque outil avec résultats, erreurs,
-   identifiants absents et entrées invalides.
+Avec l'image de production :
 
-   Une sonde locale automatisée est également fournie :
+```bash
+docker build -t pandecte-mcp .
+docker run --rm -p 8765:8000 --env-file .env pandecte-mcp
+```
 
-   ```bash
-   python tests/check_mcp_http.py https://droit-francais-skill.onrender.com/mcp
-   ```
-3. Dans ChatGPT, activer le mode développeur et créer une application MCP avec
-   l'URL complète `https://droit-francais-skill.onrender.com/mcp`.
-4. Vérifier les six outils. Ils doivent annoncer : `readOnlyHint: true`,
-   `destructiveHint: false` et `openWorldHint: false` : ils ne modifient
-   aucun état publiquement visible d'internet, même s'ils consultent des API
-   externes et consomment leurs quotas.
-5. Exécuter les jeux d'évaluation positifs et négatifs, puis conserver les
-   résultats de cette version.
-6. Lors de la soumission, placer le jeton fourni par OpenAI dans
-   `OPENAI_APPS_CHALLENGE`, vérifier le domaine, puis retirer la variable après
-   validation.
+L'image démarre en root le temps de donner le dossier de données à
+l'utilisateur `app`, puis lance le serveur sous `app` (`deploy/entrypoint.sh`).
+Le contrôle de configuration sans démarrage :
+`python mcp_server/server.py --check-config`.
 
-Ne pas ajouter `.app.json` avec un faux identifiant. Ce fichier ne sera ajouté
-qu'après création de la connexion réelle à laquelle le plugin local doit se
-rattacher.
+## Exploitation
 
-## Matériel encore requis pour la publication
-
-- identité développeur ou entreprise vérifiée et droit `Apps Management: Write` ;
-- alignement du moyen de contact privé avec l'identité publiée ;
-- validation finale et téléversement du logo `assets/logo.png` ;
-- vérification du domaine dans le portail OpenAI ;
-- surveillance de l'instance : plan gratuit conservé le 1er septembre 2026.
-  Le maintien hors veille **ne repose pas** sur `surveillance.yml` — cette voie
-  a été essayée puis réfutée par la mesure, GitHub n'exécutant les workflows
-  planifiés qu'en « meilleur effort ». `surveillance.yml` ne fait que
-  *constater* l'état ; c'est un **ping externe toutes les cinq minutes** qui
-  maintient l'instance éveillée, en service depuis le 3 septembre 2026 entre
-  14:24 et 18:32 UTC. Voir [exploitation.md](exploitation.md) et
-  pieces-humaines.md § 11 ;
-- **quota d'heures d'instance Render** : une instance maintenue éveillée en
-  permanence consomme des heures en continu, là où une instance endormie les
-  économise. Le plan gratuit borne ce total par mois et le partage entre les
-  services gratuits du compte. À vérifier au tableau de bord avant publication :
-  une suspension en fin de mois serait plus visible qu'un réveil.
-
-
-Références : [connexion et test du plugin][connect], [soumission][submission],
-[exigences de revue MCP][review] et [sécurité et confidentialité][security].
-
-[connect]: https://developers.openai.com/plugins/deploy/connect-chatgpt
-[submission]: https://developers.openai.com/plugins/deploy/submission
-[review]: https://developers.openai.com/plugins/deploy/app-review
-[security]: https://developers.openai.com/plugins/guides/security-privacy
+- **Journaux** : une ligne par appel d'outil, avec le mode, une empreinte
+  tronquée du sujet (donnée pseudonymisée), le résultat et `cache=hit|miss`.
+  Jamais de jeton, de clé, d'adresse e-mail ni d'argument d'outil.
+- **Sauvegarde** : Render prend un instantané quotidien des disques. Perdre la
+  base ne fait perdre que les jetons personnels (à régénérer), les compteurs du
+  jour et le cache.
+- **Une seule instance** : le disque persistant l'impose, et les quotas
+  comme le cache le supposent.
+- **Mise à jour** : chaque commit sur `main` redéploie le service ; un
+  redéploiement interrompt brièvement le service (disque attaché).
+- **Compromission des identifiants PISTE** : les réinitialiser sur PISTE,
+  mettre à jour les variables Render, et prévenir la DILA ou l'AIFE comme le
+  prévoient les CGU (voir `obligations-cgu.md`).

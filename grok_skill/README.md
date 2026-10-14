@@ -1,7 +1,7 @@
 # Skill juridique — déclinaison Grok
 
 Déclinaison **Grok** (xAI) de la méthodologie de recherche juridique portée par
-ce dépôt. Contrairement à l'agent Gemini ([`gemini_agent/`](../gemini_agent)),
+ce dépôt. Contrairement à l'agent Gemini (`gemini_agent/` (retiré de PandecteMCP)),
 générique et non connecté, cette déclinaison reste **spécifique au droit
 français** et conserve les principes du noyau : elle n'en change que la voie de
 récupération.

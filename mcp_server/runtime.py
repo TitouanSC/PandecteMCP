@@ -155,6 +155,11 @@ class RuntimeSettings:
     #: Nombre de proxys de confiance devant le serveur (1 sur Render) : l'IP
     #: cliente est lue à cette position, depuis la droite, dans X-Forwarded-For.
     trusted_proxy_hops: int = 0
+    #: En-tête portant l'IP cliente, posé et réécrit par le proxy de
+    #: l'hébergeur (prioritaire sur X-Forwarded-For) ; vide par défaut.
+    client_ip_header: str = ""
+    #: Page /diagnostic-ip, pour vérifier la lecture de l'IP au déploiement.
+    ip_diagnostic: bool = False
     #: Client ID WorkOS (public) : active la page « Mon compte ». La connexion
     #: passe par PKCE ; aucune clé API WorkOS n'est nécessaire au serveur.
     workos_client_id: str = ""
@@ -239,6 +244,9 @@ class RuntimeSettings:
             if not audience:
                 audience = f"{public_url}/mcp"
 
+        client_ip_header = values.get("MCP_CLIENT_IP_HEADER", "").strip().lower()
+        if client_ip_header and not re.match(r"^[a-z0-9-]{1,64}$", client_ip_header):
+            raise RuntimeConfigurationError("MCP_CLIENT_IP_HEADER est un nom d'en-tête invalide.")
         workos_client_id = values.get("WORKOS_CLIENT_ID", "").strip()
         if workos_client_id and not WORKOS_CLIENT_ID_RE.match(workos_client_id):
             raise RuntimeConfigurationError(
@@ -286,6 +294,8 @@ class RuntimeSettings:
             personal_keys_enabled=_boolean(values, "MCP_PERSONAL_KEYS_ENABLED", True),
             data_dir=values.get("PANDECTE_DATA_DIR", "data").strip() or "data",
             trusted_proxy_hops=_non_negative_int(values, "MCP_TRUSTED_PROXY_HOPS", 0),
+            client_ip_header=client_ip_header,
+            ip_diagnostic=_boolean(values, "MCP_IP_DIAGNOSTIC", False),
             workos_client_id=workos_client_id,
             workos_api_base=workos_api_base,
             cache_text_ttl=_non_negative_int(values, "PANDECTE_CACHE_TEXT_TTL", 6 * 3600),

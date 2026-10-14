@@ -1,0 +1,62 @@
+# Blueprint Render de PandecteMCP — voir docs/deployment.md.
+#
+# Un seul service web Docker, offre Starter (toujours allumé), avec un disque
+# persistant de 1 Go pour la base SQLite (jetons personnels hachés, compteurs
+# de quotas, cache des réponses). Région Francfort : données dans l'UE.
+#
+# Aucun secret ici : les valeurs marquées « sync: false » sont demandées par
+# Render à la création du Blueprint, le poivre des jetons est tiré au hasard
+# par Render.
+services:
+  - type: web
+    name: pandecte-mcp
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    branch: main
+    autoDeployTrigger: commit
+    # Un disque persistant interdit plusieurs instances : les quotas et le
+    # cache supposent de toute façon une instance unique.
+    numInstances: 1
+    healthCheckPath: /health
+    disk:
+      name: pandecte-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      # -- Authentification ------------------------------------------------
+      - key: MCP_AUTH_MODE
+        value: oauth
+      # URL publique du service, sans /mcp : https://<nom>.onrender.com
+      - key: MCP_PUBLIC_URL
+        sync: false
+      # Émetteur WorkOS AuthKit : https://<domaine>.authkit.app
+      - key: MCP_OAUTH_ISSUER
+        sync: false
+      # Client ID WorkOS (public) ; active la page « Mon compte ».
+      - key: WORKOS_CLIENT_ID
+        sync: false
+      # Poivre des jetons personnels : aléatoire, à ne jamais changer ensuite
+      # (le changer invalide tous les jetons personnels et les sessions).
+      - key: PANDECTE_TOKEN_PEPPER
+        generateValue: true
+      # -- Identifiants PISTE du titulaire (mode « serveur partagé ») --------
+      - key: LEGIFRANCE_CLIENT_ID
+        sync: false
+      - key: LEGIFRANCE_CLIENT_SECRET
+        sync: false
+      - key: JUDILIBRE_KEY_ID
+        sync: false
+      - key: LEGIFRANCE_ENV
+        value: prod
+      - key: JUDILIBRE_ENV
+        value: prod
+      # -- Adresse IP cliente (limites par IP) --------------------------------
+      # À vérifier au premier déploiement avec /diagnostic-ip, puis passer
+      # MCP_IP_DIAGNOSTIC à false. Voir docs/deployment.md.
+      - key: MCP_TRUSTED_PROXY_HOPS
+        value: "1"
+      - key: MCP_IP_DIAGNOSTIC
+        value: "true"

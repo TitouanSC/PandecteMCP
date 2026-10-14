@@ -491,7 +491,7 @@ Vous êtes libre de :
 - **Références** : [`skill/references/`](../skill/references/)
 - **Outils originaux** : [`skill/scripts/`](../skill/scripts/)
 - **Déclinaison Grok** : [`grok_skill/`](../grok_skill/) (pour comparaison)
-- **Déclinaison Gemini** : [`gemini_agent/`](../gemini_agent/) (pour comparaison)
+- **Déclinaison Gemini** : `gemini_agent/` (retiré de PandecteMCP) (pour comparaison)
 
 ---
 

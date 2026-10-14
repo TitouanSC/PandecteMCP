@@ -19,7 +19,7 @@ capacités et aux outils de l'écosystème Google / Gemini :
 | Noyau (`skill/`) | Déclinaison Gemini (`gemini_skill/`) |
 |---|---|
 | Connecteur MCP Légifrance/Judilibre | **Identique (Priorité 1)** : support direct du serveur MCP du dépôt ([`mcp_server/`](../mcp_server)) sous Antigravity et Gemini CLI |
-| `scripts/legifrance.py` (API PISTE) | Accessible via exécution de code Python ou via le package client [`gemini_agent/`](../gemini_agent) |
+| `scripts/legifrance.py` (API PISTE) | Accessible via exécution de code Python ou via le package client `gemini_agent/` (retiré de PandecteMCP) |
 | Repli `web_search` / `web_fetch` | **Grounding Google Search / Outils Web** restreints strictement aux domaines institutionnels primaires (`site:legifrance.gouv.fr`, etc.) |
 | Abstention (P7) | Règle absolue : refus de spéculer ou d'halluciner en l'absence de source vérifiée |
 
@@ -40,7 +40,7 @@ capacités et aux outils de l'écosystème Google / Gemini :
    Si aucun serveur MCP n'est actif, mobiliser le grounding Google Search en ciblant impérativement les domaines officiels listés dans [`references/sources-autorisees.md`](references/sources-autorisees.md). Ne jamais reconstituer un texte ou un numéro de pourvoi de mémoire.
 
 3. **Exécution de code Python / SDK `google-genai`** :  
-   Pour les intégrations programmatiques, s'appuyer sur le package compagnon [`gemini_agent/`](../gemini_agent) qui instancie un agent `google-genai` à température `0.0` avec le prompt système méthodologique.
+   Pour les intégrations programmatiques, s'appuyer sur le package compagnon `gemini_agent/` (retiré de PandecteMCP) qui instancie un agent `google-genai` à température `0.0` avec le prompt système méthodologique.
 
 4. **Abstention informée (P7)** :  
    Si la source primaire est inaccessible ou contradictoire, énoncer une réserve et s'abstenir de conclure.

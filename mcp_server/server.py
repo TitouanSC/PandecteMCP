@@ -656,7 +656,12 @@ def _fetch_authorization_metadata() -> dict[str, Any]:
 def build_http_app(**transport_options: Any):
     """Application HTTP complète : transport MCP du SDK derrière le garde HTTP."""
     app = server.streamable_http_app(**transport_options)
-    return HttpGuard(app, trusted_hops=SETTINGS.trusted_proxy_hops)
+    return HttpGuard(
+        app,
+        trusted_hops=SETTINGS.trusted_proxy_hops,
+        ip_header=SETTINGS.client_ip_header,
+        diagnostic=SETTINGS.ip_diagnostic,
+    )
 
 
 def check_issuer() -> None:

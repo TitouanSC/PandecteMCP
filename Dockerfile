@@ -5,6 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     MCP_ENV=production \
     MCP_HOST=0.0.0.0 \
     MCP_LOG_LEVEL=WARNING \
+    PANDECTE_DATA_DIR=/var/data \
     PORT=8000
 
 WORKDIR /app
@@ -16,9 +17,10 @@ WORKDIR /app
 # La couche est donc volontairement non reproductible bit à bit : c'est ce qui
 # garantit qu'aucune CVE corrigeable ne survit à la construction. La porte
 # Trivy de la CI reste l'autorité — elle scanne l'image après cette montée.
-RUN apk upgrade --no-cache
+RUN apk upgrade --no-cache && apk add --no-cache su-exec
 
-RUN addgroup -S app && adduser -S -G app app
+RUN addgroup -S app && adduser -S -G app app \
+    && mkdir -p /var/data && chown app:app /var/data && chmod 700 /var/data
 
 COPY requirements-mcp.txt ./
 # pip et setuptools ne servent qu'à cette étape : l'image lancée n'exécute que
@@ -32,11 +34,15 @@ RUN python -m pip install --no-cache-dir --requirement requirements-mcp.txt \
 
 COPY mcp_server/ ./mcp_server/
 COPY skill/scripts/ ./skill/scripts/
+COPY deploy/entrypoint.sh /usr/local/bin/pandecte-entrypoint
 
-USER app
+# Pas de « USER app » ici : l'entrée démarre en root le temps de donner le
+# disque persistant à « app », puis lance le serveur sous « app » (su-exec).
+# Aucun code applicatif ne s'exécute jamais en root.
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD ["python", "-c", "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('PORT', '8000') + '/health', timeout=3).read()"]
 
+ENTRYPOINT ["/usr/local/bin/pandecte-entrypoint"]
 CMD ["python", "mcp_server/server.py", "--transport", "streamable-http"]
