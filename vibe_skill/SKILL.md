@@ -198,7 +198,7 @@ Vérifier qu'ils correspondent à la version de Vibe effectivement installée.
 
 ## Intégration Python optionnelle — squelette non connecté
 
-[`tools/legifrance_vibe.py`](tools/legifrance_vibe.py) esquisse un wrapper structuré
+`tools/legifrance_vibe.py` (retiré de PandecteMCP) esquissait un wrapper structuré
 autour de `web_search` / `web_fetch` : extraction d'identifiant `LEGIARTI`,
 normalisation en dataclasses. **Ce module ne fonctionne pas tel quel** : ses
 fonctions ne contiennent aucun appel réel à `web_search` ou `web_fetch` — elles

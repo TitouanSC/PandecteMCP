@@ -307,8 +307,7 @@ plugin. Without credentials, the methodological skill remains usable; only the M
 
 > **Standalone installation:** package only the `skill/` directory. It contains
 > the core (`SKILL.md`), history (`CHANGELOG.md`), references (`references/`)
-> and tooling (`scripts/`). The `vault/` directory is reserved for Obsidian
-> notes and is not included in the skill package.
+> and tooling (`scripts/`).
 
 ### Windows
 
@@ -339,7 +338,6 @@ standalone and documented in its own README:
 | Directory | Platform | Type |
 |---|---|---|
 | [`gemini_skill/`](gemini_skill) | Gemini (Google) | Condensed v3.3.0 core, prioritizing this repository's MCP server, with fallback to Google Search grounding on official sources |
-| [`gemini_agent/`](gemini_agent) | Gemini (`google-genai`) | Programmatic Python client, temperature 0.0, system prompt aligned with v3.3.0 methodology |
 | [`grok_skill/`](grok_skill) | Grok (xAI) | Condensed core for French law, retrieval with native web tools (`web_search`, `open_page`) instead of the MCP connector and PISTE APIs |
 | [`vibe_skill/`](vibe_skill) | Vibe (Mistral) | Condensed core, native `web_search`/`web_fetch` tools checked against public source code; Python wrapper provided as an unconnected scaffold |
 | [`manus_skill/`](manus_skill) | Manus | Condensed core; this repository's custom MCP connector first (verified tools), with fallback to Manus's native web capability without assuming tool names |
@@ -378,8 +376,6 @@ droit-francais-skill/
 │   └── marketplace.json           ← direct distribution from the repository
 ├── .codex-plugin/
 │   └── plugin.json                ← OpenAI plugin manifest
-├── assets/
-│   └── logo.png                   ← original distribution logo
 ├── .mcp.json                       ← connection to the remote MCP service
 ├── mcp_server/
 │   ├── server.py                   ← MCP tools over stdio or HTTP /mcp
@@ -431,13 +427,10 @@ droit-francais-skill/
 │   ├── privacy-checklist.md        ← pre-publication checklist
 │   ├── privacy-policy.md           ← public policy
 │   └── terms-of-use.md             ← public terms
-├── chatgpt-app-submission.json     ← importable metadata and test cases
 ├── gemini_skill/                   ← Gemini adaptation (condensed core, Agent Skills, MCP first)
-├── gemini_agent/                   ← Gemini adaptation (Python google-genai client)
 ├── grok_skill/                     ← Grok adaptation (condensed core, native web tools)
 ├── vibe_skill/                     ← Vibe adaptation (verified web_search/web_fetch tools)
 ├── manus_skill/                    ← Manus adaptation (MCP connector first)
-├── vault/                          ← Obsidian notes (outside the package)
 ├── tests/                          ← invariants, MCP tools + historical evaluations
 ├── requirements-mcp.txt            ← server dependency only
 ├── README.md

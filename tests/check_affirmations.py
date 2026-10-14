@@ -41,7 +41,6 @@ if hasattr(sys.stdout, "reconfigure"):
 ROOT = Path(__file__).resolve().parent.parent
 SERVER = ROOT / "mcp_server" / "server.py"
 MANIFEST = ROOT / ".codex-plugin" / "plugin.json"
-SUBMISSION = ROOT / "chatgpt-app-submission.json"
 ENV_EXAMPLE = ROOT / "skill" / "scripts" / ".env.example"
 
 #: Journaux datés : ils consignent un état d'époque et doivent pouvoir citer une
@@ -142,19 +141,6 @@ def controler_annotations(problems: list[str]) -> None:
                         f"le serveur déclare {str(reelles[nom]).lower()}",
                         problems,
                     )
-    if not SUBMISSION.exists():
-        return
-    outils = json.loads(SUBMISSION.read_text(encoding="utf-8")).get("tools", {})
-    for outil, descripteur in outils.items():
-        declarees = descripteur.get("annotations", {})
-        for nom, attendue in reelles.items():
-            if nom in declarees and declarees[nom] != attendue:
-                _fail(
-                    f"chatgpt-app-submission.json : {outil}.{nom} vaut "
-                    f"{str(declarees[nom]).lower()}, le serveur déclare "
-                    f"{str(attendue).lower()}",
-                    problems,
-                )
 
 
 def controler_variables(problems: list[str]) -> None:

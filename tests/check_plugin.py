@@ -16,17 +16,11 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
-# Catalogue sans dépendance externe : importable ici sans le SDK MCP.
-from mcp_server.catalog import EXPECTED_TOOLS  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 MANIFEST = ROOT / ".codex-plugin" / "plugin.json"
-SUBMISSION = ROOT / "chatgpt-app-submission.json"
 SERVER = ROOT / "mcp_server" / "server.py"
 
 #: Socle du plugin Claude Code. Il n'etait couvert par aucun controle : sa
@@ -57,19 +51,6 @@ MAX_LONGUEUR_PROMPT = 128
 MAX_CAPABILITIES = 20
 MAX_LONGUEUR_CAPABILITY = 120
 MAX_LONGUEUR_URL = 1024
-
-#: URL de schema attendue dans le fichier de soumission. Le chemin historique
-#: « apps-sdk » redirige, mais le schema exige desormais la forme « plugins » :
-#: un fichier declarant l'ancienne valeur echoue a la validation officielle.
-SCHEMA_SOUMISSION = (
-    "https://developers.openai.com/plugins/schemas/chatgpt-app-submission.v1.json"
-)
-
-#: Copie locale du schema officiel, relevee le 31 aout 2026. Embarquee pour que
-#: la validation soit rejouable hors ligne et en CI : le defaut de $schema qui
-#: rendait le dossier invalide n'avait ete vu que par une validation manuelle,
-#: jouee une seule fois. A rafraichir depuis SCHEMA_SOUMISSION lors des revues.
-SCHEMA_LOCAL = ROOT / "tests" / "fixtures" / "chatgpt-app-submission.v1.schema.json"
 
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 PLUGIN_NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -175,37 +156,6 @@ def controler_socle_claude(
         )
 
 
-def valider_contre_le_schema(submission: dict, problems: list[str]) -> None:
-    """Valide le dossier contre la copie locale du schema officiel.
-
-    La validation est *facultative* : ce controle se veut sans dependance
-    externe, et jsonschema n'arrive qu'avec le SDK MCP. Quand il manque,
-    l'absence de validation est dite explicitement plutot que passee sous
-    silence — un controle muet se lit a tort comme un controle reussi.
-    """
-    try:
-        import jsonschema
-    except ImportError:
-        print(
-            "ℹ️  jsonschema absent : dossier NON valide contre le schema "
-            "(installer requirements-mcp.txt pour ce controle)"
-        )
-        return
-
-    if not SCHEMA_LOCAL.is_file():
-        fail(f"copie locale du schema absente : {SCHEMA_LOCAL.name}", problems)
-        return
-    try:
-        schema = json.loads(SCHEMA_LOCAL.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        fail(f"copie locale du schema illisible : {exc}", problems)
-        return
-
-    for erreur in jsonschema.Draft202012Validator(schema).iter_errors(submission):
-        chemin = "/".join(str(part) for part in erreur.path) or "(racine)"
-        fail(f"schema officiel — {chemin} : {erreur.message}", problems)
-
-
 def main() -> int:
     problems: list[str] = []
 
@@ -260,6 +210,9 @@ def main() -> int:
                 fail(f"interface.{field} doit être une URL HTTPS publique", problems)
         for field in LOCAL_ASSET_FIELDS:
             value = interface.get(field)
+            if value is None:
+                # Visuel facultatif tant que le projet n'a pas de logo.
+                continue
             if not isinstance(value, str) or not value.strip():
                 fail(f"interface.{field} doit être un chemin relatif", problems)
                 continue
@@ -429,79 +382,6 @@ def main() -> int:
                 if secret_name in serialized_mcp:
                     fail(
                         f"secret ou variable sensible interdit dans .mcp.json : {secret_name}",
-                        problems,
-                    )
-
-    if not SUBMISSION.is_file():
-        fail("fichier de soumission absent : chatgpt-app-submission.json", problems)
-    else:
-        try:
-            submission = json.loads(SUBMISSION.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            fail(f"chatgpt-app-submission.json est illisible : {exc}", problems)
-        else:
-            if submission.get("schema_version") != 1:
-                fail("schema_version de la soumission doit valoir 1", problems)
-            if submission.get("$schema") != SCHEMA_SOUMISSION:
-                fail(
-                    f"$schema doit valoir {SCHEMA_SOUMISSION} : l'ancienne forme "
-                    "apps-sdk echoue a la validation officielle",
-                    problems,
-                )
-            if not str(submission.get("release_notes", "")).strip():
-                fail("release_notes est obligatoire a la soumission", problems)
-            valider_contre_le_schema(submission, problems)
-            tools = submission.get("tools")
-            if not isinstance(tools, dict) or set(tools) != set(EXPECTED_TOOLS):
-                fail("la soumission doit couvrir exactement le catalogue MCP", problems)
-            else:
-                for name, descriptor in tools.items():
-                    justifications = descriptor.get("justifications", {})
-                    for cle in (
-                        "read_only_justification",
-                        "open_world_justification",
-                        "destructive_justification",
-                    ):
-                        if not str(justifications.get(cle, "")).strip():
-                            fail(
-                                f"justification {cle} absente pour {name} : "
-                                "OpenAI en exige une par annotation",
-                                problems,
-                            )
-                    annotations = descriptor.get("annotations", {})
-                    expected = {
-                        "readOnlyHint": True,
-                        "openWorldHint": False,
-                        "destructiveHint": False,
-                    }
-                    if annotations != expected:
-                        fail(f"annotations de soumission invalides pour {name}", problems)
-            positives = submission.get("test_cases", [])
-            negatives = submission.get("negative_test_cases", [])
-            if len(positives) != 5:
-                fail("la soumission doit contenir cinq cas de test positifs", problems)
-            if len(negatives) != 3:
-                fail("la soumission doit contenir trois cas de test négatifs", problems)
-
-            for index, case in enumerate(positives, start=1):
-                triggered = case.get("tools_triggered")
-                if not isinstance(triggered, str) or not triggered.strip():
-                    fail(
-                        f"cas de test positif {index} : tools_triggered est obligatoire",
-                        problems,
-                    )
-                    continue
-                named = [item.strip() for item in triggered.split(",")]
-                unknown = sorted(set(named) - set(EXPECTED_TOOLS))
-                if unknown:
-                    fail(
-                        f"cas de test positif {index} : outil inconnu {unknown}",
-                        problems,
-                    )
-            for index, case in enumerate(negatives, start=1):
-                if case.get("tools_triggered") is not None:
-                    fail(
-                        f"cas de test négatif {index} : tools_triggered doit être null",
                         problems,
                     )
 

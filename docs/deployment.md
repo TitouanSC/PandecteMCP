@@ -198,9 +198,6 @@ rattacher.
   services gratuits du compte. À vérifier au tableau de bord avant publication :
   une suspension en fin de mois serait plus visible qu'un réveil.
 
-Les descriptions, les politiques publiques, l'URL MCP et les cinq cas de test
-positifs et trois négatifs sont préparés dans
-[`chatgpt-app-submission.json`](../chatgpt-app-submission.json).
 
 Références : [connexion et test du plugin][connect], [soumission][submission],
 [exigences de revue MCP][review] et [sécurité et confidentialité][security].

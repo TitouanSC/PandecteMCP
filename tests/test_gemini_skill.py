@@ -6,8 +6,7 @@ Vérifie que la déclinaison Gemini respecte les standards du dépôt :
 - présence intégrale des 7 principes invariants P1 à P7 ;
 - documentation complète des 6 modules activables ;
 - hiérarchie rigoureuse des 4 voies de récupération d'outils ;
-- intégrité des liens relatifs internes et des références ;
-- cohérence du prompt système dans le package compagnon gemini_agent/.
+- intégrité des liens relatifs internes et des références.
 """
 
 from __future__ import annotations
@@ -81,27 +80,6 @@ class GeminiSkillIntegrityTests(unittest.TestCase):
         self.assertIn("Voie 3 : Code Execution / Client Python", texte)
         self.assertIn("Voie 4 : Abstention informée", texte)
 
-    def test_coherence_agent_compagnon(self):
-        from gemini_agent.legal_agent_config import (
-            MODEL_NAME,
-            SYSTEM_PROMPT,
-            TEMPERATURE,
-            LegalAgentConfig,
-        )
-
-        self.assertEqual(MODEL_NAME, "gemini-2.5-pro")
-        self.assertEqual(TEMPERATURE, 0.0)
-        self.assertIn("v3.3.0", SYSTEM_PROMPT)
-        for p in ("P1", "P2", "P3", "P4", "P5", "P6", "P7"):
-            with self.subTest(principe_agent=p):
-                self.assertIn(
-                    p,
-                    SYSTEM_PROMPT,
-                    f"Le principe {p} doit figurer dans le SYSTEM_PROMPT de l'agent Python",
-                )
-
-        cfg = LegalAgentConfig()
-        self.assertEqual(cfg.temperature, 0.0)
 
 
 if __name__ == "__main__":

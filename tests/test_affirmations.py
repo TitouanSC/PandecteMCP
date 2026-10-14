@@ -31,19 +31,6 @@ READ_ONLY = ToolAnnotations(
 )
 '''
 
-OUTILS_FACTICES = {
-    "tools": {
-        "search": {
-            "annotations": {
-                "readOnlyHint": True,
-                "destructiveHint": False,
-                "openWorldHint": False,
-            }
-        }
-    }
-}
-
-
 class DepotFactice:
     """Arborescence minimale portant les quatre sources que le contrôle lit."""
 
@@ -56,7 +43,6 @@ class DepotFactice:
         (racine / "docs").mkdir()
         self.ecrire_manifeste("0.7.0")
         self.ecrire_serveur(SERVEUR_FACTICE)
-        self.ecrire_soumission(OUTILS_FACTICES)
         (racine / "skill" / "scripts" / ".env.example").write_text(
             "MCP_AUTH_MODE=oauth\n", encoding="utf-8"
         )
@@ -69,11 +55,6 @@ class DepotFactice:
 
     def ecrire_serveur(self, contenu: str) -> None:
         (self.racine / "mcp_server" / "server.py").write_text(contenu, encoding="utf-8")
-
-    def ecrire_soumission(self, contenu: dict) -> None:
-        (self.racine / "chatgpt-app-submission.json").write_text(
-            json.dumps(contenu), encoding="utf-8"
-        )
 
     def ecrire_doc(self, texte: str) -> None:
         (self.racine / "docs" / "guide.md").write_text(texte, encoding="utf-8")
@@ -89,7 +70,6 @@ class DepotFactice:
             ROOT=racine,
             SERVER=racine / "mcp_server" / "server.py",
             MANIFEST=racine / ".codex-plugin" / "plugin.json",
-            SUBMISSION=racine / "chatgpt-app-submission.json",
             ENV_EXAMPLE=racine / "skill" / "scripts" / ".env.example",
         ):
             releves: list[str] = []
@@ -149,25 +129,6 @@ class ControleAffirmationsTests(unittest.TestCase):
         problemes = self.depot.problemes()
         self.assertEqual(1, len(problemes))
         self.assertIn("MCP_AUTH_MODE_V2", problemes[0])
-
-    def test_le_dossier_de_soumission_qui_diverge_du_serveur(self) -> None:
-        divergent = json.loads(json.dumps(OUTILS_FACTICES))
-        divergent["tools"]["search"]["annotations"]["openWorldHint"] = True
-        self.depot.ecrire_soumission(divergent)
-        problemes = self.depot.problemes()
-        self.assertEqual(1, len(problemes))
-        self.assertIn("search.openWorldHint", problemes[0])
-
-    def test_la_derive_se_detecte_aussi_cote_serveur(self) -> None:
-        # Sens inverse : la documentation reste juste, c'est le serveur qui bouge.
-        # Un contrôle qui présumerait la doc coupable ne verrait rien ici.
-        self.depot.ecrire_serveur(
-            SERVEUR_FACTICE.replace("openWorldHint=False", "openWorldHint=True")
-        )
-        problemes = self.depot.problemes()
-        self.assertEqual(2, len(problemes))
-        self.assertTrue(any("guide.md" in p for p in problemes))
-        self.assertTrue(any("chatgpt-app-submission.json" in p for p in problemes))
 
     def test_le_depot_reel_est_coherent(self) -> None:
         # Garde-fou de bout en bout, sur les vraies sources cette fois.
