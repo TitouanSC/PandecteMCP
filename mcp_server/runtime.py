@@ -10,8 +10,14 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Iterator, Mapping
 
-#: Portées exigées par défaut sur les outils de lecture juridique.
-DEFAULT_SCOPES: tuple[str, ...] = ("legal:read",)
+#: Portées exigées par défaut : aucune. Les jetons WorkOS AuthKit ne portent
+#: que des portées OpenID (openid, profile, email, offline_access) ; le droit
+#: d'accès repose sur l'authentification et sur le quota du sujet. Une portée
+#: peut toujours être exigée via MCP_OAUTH_REQUIRED_SCOPES.
+DEFAULT_SCOPES: tuple[str, ...] = ()
+
+#: Longueur minimale du poivre des jetons personnels (PANDECTE_TOKEN_PEPPER).
+MIN_PEPPER_LENGTH = 32
 
 #: Modes d'authentification acceptés à l'entrée du transport HTTP.
 AUTH_MODES: frozenset[str] = frozenset({"disabled", "oauth"})
@@ -45,6 +51,29 @@ def _positive_float(env: Mapping[str, str], name: str, default: float) -> float:
     if value <= 0:
         raise RuntimeConfigurationError(f"{name} doit être strictement positif.")
     return value
+
+
+def _non_negative_int(env: Mapping[str, str], name: str, default: int) -> int:
+    raw = env.get(name, str(default))
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise RuntimeConfigurationError(f"{name} doit être un entier.") from exc
+    if value < 0:
+        raise RuntimeConfigurationError(f"{name} doit être positif ou nul.")
+    return value
+
+
+def _boolean(env: Mapping[str, str], name: str, default: bool) -> bool:
+    raw = env.get(name)
+    if raw is None or not raw.strip():
+        return default
+    value = raw.strip().lower()
+    if value in {"1", "true", "oui", "yes", "on"}:
+        return True
+    if value in {"0", "false", "non", "no", "off"}:
+        return False
+    raise RuntimeConfigurationError(f"{name} doit valoir true ou false.")
 
 
 def _https_url(
@@ -109,7 +138,16 @@ class RuntimeSettings:
     oauth_jwks_url: str = ""
     oauth_audience: str = ""
     oauth_required_scopes: tuple[str, ...] = field(default_factory=lambda: DEFAULT_SCOPES)
-    user_calls_per_minute: int = 20
+    user_calls_per_minute: int = 10
+    user_calls_per_day: int = 100
+    global_calls_per_day: int = 2000
+    keys_calls_per_minute: int = 30
+    personal_keys_enabled: bool = True
+    #: Dossier de la base SQLite ; sur Render, le point de montage du disque.
+    data_dir: str = "data"
+    #: Nombre de proxys de confiance devant le serveur (1 sur Render) : l'IP
+    #: cliente est lue à cette position, depuis la droite, dans X-Forwarded-For.
+    trusted_proxy_hops: int = 0
 
     @property
     def auth_enabled(self) -> bool:
@@ -166,7 +204,8 @@ class RuntimeSettings:
             )
             jwks_url = values.get("MCP_OAUTH_JWKS_URL", "").strip()
             if not jwks_url:
-                jwks_url = f"{issuer.rstrip('/')}/.well-known/jwks.json"
+                # Emplacement publié par WorkOS AuthKit.
+                jwks_url = f"{issuer.rstrip('/')}/oauth2/jwks"
             if not jwks_url.startswith("https://"):
                 raise RuntimeConfigurationError(
                     "MCP_OAUTH_JWKS_URL doit commencer par https://."
@@ -199,8 +238,18 @@ class RuntimeSettings:
             oauth_audience=audience,
             oauth_required_scopes=scopes,
             user_calls_per_minute=_positive_int(
-                values, "MCP_USER_CALLS_PER_MINUTE", 20
+                values, "MCP_USER_CALLS_PER_MINUTE", 10
             ),
+            user_calls_per_day=_positive_int(values, "MCP_USER_CALLS_PER_DAY", 100),
+            global_calls_per_day=_positive_int(
+                values, "MCP_GLOBAL_CALLS_PER_DAY", 2000
+            ),
+            keys_calls_per_minute=_positive_int(
+                values, "MCP_KEYS_CALLS_PER_MINUTE", 30
+            ),
+            personal_keys_enabled=_boolean(values, "MCP_PERSONAL_KEYS_ENABLED", True),
+            data_dir=values.get("PANDECTE_DATA_DIR", "data").strip() or "data",
+            trusted_proxy_hops=_non_negative_int(values, "MCP_TRUSTED_PROXY_HOPS", 0),
         )
 
     def validate_public(self, env: Mapping[str, str] | None = None) -> None:
@@ -238,6 +287,11 @@ class RuntimeSettings:
                 "MCP_AUTH_MODE doit valoir oauth en production : une passerelle "
                 "MCP publique anonyme engage les identifiants PISTE du titulaire."
             )
+        if len(values.get("PANDECTE_TOKEN_PEPPER", "").strip()) < MIN_PEPPER_LENGTH:
+            raise RuntimeConfigurationError(
+                "PANDECTE_TOKEN_PEPPER doit contenir au moins "
+                f"{MIN_PEPPER_LENGTH} caractères aléatoires en production."
+            )
 
 
 class RequestGovernor:
@@ -273,44 +327,3 @@ class RequestGovernor:
             yield
         finally:
             self._semaphore.release()
-
-
-class PrincipalRateLimiter:
-    """Quota glissant d'une minute, appliqué par utilisateur authentifié.
-
-    Le quota global de ``RequestGovernor`` protège l'instance ; celui-ci
-    empêche un seul compte de consommer à lui seul les quotas PISTE du
-    titulaire des clés. Les identifiants inactifs sont purgés à chaque
-    passage, ce qui borne l'empreinte mémoire sans tâche de fond.
-    """
-
-    def __init__(self, calls_per_minute: int, window_seconds: float = 60.0) -> None:
-        if calls_per_minute <= 0:
-            raise RuntimeConfigurationError(
-                "Le quota par utilisateur doit être strictement positif."
-            )
-        self._calls_per_minute = calls_per_minute
-        self._window_seconds = window_seconds
-        self._buckets: dict[str, deque[float]] = {}
-        self._lock = threading.Lock()
-
-    def check(self, principal: str) -> None:
-        """Enregistre un appel, ou lève ``RuntimeCapacityError`` si le quota est atteint."""
-        now = time.monotonic()
-        horizon = now - self._window_seconds
-        with self._lock:
-            for key in [k for k, v in self._buckets.items() if not v or v[-1] <= horizon]:
-                del self._buckets[key]
-            bucket = self._buckets.setdefault(principal, deque())
-            while bucket and bucket[0] <= horizon:
-                bucket.popleft()
-            if len(bucket) >= self._calls_per_minute:
-                raise RuntimeCapacityError(
-                    "Quota individuel atteint pour cette minute ; réessayer ensuite."
-                )
-            bucket.append(now)
-
-    @property
-    def tracked_principals(self) -> int:
-        with self._lock:
-            return len(self._buckets)

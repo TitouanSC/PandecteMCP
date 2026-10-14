@@ -32,8 +32,6 @@ from mcp_server.auth import (  # noqa: E402
     principal_of,
 )
 from mcp_server.runtime import (  # noqa: E402
-    PrincipalRateLimiter,
-    RuntimeCapacityError,
     RuntimeConfigurationError,
     RuntimeSettings,
 )
@@ -49,6 +47,7 @@ BASE_ENV = {
 }
 
 PISTE_ENV = {
+    "PANDECTE_TOKEN_PEPPER": "p" * 40,
     "LEGIFRANCE_CLIENT_ID": "identifiant",
     "LEGIFRANCE_CLIENT_SECRET": "secret",
     "JUDILIBRE_KEY_ID": "cle",
@@ -61,8 +60,9 @@ class AuthSettingsTests(unittest.TestCase):
         self.assertTrue(settings.auth_enabled)
         self.assertEqual(settings.resource_url, RESOURCE)
         self.assertEqual(settings.oauth_audience, RESOURCE)
-        self.assertEqual(settings.oauth_jwks_url, f"{ISSUER}/.well-known/jwks.json")
-        self.assertEqual(settings.oauth_required_scopes, ("legal:read",))
+        self.assertEqual(settings.oauth_jwks_url, f"{ISSUER}/oauth2/jwks")
+        # WorkOS ne délivre que des portées OpenID : aucune portée maison exigée.
+        self.assertEqual(settings.oauth_required_scopes, ())
 
     def test_trailing_slash_never_produces_a_double_separator(self):
         env = dict(BASE_ENV, MCP_PUBLIC_URL="https://pandecte.example.com/")
@@ -85,9 +85,7 @@ class AuthSettingsTests(unittest.TestCase):
             self.assertTrue(settings.auth_enabled)
 
     def test_absent_scope_variable_keeps_the_default(self):
-        self.assertEqual(
-            RuntimeSettings.from_env(BASE_ENV).oauth_required_scopes, ("legal:read",)
-        )
+        self.assertEqual(RuntimeSettings.from_env(BASE_ENV).oauth_required_scopes, ())
 
     def test_plaintext_issuer_is_refused(self):
         env = dict(BASE_ENV, MCP_OAUTH_ISSUER="http://exemple-idp.local")
@@ -105,6 +103,61 @@ class AuthSettingsTests(unittest.TestCase):
         with self.assertRaises(RuntimeConfigurationError) as raised:
             settings.validate_public(dict(env, **PISTE_ENV))
         self.assertIn("MCP_AUTH_MODE", str(raised.exception))
+
+    def test_production_requires_a_long_token_pepper(self):
+        settings = RuntimeSettings.from_env(BASE_ENV)
+        for pepper in ("", "court", "x" * 31):
+            env = {**BASE_ENV, **PISTE_ENV, "PANDECTE_TOKEN_PEPPER": pepper}
+            with self.subTest(longueur=len(pepper)):
+                with self.assertRaises(RuntimeConfigurationError) as raised:
+                    settings.validate_public(env)
+                self.assertIn("PANDECTE_TOKEN_PEPPER", str(raised.exception))
+                if pepper:
+                    self.assertNotIn(pepper, str(raised.exception))
+
+    def test_quota_and_access_settings_have_safe_defaults(self):
+        settings = RuntimeSettings.from_env(BASE_ENV)
+        self.assertEqual(
+            (10, 100, 2000, 30, True, 0),
+            (
+                settings.user_calls_per_minute,
+                settings.user_calls_per_day,
+                settings.global_calls_per_day,
+                settings.keys_calls_per_minute,
+                settings.personal_keys_enabled,
+                settings.trusted_proxy_hops,
+            ),
+        )
+
+    def test_quota_and_access_settings_are_configurable(self):
+        env = dict(
+            BASE_ENV,
+            MCP_USER_CALLS_PER_DAY="50",
+            MCP_GLOBAL_CALLS_PER_DAY="900",
+            MCP_KEYS_CALLS_PER_MINUTE="5",
+            MCP_PERSONAL_KEYS_ENABLED="false",
+            MCP_TRUSTED_PROXY_HOPS="1",
+            PANDECTE_DATA_DIR="/var/data",
+        )
+        settings = RuntimeSettings.from_env(env)
+        self.assertEqual(
+            (50, 900, 5, False, 1, "/var/data"),
+            (
+                settings.user_calls_per_day,
+                settings.global_calls_per_day,
+                settings.keys_calls_per_minute,
+                settings.personal_keys_enabled,
+                settings.trusted_proxy_hops,
+                settings.data_dir,
+            ),
+        )
+        for name, raw in (
+            ("MCP_PERSONAL_KEYS_ENABLED", "peut-être"),
+            ("MCP_TRUSTED_PROXY_HOPS", "-1"),
+            ("MCP_USER_CALLS_PER_DAY", "0"),
+        ):
+            with self.subTest(name=name), self.assertRaises(RuntimeConfigurationError):
+                RuntimeSettings.from_env(dict(BASE_ENV, **{name: raw}))
 
     def test_production_accepts_a_complete_oauth_configuration(self):
         settings = RuntimeSettings.from_env(BASE_ENV)
@@ -150,8 +203,8 @@ class IssuerCanonicalisationTests(unittest.TestCase):
         for raw in (self.AVEC_BARRE, self.SANS_BARRE):
             env = dict(BASE_ENV, MCP_OAUTH_ISSUER=raw)
             jwks = RuntimeSettings.from_env(env).oauth_jwks_url
-            self.assertEqual(jwks, f"{self.SANS_BARRE}/.well-known/jwks.json")
-            self.assertNotIn("//.well-known", jwks)
+            self.assertEqual(jwks, f"{self.SANS_BARRE}/oauth2/jwks")
+            self.assertNotIn("//oauth2", jwks)
 
     def test_explicit_jwks_url_still_wins(self):
         env = dict(
@@ -240,24 +293,6 @@ class IssuerCanonicalisationTests(unittest.TestCase):
                 self.assertEqual(
                     self._root_route_issuer(settings), self._sdk_route_issuer(settings)
                 )
-
-
-class PrincipalRateLimiterTests(unittest.TestCase):
-    def test_quota_is_counted_per_principal(self):
-        limiter = PrincipalRateLimiter(calls_per_minute=2)
-        limiter.check("utilisateur-a")
-        limiter.check("utilisateur-a")
-        with self.assertRaises(RuntimeCapacityError):
-            limiter.check("utilisateur-a")
-        # Un second utilisateur dispose de son propre quota.
-        limiter.check("utilisateur-b")
-
-    def test_window_expiry_frees_the_quota_and_purges_the_bucket(self):
-        limiter = PrincipalRateLimiter(calls_per_minute=1, window_seconds=0.05)
-        limiter.check("utilisateur-a")
-        time.sleep(0.06)
-        limiter.check("utilisateur-a")
-        self.assertEqual(limiter.tracked_principals, 1)
 
 
 #: Identifiant de clé par défaut : celui que le jeu de clés simulé (voir

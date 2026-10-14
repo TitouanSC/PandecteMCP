@@ -41,3 +41,6 @@ tests/bench/runs/
 
 # Index Graphify local régénérable, distinct des sources du connecteur.
 /graphify-out/
+
+# Base SQLite locale du serveur (jetons hachés, compteurs) — jamais versionnée.
+/data/

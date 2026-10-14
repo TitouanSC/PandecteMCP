@@ -532,6 +532,7 @@ class RuntimeSafetyTests(unittest.TestCase):
             "LEGIFRANCE_CLIENT_ID": "client-secret-value",
             "LEGIFRANCE_CLIENT_SECRET": "oauth-secret-value",
             "PISTE_KEY_ID": "key-secret-value",
+            "PANDECTE_TOKEN_PEPPER": "pepper-secret-value-" + "x" * 20,
         }
         settings = RuntimeSettings.from_env(env)
         settings.validate_public(env)
@@ -560,7 +561,8 @@ class RuntimeSafetyTests(unittest.TestCase):
         # à chaque montée de version sans rien prouver de plus. Ce qui compte
         # est la forme de la charge et l'absence de toute autre information.
         attendu = (
-            '{"status":"ok","version":"%s","auth":"disabled"}' % mcp_app.SERVER_VERSION
+            '{"status":"ok","version":"%s","auth":"disabled","personal_keys":false}'
+            % mcp_app.SERVER_VERSION
         ).encode()
         self.assertEqual(attendu, health.body)
 

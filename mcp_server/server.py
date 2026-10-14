@@ -7,9 +7,11 @@ import argparse
 import hashlib
 import logging
 import os
+import secrets
 import sys
 import time
 import uuid
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any, Callable, Literal
 
@@ -31,11 +33,14 @@ except ImportError:  # SDK MCP v1.27, encore largement installé
 from mcp.types import ToolAnnotations
 
 from pandecte.config import load_dotenv
-from pandecte.credentials import mask_secrets
+from pandecte.credentials import mask_secrets, use_credentials
 from pandecte.errors import LegifranceError
 from pandecte import tools as legal_tools
+from mcp_server.access import AccessGrant, AccessVerifier
+from mcp_server.http_guard import HttpGuard, client_ip
+from mcp_server.quotas import QuotaExceeded, QuotaPolicy
+from mcp_server.store import Store
 from mcp_server.runtime import (
-    PrincipalRateLimiter,
     RequestGovernor,
     RuntimeCapacityError,
     RuntimeConfigurationError,
@@ -61,7 +66,37 @@ GOVERNOR = RequestGovernor(
     SETTINGS.tool_calls_per_minute,
     SETTINGS.queue_timeout_seconds,
 )
-USER_LIMITER = PrincipalRateLimiter(SETTINGS.user_calls_per_minute)
+
+#: Base SQLite (jetons personnels hachés, compteurs journaliers) et quotas :
+#: n'existent qu'avec l'authentification. En stdio local, seul le
+#: gouverneur d'instance s'applique.
+STORE: Store | None = None
+QUOTAS: QuotaPolicy | None = None
+if SETTINGS.auth_enabled:
+    STORE = Store(Path(SETTINGS.data_dir) / "pandecte.sqlite3")
+    QUOTAS = QuotaPolicy(
+        STORE,
+        user_per_minute=SETTINGS.user_calls_per_minute,
+        user_per_day=SETTINGS.user_calls_per_day,
+        global_per_day=SETTINGS.global_calls_per_day,
+        keys_per_minute_per_ip=SETTINGS.keys_calls_per_minute,
+    )
+
+
+def token_pepper() -> bytes:
+    """Poivre des jetons personnels.
+
+    Exigé en production (``validate_public``). Hors production, un poivre
+    aléatoire par processus est tiré : les jetons émis ne survivent alors pas
+    à un redémarrage, ce qui suffit au développement.
+    """
+    configured = os.environ.get("PANDECTE_TOKEN_PEPPER", "").strip()
+    if configured:
+        return configured.encode("utf-8")
+    return _EPHEMERAL_PEPPER
+
+
+_EPHEMERAL_PEPPER = secrets.token_bytes(32)
 
 SERVER_VERSION = "0.1.0"
 
@@ -99,15 +134,19 @@ def _build_auth_options() -> dict[str, Any]:
 
     from mcp_server.auth import JwksTokenVerifier
 
-    verifier = JwksTokenVerifier(
+    oauth_verifier = JwksTokenVerifier(
         issuer=SETTINGS.oauth_issuer,
         jwks_url=SETTINGS.oauth_jwks_url,
         audience=SETTINGS.oauth_audience,
     )
-    if not SETTINGS.oauth_required_scopes:
-        LOGGER.warning(
-            "auth_scope_gate disabled — jeton valide exigé, aucune portée requise"
-        )
+    verifier = AccessVerifier(
+        store=STORE,
+        pepper=token_pepper(),
+        resource=SETTINGS.resource_url,
+        scopes=SETTINGS.oauth_required_scopes,
+        oauth_verifier=oauth_verifier,
+        personal_keys_enabled=SETTINGS.personal_keys_enabled,
+    )
     auth_settings: dict[str, Any] = {
         "issuer_url": SETTINGS.oauth_issuer,
         "resource_server_url": SETTINGS.resource_url,
@@ -173,15 +212,22 @@ def _pseudonym(principal: str) -> str:
     return hashlib.sha256(principal.encode("utf-8")).hexdigest()[:12]
 
 
-def _current_principal() -> str:
-    """Sujet authentifié de la requête courante, sans jamais lire le jeton."""
+def _current_grant() -> AccessGrant | None:
+    """Accès validé de la requête courante, sans jamais lire le jeton brut."""
     if not SETTINGS.auth_enabled:
-        return "anonyme"
+        return None
     from mcp.server.auth.middleware.auth_context import get_access_token
 
-    from mcp_server.auth import principal_of
+    grant = get_access_token()
+    return grant if isinstance(grant, AccessGrant) else None
 
-    return principal_of(get_access_token())
+
+def _current_principal() -> str:
+    """Sujet de quota de la requête courante."""
+    grant = _current_grant()
+    if grant is None or not grant.subject:
+        return "anonyme"
+    return grant.subject
 
 
 def _current_scopes() -> str:
@@ -211,37 +257,81 @@ _mask_secrets = mask_secrets
 
 
 def _safe_call(operation: Callable[..., dict[str, Any]], *args: Any, **kwargs: Any) -> dict[str, Any]:
-    """Transforme une erreur métier en erreur MCP sans exposer de secret.
+    """Applique le mode d'accès, les quotas et le masquage autour d'un outil.
 
     Le client reçoit un message public — code, phrase actionnable, hôte amont
     — et un identifiant de corrélation. Le détail technique (URL amont
     complète, fragment de corps) va dans le journal sous le même identifiant :
     c'est là, et seulement là, qu'on dépanne.
+
+    En mode « clés personnelles », les identifiants de la requête sont posés
+    pour TOUTE la durée du traitement, gestion d'erreur comprise : le masquage
+    des messages doit encore les connaître au moment où il s'applique.
     """
+    grant = _current_grant()
+    if SETTINGS.auth_enabled and grant is None:
+        raise ToolError("Authentification requise.")
+    if grant is not None and grant.mode == "keys":
+        credentials = use_credentials(grant.credentials)
+    else:
+        # Mode partagé ou stdio local : identifiants de l'environnement.
+        credentials = nullcontext()
+    with credentials:
+        return _guarded_call(grant, operation, *args, **kwargs)
+
+
+def _check_quota(grant: AccessGrant | None) -> None:
+    if grant is None:
+        return
+    if grant.mode == "keys":
+        QUOTAS.check_personal_keys(client_ip())
+    else:
+        QUOTAS.check_shared(grant.subject)
+
+
+def _guarded_call(
+    grant: AccessGrant | None,
+    operation: Callable[..., dict[str, Any]],
+    *args: Any,
+    **kwargs: Any,
+) -> dict[str, Any]:
     started = time.monotonic()
     operation_name = getattr(operation, "__name__", "legal_operation")
     principal = _current_principal()
+    mode = grant.mode if grant is not None else "local"
     try:
-        USER_LIMITER.check(principal)
+        _check_quota(grant)
         with GOVERNOR.slot():
             result = operation(*args, **kwargs)
         LOGGER.info(
-            "tool_call tool=%s principal=%s scopes=%s outcome=success duration_ms=%d",
+            "tool_call tool=%s mode=%s principal=%s scopes=%s outcome=success "
+            "duration_ms=%d",
             operation_name,
+            mode,
             _pseudonym(principal),
             _current_scopes(),
             int((time.monotonic() - started) * 1000),
         )
         return result
+    except QuotaExceeded as exc:
+        LOGGER.warning(
+            "tool_call tool=%s mode=%s principal=%s outcome=quota retry_after=%d",
+            operation_name,
+            mode,
+            _pseudonym(principal),
+            exc.retry_after,
+        )
+        raise ToolError(f"{exc} [retry_after={exc.retry_after}]") from exc
     except RuntimeCapacityError as exc:
         LOGGER.warning("tool_call tool=%s outcome=throttled", operation_name)
         raise ToolError(str(exc)) from exc
     except LegifranceError as exc:
         reference = uuid.uuid4().hex[:8]
         LOGGER.warning(
-            "tool_call tool=%s outcome=upstream_error ref=%s code=%d status=%s "
-            "duration_ms=%d detail=%s",
+            "tool_call tool=%s mode=%s outcome=upstream_error ref=%s code=%d "
+            "status=%s duration_ms=%d detail=%s",
             operation_name,
+            mode,
             reference,
             exc.exit_code,
             exc.http_status if exc.http_status is not None else "-",
@@ -252,6 +342,20 @@ def _safe_call(operation: Callable[..., dict[str, Any]], *args: Any, **kwargs: A
             f"Source officielle non vérifiée (code {exc.exit_code}) : "
             f"{_mask_secrets(str(exc))} [réf. {reference}]"
         ) from exc
+    except ToolError:
+        raise
+    except Exception as exc:
+        # Filet : le message d'une exception imprévue n'est jamais renvoyé tel
+        # quel au client — il pourrait citer une valeur sensible.
+        reference = uuid.uuid4().hex[:8]
+        LOGGER.error(
+            "tool_call tool=%s mode=%s outcome=internal_error ref=%s type=%s",
+            operation_name,
+            mode,
+            reference,
+            type(exc).__name__,
+        )
+        raise ToolError(f"Erreur interne du serveur [réf. {reference}].") from exc
 
 
 if hasattr(server, "custom_route"):
@@ -262,8 +366,42 @@ if hasattr(server, "custom_route"):
     async def health(_request: Request) -> Response:
         """Sonde publique sans donnée interne ni vérification consommatrice d'API."""
         return JSONResponse(
-            {"status": "ok", "version": SERVER_VERSION, "auth": SETTINGS.auth_mode}
+            {
+                "status": "ok",
+                "version": SERVER_VERSION,
+                "auth": SETTINGS.auth_mode,
+                "personal_keys": SETTINGS.auth_enabled and SETTINGS.personal_keys_enabled,
+            }
         )
+
+    _AUTH_SERVER_METADATA: dict[str, Any] = {}
+
+    @server.custom_route(
+        "/.well-known/oauth-authorization-server",
+        methods=["GET"],
+        include_in_schema=False,
+    )
+    async def authorization_server_metadata(_request: Request) -> Response:
+        """Relais des métadonnées du serveur d'autorisation (WorkOS AuthKit).
+
+        Certains clients ignorent les métadonnées RFC 9728 et cherchent celles
+        du serveur d'autorisation sur l'hôte du serveur MCP ; WorkOS recommande
+        de les relayer. Le document est mis en cache une heure ; une panne de
+        l'émetteur rend 502, sans détail.
+        """
+        if not SETTINGS.auth_enabled:
+            return PlainTextResponse("Not configured", status_code=404)
+        cached = _AUTH_SERVER_METADATA.get("document")
+        if cached is None or time.monotonic() >= _AUTH_SERVER_METADATA["expires_at"]:
+            import anyio
+
+            try:
+                cached = await anyio.to_thread.run_sync(_fetch_authorization_metadata)
+            except Exception as exc:  # panne réseau ou document invalide
+                LOGGER.warning("auth_metadata_unavailable reason=%s", type(exc).__name__)
+                return JSONResponse({"error": "issuer_unavailable"}, status_code=502)
+            _AUTH_SERVER_METADATA.update(document=cached, expires_at=time.monotonic() + 3600)
+        return JSONResponse(cached)
 
     @server.custom_route(
         "/.well-known/oauth-protected-resource",
@@ -471,6 +609,24 @@ def get_text(id: str, date: str | None = None) -> dict[str, Any]:
     return _safe_call(legal_tools.get_text, id, date)
 
 
+def _fetch_authorization_metadata() -> dict[str, Any]:
+    import json
+    import urllib.request
+
+    url = f"{SETTINGS.oauth_issuer_base}/.well-known/oauth-authorization-server"
+    with urllib.request.urlopen(url, timeout=5) as response:
+        document = json.load(response)
+    if not isinstance(document, dict) or document.get("issuer") != SETTINGS.oauth_issuer:
+        raise ValueError("métadonnées d'émetteur inattendues")
+    return document
+
+
+def build_http_app(**transport_options: Any):
+    """Application HTTP complète : transport MCP du SDK derrière le garde HTTP."""
+    app = server.streamable_http_app(**transport_options)
+    return HttpGuard(app, trusted_hops=SETTINGS.trusted_proxy_hops)
+
+
 def check_issuer() -> None:
     """Compare l'émetteur configuré à celui que publie le serveur d'autorisation.
 
@@ -487,7 +643,7 @@ def check_issuer() -> None:
         raise RuntimeConfigurationError(
             "--check-issuer exige MCP_AUTH_MODE=oauth."
         )
-    url = f"{SETTINGS.oauth_issuer_base}/.well-known/openid-configuration"
+    url = f"{SETTINGS.oauth_issuer_base}/.well-known/oauth-authorization-server"
     with urllib.request.urlopen(url, timeout=10) as response:
         published = json.load(response).get("issuer")
     if published != SETTINGS.oauth_issuer:
@@ -537,15 +693,19 @@ def main() -> None:
         print(f"Retrait d'urgence Judilibre : {suppressed} identifiant(s) chargé(s).")
         return
     if args.transport == "streamable-http" and MCP_V2:
-        server.run(
-            transport=args.transport,
+        import uvicorn
+
+        uvicorn.run(
+            build_http_app(max_request_body_size=SETTINGS.max_request_body_bytes),
             host=SETTINGS.host,
             port=SETTINGS.port,
-            max_request_body_size=SETTINGS.max_request_body_bytes,
+            log_level=SETTINGS.log_level.lower(),
+            # L'adresse cliente est résolue par HttpGuard, selon
+            # MCP_TRUSTED_PROXY_HOPS ; uvicorn ne doit pas la réécrire.
+            proxy_headers=False,
         )
     else:
         server.run(transport=args.transport)
-
 
 if __name__ == "__main__":
     main()

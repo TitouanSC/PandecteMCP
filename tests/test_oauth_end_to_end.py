@@ -17,7 +17,9 @@ from __future__ import annotations
 import asyncio
 import importlib
 import os
+import shutil
 import sys
+import tempfile
 import time
 import unittest
 import warnings
@@ -38,6 +40,8 @@ from mcp.client.streamable_http import streamable_http_client  # noqa: E402
 from mcp.server.transport_security import TransportSecuritySettings  # noqa: E402
 
 from mcp_server import server as mcp_app  # noqa: E402
+from mcp_server.quotas import QuotaPolicy  # noqa: E402
+from mcp_server.store import Store  # noqa: E402
 
 ISSUER = "https://exemple-idp.eu.auth0.com/"
 PUBLIC_URL = "https://exemple.test"
@@ -96,8 +100,12 @@ class OAuthServerCase(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
+        # Base SQLite du serveur dans un dossier jetable, jamais dans le dépôt.
+        cls._data_dir = tempfile.mkdtemp(prefix="pandecte-test-")
         cls._env = mock.patch.dict(
-            os.environ, dict(OAUTH_ENV, **cls.extra_env), clear=False
+            os.environ,
+            dict(OAUTH_ENV, PANDECTE_DATA_DIR=cls._data_dir, **cls.extra_env),
+            clear=False,
         )
         cls._env.start()
 
@@ -125,6 +133,7 @@ class OAuthServerCase(unittest.TestCase):
         cls._env.stop()
         # Rétablit un serveur non authentifié pour les autres modules de test.
         importlib.reload(mcp_app)
+        shutil.rmtree(cls._data_dir, ignore_errors=True)
 
     # ------------------------------------------------------------------
     # Lecture d'un resultat d'outil
@@ -179,11 +188,11 @@ class OAuthServerCase(unittest.TestCase):
         instance. Sans ce cycle de vie, il ne démarre jamais et tout appel
         d'outil échoue.
         """
-        app = mcp_app.server.streamable_http_app(
-            transport_security=TRANSPORT_SECURITY
-        )
+        # Application complète, garde HTTP compris : celle que lance main().
+        app = mcp_app.build_http_app(transport_security=TRANSPORT_SECURITY)
+        inner = app.inner
         headers = {"Authorization": f"Bearer {token}"} if token else {}
-        async with app.router.lifespan_context(app):
+        async with inner.router.lifespan_context(inner):
             async with httpx2.AsyncClient(
                 transport=httpx2.ASGITransport(app=app),
                 base_url=TRANSPORT_URL,
@@ -370,7 +379,13 @@ class QuotaParUtilisateurTests(OAuthServerCase):
     def setUp(self) -> None:
         # Chaque test repart d'un compteur vide : le quota est glissant sur une
         # minute, donc un test précédent le remplirait pour le suivant.
-        mcp_app.USER_LIMITER._buckets.clear()
+        mcp_app.QUOTAS = QuotaPolicy(
+            Store(":memory:"),
+            user_per_minute=QUOTA_PAR_UTILISATEUR,
+            user_per_day=100,
+            global_per_day=1000,
+            keys_per_minute_per_ip=30,
+        )
 
     def test_le_quota_est_isole_par_sujet(self):
         with mock.patch.object(mcp_app.legal_tools, "search", return_value={}):
@@ -384,7 +399,8 @@ class QuotaParUtilisateurTests(OAuthServerCase):
                 self.token(sub="auth0|alice"), "search", {"query": "x"}
             )
             self.assertTrue(self.en_erreur(depassement))
-            self.assertIn("Quota individuel", str(depassement.content))
+            self.assertIn("Quota par minute", str(depassement.content))
+            self.assertIn("retry_after=", str(depassement.content))
 
             # Un second sujet dispose de son propre quota : le dépassement de
             # l'un ne ferme pas le service à l'autre.
