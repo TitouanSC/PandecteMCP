@@ -15,7 +15,8 @@ services:
     region: frankfurt
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    branch: main
+    # Branche de déploiement : rebrand le temps des essais, main après la fusion.
+    branch: rebrand
     autoDeployTrigger: commit
     # Un disque persistant interdit plusieurs instances : les quotas et le
     # cache supposent de toute façon une instance unique.

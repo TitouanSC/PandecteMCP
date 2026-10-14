@@ -36,7 +36,8 @@ Vérifiez les tarifs en vigueur sur les sites des fournisseurs.
 
 ## 1. Prérequis
 
-- Le dépôt sur GitHub, branche `main` à jour.
+- Le dépôt sur GitHub, à jour sur la branche indiquée par `branch` dans
+  `render.yaml`.
 - Une application PISTE abonnée aux API **Légifrance** et **Judilibre**
   (https://piste.gouv.fr → Applications). Notez son *client ID*, son *client
   secret* et sa clé d'API (*KeyId*). Consultez ses quotas : Applications →
