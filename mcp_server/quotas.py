@@ -174,6 +174,11 @@ class QuotaPolicy:
             raise QuotaExceeded(message, retry)
         self._user_minute.hit(key)
 
+    def usage_today(self, subject: str) -> tuple[int, int]:
+        """Appels consommés aujourd'hui par un sujet, et son plafond journalier."""
+        day, _ = self._today()
+        return self._store.count(f"user:{subject}", day), self._user_per_day
+
     def check_personal_keys(self, client_ip: str) -> None:
         """Mode clés personnelles : seul le débit par adresse IP est limité."""
         key = f"ip:{client_ip}"

@@ -371,6 +371,7 @@ if hasattr(server, "custom_route"):
                 "version": SERVER_VERSION,
                 "auth": SETTINGS.auth_mode,
                 "personal_keys": SETTINGS.auth_enabled and SETTINGS.personal_keys_enabled,
+                "account": SETTINGS.account_enabled,
             }
         )
 
@@ -426,6 +427,19 @@ if hasattr(server, "custom_route"):
                 "bearer_methods_supported": ["header"],
             }
         )
+
+    if SETTINGS.auth_enabled:
+        from mcp_server.account import AccountPages
+
+        #: Pages « Mon compte » (si WORKOS_CLIENT_ID) et « Clé personnelle ».
+        #: La base et les quotas sont relus à chaque requête.
+        ACCOUNT_PAGES = AccountPages(
+            settings=SETTINGS,
+            store=lambda: STORE,
+            quotas=lambda: QUOTAS,
+            pepper=token_pepper,
+        )
+        ACCOUNT_PAGES.register(server)
 
     @server.custom_route(
         "/.well-known/openai-apps-challenge",

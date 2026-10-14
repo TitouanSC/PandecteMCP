@@ -561,7 +561,7 @@ class RuntimeSafetyTests(unittest.TestCase):
         # à chaque montée de version sans rien prouver de plus. Ce qui compte
         # est la forme de la charge et l'absence de toute autre information.
         attendu = (
-            '{"status":"ok","version":"%s","auth":"disabled","personal_keys":false}'
+            '{"status":"ok","version":"%s","auth":"disabled","personal_keys":false,"account":false}'
             % mcp_app.SERVER_VERSION
         ).encode()
         self.assertEqual(attendu, health.body)

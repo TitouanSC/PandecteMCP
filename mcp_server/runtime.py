@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import threading
 import time
 from collections import deque
@@ -18,6 +19,12 @@ DEFAULT_SCOPES: tuple[str, ...] = ()
 
 #: Longueur minimale du poivre des jetons personnels (PANDECTE_TOKEN_PEPPER).
 MIN_PEPPER_LENGTH = 32
+
+#: Forme d'un Client ID WorkOS.
+WORKOS_CLIENT_ID_RE = re.compile(r"^client_[A-Za-z0-9]{10,64}$")
+
+#: URL publique de développement acceptée hors production.
+LOOPBACK_URL_RE = re.compile(r"^http://(localhost|127\.0\.0\.1)(:[0-9]{1,5})?$")
 
 #: Modes d'authentification acceptés à l'entrée du transport HTTP.
 AUTH_MODES: frozenset[str] = frozenset({"disabled", "oauth"})
@@ -148,10 +155,18 @@ class RuntimeSettings:
     #: Nombre de proxys de confiance devant le serveur (1 sur Render) : l'IP
     #: cliente est lue à cette position, depuis la droite, dans X-Forwarded-For.
     trusted_proxy_hops: int = 0
+    #: Client ID WorkOS (public) : active la page « Mon compte ». La connexion
+    #: passe par PKCE ; aucune clé API WorkOS n'est nécessaire au serveur.
+    workos_client_id: str = ""
+    workos_api_base: str = "https://api.workos.com"
 
     @property
     def auth_enabled(self) -> bool:
         return self.auth_mode == "oauth"
+
+    @property
+    def account_enabled(self) -> bool:
+        return self.auth_enabled and bool(self.workos_client_id)
 
     @property
     def resource_url(self) -> str:
@@ -198,7 +213,13 @@ class RuntimeSettings:
         audience = ""
         scopes = _split_scopes(values.get("MCP_OAUTH_REQUIRED_SCOPES"), DEFAULT_SCOPES)
         if auth_mode == "oauth":
-            public_url = _https_url(values, "MCP_PUBLIC_URL")
+            raw_public = values.get("MCP_PUBLIC_URL", "").strip().rstrip("/")
+            if environment != "production" and LOOPBACK_URL_RE.match(raw_public):
+                # Développement : http://localhost:PORT, pour tester la page
+                # de compte contre un environnement WorkOS de test.
+                public_url = raw_public
+            else:
+                public_url = _https_url(values, "MCP_PUBLIC_URL")
             issuer = _https_url(
                 values, "MCP_OAUTH_ISSUER", strip_trailing_slash=False
             )
@@ -213,6 +234,17 @@ class RuntimeSettings:
             audience = values.get("MCP_OAUTH_AUDIENCE", "").strip()
             if not audience:
                 audience = f"{public_url}/mcp"
+
+        workos_client_id = values.get("WORKOS_CLIENT_ID", "").strip()
+        if workos_client_id and not WORKOS_CLIENT_ID_RE.match(workos_client_id):
+            raise RuntimeConfigurationError(
+                "WORKOS_CLIENT_ID doit avoir la forme client_… ."
+            )
+        workos_api_base = (
+            values.get("WORKOS_API_BASE", "").strip().rstrip("/") or "https://api.workos.com"
+        )
+        if not workos_api_base.startswith("https://"):
+            raise RuntimeConfigurationError("WORKOS_API_BASE doit commencer par https://.")
 
         return cls(
             environment=environment,
@@ -250,6 +282,8 @@ class RuntimeSettings:
             personal_keys_enabled=_boolean(values, "MCP_PERSONAL_KEYS_ENABLED", True),
             data_dir=values.get("PANDECTE_DATA_DIR", "data").strip() or "data",
             trusted_proxy_hops=_non_negative_int(values, "MCP_TRUSTED_PROXY_HOPS", 0),
+            workos_client_id=workos_client_id,
+            workos_api_base=workos_api_base,
         )
 
     def validate_public(self, env: Mapping[str, str] | None = None) -> None:

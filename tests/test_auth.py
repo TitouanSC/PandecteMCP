@@ -97,6 +97,32 @@ class AuthSettingsTests(unittest.TestCase):
         with self.assertRaises(RuntimeConfigurationError):
             RuntimeSettings.from_env(env)
 
+    def test_loopback_public_url_only_outside_production(self):
+        for url in ("http://localhost:8765", "http://127.0.0.1:8000/"):
+            env = dict(BASE_ENV, MCP_ENV="development", MCP_PUBLIC_URL=url)
+            self.assertEqual(url.rstrip("/") + "/mcp", RuntimeSettings.from_env(env).resource_url)
+            with self.assertRaises(RuntimeConfigurationError):
+                RuntimeSettings.from_env(dict(env, MCP_ENV="production"))
+        for url in ("http://localhost.evil.example", "http://192.168.1.2:8000"):
+            env = dict(BASE_ENV, MCP_ENV="development", MCP_PUBLIC_URL=url)
+            with self.assertRaises(RuntimeConfigurationError):
+                RuntimeSettings.from_env(env)
+
+    def test_workos_settings(self):
+        settings = RuntimeSettings.from_env(BASE_ENV)
+        self.assertFalse(settings.account_enabled)
+        env = dict(BASE_ENV, WORKOS_CLIENT_ID="client_01ABCDEFGHIJKLMNOP")
+        settings = RuntimeSettings.from_env(env)
+        self.assertTrue(settings.account_enabled)
+        self.assertEqual("https://api.workos.com", settings.workos_api_base)
+        for bad in (
+            {"WORKOS_CLIENT_ID": "sk_test_pas_un_client_id"},
+            {"WORKOS_CLIENT_ID": "client_01ABCDEFGHIJKLMNOP", "WORKOS_API_BASE": "http://api.workos.com"},
+        ):
+            with self.assertRaises(RuntimeConfigurationError) as raised:
+                RuntimeSettings.from_env(dict(BASE_ENV, **bad))
+            self.assertNotIn("sk_test", str(raised.exception))
+
     def test_production_refuses_an_anonymous_public_gateway(self):
         env = dict(BASE_ENV, MCP_AUTH_MODE="disabled")
         settings = RuntimeSettings.from_env(env)
