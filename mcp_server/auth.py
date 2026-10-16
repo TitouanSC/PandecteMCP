@@ -26,6 +26,7 @@ Aucun jeton, aucune charge utile et aucun secret n'est journalisé.
 from __future__ import annotations
 
 import logging
+import re
 import threading
 import time
 from typing import Any, Callable, Iterable
@@ -116,6 +117,21 @@ def _client_identifier(payload: dict[str, Any]) -> str:
         if isinstance(value, (list, tuple)) and value:
             return str(value[0])
     return "client-inconnu"
+
+
+_AUDIENCE_LOG_RE = re.compile(r"[^A-Za-z0-9:/._-]")
+
+
+def _received_audience(token: str) -> str:
+    """Audience d'un jeton refusé, réduite à des caractères sûrs pour le journal."""
+    try:
+        claims = jwt.decode(token, options={"verify_signature": False})
+    except jwt.PyJWTError:
+        return "illisible"
+    value = claims.get("aud")
+    values = value if isinstance(value, (list, tuple)) else [value]
+    cleaned = [_AUDIENCE_LOG_RE.sub("?", str(item))[:120] for item in values[:3]]
+    return ",".join(cleaned) or "absente"
 
 
 class JwksTokenVerifier:
@@ -309,6 +325,17 @@ class JwksTokenVerifier:
             # remonter comme une indisponibilité (WARNING). Le comportement
             # observable ne change pas : verify_token rend toujours None.
             LOGGER.warning("auth_unavailable reason=%s", type(exc).__name__)
+            return None
+        except jwt.InvalidAudienceError as exc:
+            # Audience reçue journalisée : c'est le symptôme d'un indicateur
+            # de ressource absent chez l'émetteur, impossible à diagnostiquer
+            # sans elle. La signature a déjà été vérifiée (PyJWT contrôle les
+            # revendications après) ; l'audience est une URL ou un
+            # identifiant public, assainie et tronquée.
+            LOGGER.info(
+                "auth_rejected reason=%s received_aud=%s",
+                type(exc).__name__, _received_audience(token),
+            )
             return None
         except jwt.PyJWTError as exc:
             # Le motif est journalisé, jamais le jeton ni sa charge utile.

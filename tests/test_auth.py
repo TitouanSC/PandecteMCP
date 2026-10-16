@@ -513,7 +513,21 @@ class JwksTokenVerifierTests(unittest.TestCase):
 
     def test_token_issued_for_another_api_is_refused(self):
         token = _sign(self._payload(aud="https://une-autre-api.example"), self.key)
-        self.assertIsNone(self._verify(token))
+        with self.assertLogs("pandecte.mcp.auth", level="INFO") as journal:
+            self.assertIsNone(self._verify(token))
+        # L'audience reçue est journalisée pour le diagnostic, jamais le jeton.
+        rendu = " ".join(journal.output)
+        self.assertIn("received_aud=https://une-autre-api.example", rendu)
+        self.assertNotIn(token, rendu)
+
+    def test_logged_audience_is_sanitised(self):
+        token = _sign(self._payload(aud="client_x\nfaux=1 " + "a" * 300), self.key)
+        with self.assertLogs("pandecte.mcp.auth", level="INFO") as journal:
+            self._verify(token)
+        rendu = " ".join(journal.output)
+        self.assertNotIn("\n", rendu)
+        self.assertIn("received_aud=client_x?faux?1?", rendu)
+        self.assertLess(len(rendu), 400)
 
     def test_non_canonical_trailing_slash_in_issuer_is_refused(self):
         token = _sign(self._payload(iss=f"{ISSUER}/"), self.key)
