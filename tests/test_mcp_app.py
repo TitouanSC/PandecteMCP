@@ -680,5 +680,32 @@ class McpProtocolTests(unittest.TestCase):
         asyncio.run(exercise())
 
 
+class TransportSecurityTests(unittest.TestCase):
+    """Le nom public du service doit passer la protection DNS rebinding."""
+
+    def middleware(self, public_url: str):
+        from mcp.server.transport_security import TransportSecurityMiddleware
+
+        return TransportSecurityMiddleware(mcp_app.transport_security_for(public_url))
+
+    def test_public_host_and_origin_are_accepted(self):
+        guard = self.middleware("https://pandecte.example.org")
+        self.assertTrue(guard._validate_host("pandecte.example.org"))
+        self.assertTrue(guard._validate_host("pandecte.example.org:443"))
+        self.assertTrue(guard._validate_origin("https://pandecte.example.org"))
+        self.assertTrue(guard._validate_host("localhost:8765"))
+
+    def test_foreign_host_and_origin_are_refused(self):
+        guard = self.middleware("https://pandecte.example.org")
+        self.assertFalse(guard._validate_host("attaquant.example"))
+        self.assertFalse(guard._validate_host("pandecte.example.org.attaquant.example"))
+        self.assertFalse(guard._validate_origin("https://attaquant.example"))
+
+    def test_without_public_url_only_loopback_is_accepted(self):
+        guard = self.middleware("")
+        self.assertTrue(guard._validate_host("127.0.0.1:8000"))
+        self.assertFalse(guard._validate_host("pandecte.example.org"))
+
+
 if __name__ == "__main__":
     unittest.main()

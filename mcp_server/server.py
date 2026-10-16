@@ -14,6 +14,7 @@ import uuid
 from contextlib import nullcontext
 from pathlib import Path
 from typing import Any, Callable, Literal
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "skill" / "scripts"
@@ -30,6 +31,7 @@ except ImportError:  # SDK MCP v1.27, encore largement installé
     from mcp.server.fastmcp import FastMCP as MCPServer
     from mcp.server.fastmcp.exceptions import ToolError
     MCP_V2 = False
+from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 
 from pandecte.config import load_dotenv
@@ -653,8 +655,35 @@ def _fetch_authorization_metadata() -> dict[str, Any]:
     return document
 
 
+LOOPBACK_HOSTS = ["127.0.0.1:*", "localhost:*", "[::1]:*"]
+LOOPBACK_ORIGINS = ["http://127.0.0.1:*", "http://localhost:*", "http://[::1]:*"]
+
+
+def transport_security_for(public_url: str) -> TransportSecuritySettings:
+    """Protection contre le DNS rebinding, ouverte au nom public du service.
+
+    Sans réglage explicite, le SDK suppose un serveur purement local et
+    n'accepte que ``localhost`` : derrière Render ou un tunnel, chaque
+    requête MCP échouerait en 421 « Invalid Host header ».
+    """
+    hosts = list(LOOPBACK_HOSTS)
+    origins = list(LOOPBACK_ORIGINS)
+    if public_url:
+        parsed = urlsplit(public_url)
+        hosts += [parsed.netloc, f"{parsed.hostname}:*"]
+        origins.append(f"{parsed.scheme}://{parsed.netloc}")
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=hosts,
+        allowed_origins=origins,
+    )
+
+
 def build_http_app(**transport_options: Any):
     """Application HTTP complète : transport MCP du SDK derrière le garde HTTP."""
+    transport_options.setdefault(
+        "transport_security", transport_security_for(SETTINGS.public_url)
+    )
     app = server.streamable_http_app(**transport_options)
     return HttpGuard(
         app,
