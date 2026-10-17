@@ -1,17 +1,19 @@
 # État des contrôles — serveur MCP public
 
-Revue sur pièces du serveur MCP déployé, de ses garde-fous et de son rapport
-aux fournisseurs de données. Établi le 31 août 2026, sur l'état du dépôt à
-cette date.
+Revue sur pièces du serveur MCP hébergé, de ses garde-fous et de son rapport
+aux fournisseurs de données. Établi le 18 octobre 2026, sur l'état du dépôt à
+cette date. Il remplace la revue du projet d'origine, faite pour une autre
+architecture (clés du titulaire, émetteur OAuth externe).
 
-Ce document **n'est pas une attestation de conformité**. La configuration des
-consoles Auth0/Render/PISTE et le texte intégral des CGU Légifrance du
-15 décembre 2022 restent à vérifier selon `audit-securite.md`.
+Ce document **n'est pas une attestation de conformité**. Le plan d'audit
+([audit-securite.md](audit-securite.md)) en organise la vérification ; le
+registre CGU ([obligations-cgu.md](obligations-cgu.md)) en porte l'analyse
+contractuelle.
 
-Le principe qui structure tout ce qui suit : **les clés PISTE appartiennent au
-titulaire du service, jamais à l'utilisateur final.** Une passerelle publique
-consomme les quotas du titulaire sous sa seule responsabilité. Chaque mesure
-ci-dessous existe pour que cette responsabilité reste tenable.
+Le principe qui structure tout ce qui suit : **le service n'a aucune clé PISTE
+à lui.** Chaque utilisateur consulte les API avec ses propres identifiants,
+qu'il confie au service le temps de chaque appel. Chaque mesure ci-dessous
+existe pour que cette confiance soit tenable.
 
 ---
 
@@ -19,172 +21,94 @@ ci-dessous existe pour que cette responsabilité reste tenable.
 
 | Point | État | Où c'est établi |
 |---|---|---|
-| Secrets hors du dépôt | ✅ | `.gitignore` exclut `.env` et `.env.*`, sauf `.env.example` |
-| Aucun secret suivi par Git | ✅ | Recherche par motifs sur l'arbre suivi : seuls des espaces réservés (`votre_client_secret`) et des valeurs de test |
-| Fixtures de test sans valeur réelle | ✅ | `tests/fixtures/sample.env` ne contient que deux variables factices |
-| Secrets absents du manifeste MCP | ✅ | Contrôlé en CI par `check_plugin.py`, qui échoue si `.mcp.json` nomme une variable sensible |
-| Secrets masqués dans les erreurs | ✅ | `_safe_call()` remplace les valeurs de `LEGIFRANCE_CLIENT_ID`, `LEGIFRANCE_CLIENT_SECRET`, `JUDILIBRE_KEY_ID` et `PISTE_KEY_ID` par `[secret masqué]` avant de propager une erreur au client |
-| Secrets absents des journaux | ✅ | Aucun jeton ni charge utile n'est journalisé ; un refus est tracé sous forme de nom de classe d'erreur ; le détail d'une erreur amont est journalisé après le même masquage que la réponse |
-| Détail amont réservé au journal | ✅ | Depuis le 1er septembre 2026, le client reçoit un message public stable (code, phrase actionnable, hôte amont) et un identifiant de corrélation ; l'URL amont complète et le fragment de corps de réponse vont dans le journal sous cet identifiant |
-
-En production, les secrets vivent exclusivement dans les variables
-d'environnement de l'hébergeur. Le démarrage échoue si les identifiants
-Légifrance ou Judilibre manquent, ou si l'environnement PISTE n'est pas `prod`.
+| Aucun secret suivi par Git | ✅ | `.gitignore` exclut `.env` et `.env.*` (sauf `.env.example`) et l'état local de Wrangler ; recherche de motifs et des valeurs réelles connues dans tout l'historique avant chaque push |
+| Aucun identifiant PISTE sur le serveur | ✅ | Retirés du processus au démarrage, et démarrage refusé en production s'ils sont présents (`test_owner_credentials_are_removed_at_startup`, `test_production_errors_never_echo_values`) |
+| Identifiants des utilisateurs jamais stockés ni journalisés | ✅ | Scellés dans les jetons ; `test_secrets_never_reach_the_log`, `test_credentials.py` |
+| Seul secret de l'instance : la clé de scellement | ✅ | `PANDECTE_SEAL_KEY`, exigée en production, rotation par `PANDECTE_SEAL_KEY_PREVIOUS` |
+| Secrets absents du manifeste MCP | ✅ | `check_plugin.py` échoue si `.mcp.json` nomme une variable sensible |
+| Secrets masqués dans les erreurs | ✅ | Identifiants de la requête masqués avant toute réponse ou journal (`test_server_error_masks_request_credentials`) |
+| Détail amont réservé au journal | ✅ | Le client reçoit un message public et un identifiant de corrélation ; le détail va au journal sous cet identifiant |
 
 ## 2. Authentification
 
 | Contrôle | État |
 |---|---|
-| Signature vérifiée contre le JWKS de l'émetteur | ✅ RS256 uniquement, valeur exacte du tenant |
-| Algorithmes symétriques et `none` refusés | ✅ Le serveur ne partage aucun secret avec l'émetteur |
-| `iss` contrôlé | ✅ Égalité stricte avec l'émetteur canonique configuré |
-| `aud` lié à la ressource MCP (RFC 8707) | ✅ Un jeton émis pour une autre API est refusé, ce qui bloque la réutilisation d'un jeton dérobé ailleurs |
-| `exp` / `nbf` contrôlés | ✅ 30 secondes de tolérance d'horloge |
-| `sub` exigé | ✅ Sans sujet, aucun quota n'est imputable : le jeton est refusé |
-| Portées | ✅ Vérifiées par le transport, avec opt-out explicite documenté (voir §5) |
-| Passerelle anonyme impossible en production | ✅ `validate_public()` refuse le démarrage si `MCP_AUTH_MODE` ne vaut pas `oauth` |
+| Le serveur est son propre serveur d'autorisation (OAuth 2.1, PKCE S256, enregistrement dynamique) | ✅ Protocole porté par le SDK MCP |
+| Jetons chiffrés et authentifiés, liés à leur usage, expirants | ✅ AES-256-GCM ; accès 1 h, renouvellement 90 jours glissants, code 5 min |
+| Jeton lié à son client et à la ressource MCP | ✅ Ressource étrangère refusée ; `validate_token_resource` actif |
+| Code d'autorisation à usage unique | ✅ Par instance ; PKCE en complément |
+| Identifiants vérifiés auprès de PISTE avant émission d'un code | ✅ Refus explicite si PISTE les rejette |
+| Page de connexion protégée | ✅ Origine contrôlée, CSP à nonce, aucun cadre, destinataire affiché |
+| Passerelle anonyme impossible en production | ✅ `validate_public()` exige `MCP_AUTH_MODE=piste` |
 
-Ces contrôles sont couverts par `tests/test_auth.py` (vérificateur isolé) et
-`tests/test_oauth_end_to_end.py` (chaîne complète, transport compris).
+Ces contrôles sont couverts par `test_sealed.py`, `test_piste_oauth.py`,
+`test_connexion.py` et `test_piste_end_to_end.py` (chaîne complète, transport
+compris).
 
 ## 3. Limitation et robustesse
 
 | Mesure | Valeur par défaut | Rôle |
 |---|---|---|
 | Concurrence maximale | 8 | Protège l'instance |
-| Débit d'instance | 120 appels/min | Protège les quotas PISTE globalement |
-| Quota par utilisateur | 20 appels/min | Empêche un seul compte de consommer les quotas du titulaire |
+| Débit d'instance | 120 appels/min | Protège l'instance |
+| Débit par adresse IP | 30 appels/min | Limite les abus ; IP lue dans `cf-connecting-ip` sur Render |
 | Attente en file | 2 s | Refuse vite plutôt que d'accumuler |
 | Taille maximale de requête | 1 Mio | Borne l'entrée |
 | Délai des appels sortants | 30 s | Borne la sortie |
-| Reprise sur erreur transitoire | 2 au plus, budget 8 s | Absorbe un `429`/`5xx` ponctuel des API amont sans contourner les plafonds ci-dessus ; `Retry-After` respecté, aucun autre `4xx` rejoué |
+| Reprise sur erreur transitoire | 2 au plus, budget 8 s | Absorbe un `429`/`5xx` ponctuel des API amont ; `Retry-After` respecté, aucun autre `4xx` rejoué |
 
-Le quota par utilisateur est indexé sur le `sub` du jeton et purge ses
-compteurs inactifs à chaque passage, ce qui borne l'empreinte mémoire sans
-tâche de fond. Un dépassement produit un message explicite, distinct d'une
-erreur de source.
+Chaque utilisateur consomme son propre quota PISTE : aucun quota partagé n'est
+à protéger. Un dépassement produit un message explicite, distinct d'une erreur
+de source.
 
 ## 4. Journalisation et vie privée
 
-Le journal métier (`pandecte.mcp`) est la seule trace permettant de
-rattacher un appel d'outil à un utilisateur — donc de tenir l'engagement
-d'imputabilité pris envers PISTE. Il reste en `INFO` même lorsque l'image
-tourne en `WARNING`.
+Le journal métier (`pandecte.mcp`) reste en `INFO` même lorsque l'image tourne
+en `WARNING`. Chaque appel d'outil y porte l'outil, l'issue, la durée, l'usage
+du cache et une empreinte tronquée dérivée des identifiants de l'utilisateur,
+non réversible et renouvelée à chaque redémarrage. Chaque connexion n'y laisse
+que son issue. Jamais d'identifiant, de jeton, d'argument ni de résultat.
 
-Chaque ligne porte l'outil, l'issue, la durée et une **empreinte SHA-256
-tronquée à 12 caractères** du sujet. Jamais le jeton, jamais l'identifiant brut
-du compte. Cette empreinte est une donnée personnelle pseudonymisée, et non
-anonyme : sa finalité, son accès, sa rétention et sa suppression restent donc
-encadrés par la politique de confidentialité.
+## 5. Dépendances et image
 
-## 5. Contrôle de portée désactivé — choix assumé
+`mcp`, `PyJWT[crypto]` et `cryptography` sont **épinglés à une version
+exacte**. L'image de base est épinglée par digest et ses paquets système mis à
+niveau pendant le build ; le conteneur tourne sans privilège et **sans
+disque**. La CI produit un SBOM CycloneDX, audite les dépendances Python
+(`pip-audit --strict`), inventorie les CVE élevées et critiques de l'image et
+bloque celles disposant d'un correctif (Trivy).
 
-`MCP_OAUTH_REQUIRED_SCOPES=-` désactive **uniquement** l'exigence de portée.
-L'authentification reste obligatoire : un jeton valide est toujours exigé, et
-l'imputabilité repose sur son sujet.
+## 6. Rapport aux fournisseurs
 
-Ce réglage existe pour un cas réel : un client qui n'annonce pas la portée
-personnalisée dans sa requête d'autorisation alors que l'authentification, elle,
-aboutit. Le refus se manifeste par un `403` après une authentification réussie.
-
-C'est une **configuration de compatibilité**, toujours en place — mais ce n'est
-plus un point clos. Des deux motifs qui le fermaient, un seul tient.
-
-*Il tient* : le SDK construit la métadonnée avec
-`scopes_supported=auth.required_scopes` et remet **la même liste** au middleware
-d'autorisation (`mcp/server/lowlevel/server.py:817`). Annoncer et exiger sont
-indissociables, si bien qu'une bascule serait un jour de bascule et non une
-migration progressive.
-
-*Il est tombé le 4 septembre 2026* : il était écrit qu'une portée d'API
-personnalisée, absente du document de découverte de l'émetteur, ne serait jamais
-demandée. Or un client MCP ne consulte ce document qu'**en troisième position**,
-après l'en-tête `WWW-Authenticate` et après `scopes_supported` des métadonnées
-de ressource protégée que ce serveur publie lui-même
-(`mcp/client/auth/utils.py:109-119`). Y poser `legal:read` la ferait donc
-demander.
-
-**Le raisonnement complet et à jour, avec le chemin de bascule ordonné, son
-contrôle négatif et son retour arrière, tient dans un seul document :
-[exploitation.md](exploitation.md), incident n° 4.** La présente section n'en
-est qu'un renvoi, afin qu'une révision future n'ait qu'un endroit à corriger.
-Le journal métier porte les portées reçues (`scopes=`) : c'est cette mesure,
-non une préférence, qui tranchera.
-
-Aucune valeur de cette variable ne peut désactiver l'authentification :
-`MCP_AUTH_MODE` seul en décide, et la production refuse `disabled`.
-
-## 6. Dépendances et image
-
-`mcp` et `PyJWT[crypto]` sont **épinglés à une version exacte**. Ce n'est pas
-une précaution de style : le comportement des métadonnées RFC 9728 dépend de la
-version du SDK, et une plage de versions avait fait diverger poste de
-développement, CI et production sur le point précis dont dépend le connecteur
-ChatGPT. L'image de base est épinglée par digest et ses paquets système sont mis
-à niveau pendant le build. La CI affiche les versions, produit un SBOM
-CycloneDX, audite les dépendances Python, inventorie toutes les CVE
-élevées/critiques de l'image et bloque celles disposant d'un correctif. Une CVE
-sans correctif reste visible et constitue un verrou de publication jusqu'à son
-analyse et son acceptation datée ; Dependabot suit Python, Actions et Docker.
-
-## 7. Rapport aux fournisseurs
-
-**Les clés restent côté serveur.** Aucune clé Légifrance, Judilibre ou PISTE
-n'est transmise au client MCP, ni exposée dans une réponse d'outil, ni
-mentionnée dans un message d'erreur. Les conditions d'utilisation le disent
-explicitement : les clés sont réservées à l'application et ne confèrent aucun
-droit d'accès direct à l'utilisateur.
-
-**Aucune mutualisation implicite.** Chaque utilisateur authentifié dispose de
-son propre quota. Le service n'offre pas un accès anonyme partagé aux quotas du
-titulaire — la production refuse d'ailleurs de démarrer dans cette
-configuration.
-
-**Limites de débit à valider.** Les quotas d'instance et par utilisateur
-refusent un dépassement local, mais leur alignement sur les quotas PISTE réels
-n'est pas encore prouvé. Le limiteur étant local et réinitialisé au redémarrage,
-la production doit rester à un réplica jusqu'à l'ajout d'un quota global.
+**Clés de l'utilisateur, en son nom.** Le service agit comme intermédiaire
+technique sur mandat de l'utilisateur, qui a lui-même accepté les CGU de PISTE.
+L'interprétation de III.3 (Légifrance) et XI.C (Judilibre) dans ce modèle
+n'est pas confirmée par les producteurs : voir le registre CGU, § 4.
 
 **Aucune prétention d'officialité.** Les conditions d'utilisation portent une
-clause de non-affiliation explicite : le service n'est ni édité, ni approuvé,
-ni labellisé par la DILA, Légifrance, la Cour de cassation, Judilibre ou une
-autre administration.
+clause de non-affiliation explicite.
 
 **Vérifiabilité.** La méthode du skill impose de lire la source avant de la
 citer, de signaler un échec d'accès comme une source non vérifiée, et de dater
-explicitement la version consultée (`as_of_date`, `date_basis`). Tout résultat
-reste vérifiable dans la source primaire par son identifiant et son URL.
+explicitement la version consultée (`as_of_date`, `date_basis`). Le cache
+signale ses réponses (`from_cache`) avec leur date de récupération réelle.
 
-**Licences.** Les données récupérées restent soumises aux droits et licences de
-leurs producteurs, notamment la Licence Ouverte 2.0. Le code et le skill sont
-sous CC BY-SA 4.0. La conformité contractuelle Légifrance ne sera conclue
-qu'après récupération et contrôle de la CGU 2022 actuellement référencée par
-PISTE ; le PDF 2020 n'est conservé que comme archive.
+**Licences.** Les données récupérées restent soumises à la Licence Ouverte 2.0
+et aux conditions de réutilisation de Légifrance et Judilibre. Le code et le
+skill sont sous CC BY-SA 4.0.
 
 ---
 
 ## Points à surveiller
 
-Ce qui suit n'est pas un défaut constaté, mais ce qu'un exploitant doit garder
-sous l'œil.
-
-1. **Écriture de l'émetteur.** C'est le point de rupture historique du
-   connecteur. À revérifier après tout changement d'émetteur, de locataire
-   Auth0 ou de domaine — `python tests/check_oauth_metadata.py <url> --discover`.
-2. **Dimensionnement des quotas.** Les valeurs par défaut n'ont pas été
-   confrontées à une charge réelle. À réviser dès que le service compte
-   plusieurs utilisateurs actifs, en regard des limites PISTE effectives.
-3. **Portée désactivée.** Tant que `MCP_OAUTH_REQUIRED_SCOPES=-` est en place,
-   tout jeton valide émis par l'émetteur pour cette audience ouvre l'accès. La
-   granularité par portée est perdue ; seule l'audience discrimine. Le journal
-   porte les portées reçues : relire `scopes=` avant de trancher à nouveau.
-4. **Mémoire du limiteur.** Les compteurs vivent en mémoire de processus : un
-   redémarrage remet les quotas à zéro, et une exécution multi-instance ne les
-   partagerait pas. Acceptable pour une instance unique, à revoir en cas de
-   passage à l'échelle.
-5. **Épinglage.** Une version figée doit être **suivie**, sans quoi elle
-   devient une dette de sécurité. Prévoir une revue des mises à jour du SDK MCP
-   et de PyJWT.
-6. **Journaux de l'hébergeur.** La pseudonymisation vaut pour le journal métier
-   du service. Les journaux d'accès de l'hébergeur (adresses IP, en-têtes) sont
-   hors de ce périmètre et relèvent de sa propre politique.
+1. **Clé de scellement.** Seul secret de l'instance : comptes Render et GitHub
+   à protéger par double authentification.
+2. **Enregistrement dynamique ouvert.** Surveiller dans le journal les
+   connexions vers des domaines inconnus ; une liste blanche reste possible.
+3. **Épinglage.** Une version figée doit être suivie : revue régulière des
+   mises à jour du SDK MCP, de PyJWT et de `cryptography`.
+4. **Journaux de l'hébergeur.** Les journaux d'accès de Render et de Cloudflare
+   (adresses IP, en-têtes) sont hors du journal métier et relèvent de leurs
+   propres politiques.
+5. **Métadonnées OAuth.** À revérifier après tout changement d'adresse —
+   `python tests/check_oauth_metadata.py <url> --issuer <url>`.
