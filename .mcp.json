@@ -2,7 +2,7 @@
   "mcpServers": {
     "pandecte": {
       "type": "http",
-      "url": "https://pandecte-a-configurer.invalid/mcp"
+      "url": "https://pandecte-mcp.onrender.com/mcp"
     }
   }
 }

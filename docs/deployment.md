@@ -98,8 +98,8 @@ site de Render.
    `https://<service>.onrender.com/cle`, puis
    `claude mcp add --transport http pandecte https://<service>.onrender.com/mcp --header "Authorization: Bearer pk1.…"`.
 
-Enfin, reportez l'URL réelle dans `.mcp.json` et dans les manifests du dépôt
-(valeur provisoire : `https://pandecte-a-configurer.invalid/mcp`).
+Enfin, reportez l'URL réelle dans `.mcp.json`. Celui du dépôt pointe vers
+l'instance publique du projet, `https://pandecte-mcp.onrender.com/mcp`.
 
 ## Variables d'environnement
 
