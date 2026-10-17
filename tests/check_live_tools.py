@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Valide les six outils contre le service déployé, avec un vrai jeton.
+"""Valide les huit outils contre le service déployé, avec une vraie clé.
 
 Cette sonde couvre la part automatisable de la validation de bout en bout :
-découverte puis appel des six outils, lectures avec texte et provenance
+découverte puis appel des huit outils, lectures avec texte et provenance
 officielle, datation explicite, absence non inventée et contrôle anti-secret.
 Elle ne remplace pas le parcours ChatGPT — seul celui-ci prouve qu'un
 utilisateur peut se connecter — mais elle en retire tout ce qui n'a pas besoin
@@ -379,7 +379,7 @@ async def sonder(url: str, token: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Valide les six outils contre le service déployé"
+        description="Valide les huit outils contre le service déployé"
     )
     parser.add_argument(
         "url",
@@ -411,7 +411,7 @@ def main() -> int:
         print(f"❌ {type(exc).__name__} ; détail technique volontairement masqué")
         return 1
 
-    print("\n✅ Sonde complète des six outils validée contre la production.")
+    print("\n✅ Sonde complète des huit outils validée contre la production.")
     return 0
 
 

@@ -165,5 +165,29 @@ class VerifyFailureBranchesTests(unittest.TestCase):
         challenge_mock.assert_not_called()
 
 
+class DiscoveryOrderTests(unittest.TestCase):
+    """Les métadonnées OAuth (RFC 8414) d'abord, OpenID à défaut."""
+
+    def test_oauth_metadata_is_read_first(self):
+        with mock.patch.object(verifie, "_get_json", return_value={"issuer": EMETTEUR}) as get:
+            self.assertEqual(EMETTEUR, verifie._discovered_issuer(EMETTEUR))
+        get.assert_called_once_with(f"{EMETTEUR}/.well-known/oauth-authorization-server")
+
+    def test_openid_configuration_is_the_fallback(self):
+        import urllib.error
+
+        absent = urllib.error.HTTPError(EMETTEUR, 404, "Not Found", {}, None)
+        with mock.patch.object(verifie, "_get_json", side_effect=[absent, {"issuer": EMETTEUR}]):
+            self.assertEqual(EMETTEUR, verifie._discovered_issuer(EMETTEUR))
+
+    def test_no_discovery_document_is_a_metadata_error(self):
+        import urllib.error
+
+        absent = urllib.error.HTTPError(EMETTEUR, 404, "Not Found", {}, None)
+        with mock.patch.object(verifie, "_get_json", side_effect=[absent, absent]):
+            with self.assertRaises(verifie.MetadataError):
+                verifie._discovered_issuer(EMETTEUR)
+
+
 if __name__ == "__main__":
     unittest.main()

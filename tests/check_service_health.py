@@ -139,10 +139,10 @@ def sonder(base_url: str) -> dict:
         rapport["auth"] = (charge_chaud or {}).get("auth")
         if not rapport["version"]:
             rapport["defauts"].append("version absente de /health au second appel")
-        if rapport["auth"] != "oauth":
+        if rapport["auth"] != "piste":
             rapport["defauts"].append(
                 "authentification au second appel en mode "
-                f"{rapport['auth']!r} au lieu de « oauth »"
+                f"{rapport['auth']!r} au lieu de « piste »"
             )
 
     # Le second appel ne vaut confirmation que s'il a réellement abouti : un

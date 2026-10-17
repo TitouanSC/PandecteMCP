@@ -10,7 +10,7 @@ S'utilise aussi bien contre un serveur local, avec un émetteur factice, que
 contre la production :
 
     python tests/check_oauth_metadata.py http://127.0.0.1:8000 \\
-        --issuer https://exemple.eu.auth0.com/
+        --issuer https://pandecte.example.org
 
     python tests/check_oauth_metadata.py https://<votre-serveur> \\
         --discover
@@ -54,6 +54,19 @@ def _metadata_of(url: str) -> tuple[str, str]:
     if not isinstance(resource, str) or not resource:
         raise MetadataError(f"resource absent ou vide : {url}")
     return str(servers[0]), resource
+
+
+def _discovered_issuer(base: str) -> str | None:
+    """Émetteur publié par le document de découverte du serveur d'autorisation."""
+    last_error: Exception | None = None
+    for path in ("oauth-authorization-server", "openid-configuration"):
+        try:
+            return _get_json(f"{base}/.well-known/{path}").get("issuer")
+        except urllib.error.HTTPError as exc:
+            if exc.code != 404:
+                raise
+            last_error = exc
+    raise MetadataError(f"aucun document de découverte publié sous {base} ({last_error})")
 
 
 def _expected_metadata_url(resource: str) -> str:
@@ -115,11 +128,10 @@ def verify(base_url: str, expected_issuer: str | None, discover: bool) -> None:
 
     if discover:
         # Le document de découverte fait autorité. Il se lit sur la base
-        # tronquée : la barre finale y produirait une double barre.
-        published = _get_json(
-            f"{racine.rstrip('/')}/.well-known/openid-configuration"
-        ).get("issuer")
-        expected_issuer = str(published)
+        # tronquée : la barre finale y produirait une double barre. Les
+        # métadonnées OAuth (RFC 8414) d'abord, celles d'OpenID à défaut : un
+        # serveur d'autorisation OAuth pur ne publie que les premières.
+        expected_issuer = str(_discovered_issuer(racine.rstrip("/")))
 
     if expected_issuer is not None and racine != expected_issuer:
         raise MetadataError(

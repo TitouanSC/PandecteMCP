@@ -96,7 +96,7 @@ signification, qualité générale). Inclut une sonde d'hallucination
 python tests/test_tools.py
 ```
 
-`test_mcp_app.py` couvre le contrat des six outils, le masquage des secrets,
+`test_mcp_app.py` couvre le contrat des huit outils, le masquage des secrets,
 les limites de capacité, la configuration de production, les annotations et
 une session MCP `stdio` réelle. `test_deployment.py` contrôle le paquet Docker
 sans lancer de conteneur.
@@ -117,7 +117,7 @@ réseau ni secret réel :
   l'environnement doivent être retirés au démarrage et jamais utilisés.
 
 Le CI démarre en plus le serveur Streamable HTTP, vérifie `/health`, initialise
-une vraie session sur `/mcp`, découvre les six outils, puis construit l'image
+une vraie session sur `/mcp`, découvre les huit outils, puis construit l'image
 Docker. La même sonde HTTP peut viser un déploiement de test :
 
 ```bash
@@ -137,26 +137,24 @@ de découverte :
 python tests/check_oauth_metadata.py https://domaine.example --discover
 ```
 
-`check_live_tools.py` valide les **six outils contre le service déployé**, avec
-un vrai jeton : découverte et annotations, appel effectif de chacun des six,
+`check_live_tools.py` valide les **outils contre le service déployé**, avec
+une vraie clé personnelle `pk1.…` : découverte et annotations, appel effectif de chacun des huit,
 latence des premiers appels Légifrance et Judilibre, lectures avec texte,
 datation, provenance, parcours `search → fetch` et article inexistant. Lorsque
 les valeurs des clés fournisseur existent localement, la sonde vérifie aussi
 qu'elles ne sont pas renvoyées ; sinon elle avertit explicitement que cette
-comparaison n'a pas pu être faite. Le jeton est lu dans `MCP_ACCESS_TOKEN` —
-jamais en argument — et n'est ni affiché ni écrit.
+comparaison n'a pas pu être faite. La clé est lue dans `MCP_ACCESS_TOKEN` —
+jamais en argument — et n'est ni affichée ni écrite.
 
 ```bash
-export MCP_ACCESS_TOKEN="…"
-python tests/check_live_tools.py
+export MCP_ACCESS_TOKEN="pk1.…"
+python tests/check_live_tools.py https://pandecte-mcp.onrender.com/mcp
 ```
 
-Sans jeton local, le workflow manuel **Sonde fonctionnelle**
+Sans clé locale, le workflow manuel **Sonde fonctionnelle**
 (`.github/workflows/sonde-fonctionnelle.yml`) exécute le même parcours depuis
-GitHub. Il ne stocke pas de jeton — un jeton expire, les identifiants non : les
-secrets de dépôt `AUTH0_CLIENT_ID` et `AUTH0_CLIENT_SECRET` sont échangés contre
-un jeton neuf à chaque exécution. Il n'est pas planifié : chaque exécution
-consomme le quota PISTE.
+GitHub, avec la clé enregistrée dans le secret de dépôt `PANDECTE_PROBE_KEY`.
+Il n'est pas planifié : chaque exécution consomme le quota PISTE de cette clé.
 
 `check_service_health.py` est la sonde d'**exploitation courante** : latence
 de `/health`, version et mode d'authentification annoncés, plus les contrôles
@@ -165,13 +163,12 @@ quota, et n'exige aucun jeton. Sa sortie `--json` tient sur une ligne, faite
 pour être accumulée — une dérive de latence ne se voit que sur une série.
 
 ```bash
-python tests/check_service_health.py
-python tests/check_service_health.py --json >> surveillance.jsonl
+python tests/check_service_health.py https://pandecte-mcp.onrender.com
+python tests/check_service_health.py https://pandecte-mcp.onrender.com --json >> surveillance.jsonl
 ```
 
-Cette sonde n'est **pas** jouée en CI : elle exige un jeton et consomme le
-quota PISTE du titulaire. Elle sert la validation de bout en bout décrite dans
-`docs/validation-chatgpt.md`.
+La sonde fonctionnelle n'est **pas** jouée en CI : elle exige une clé et
+consomme du quota PISTE. Voir `docs/exploitation.md` § 1.
 
 ## 4. Contrôles statiques (CI)
 
