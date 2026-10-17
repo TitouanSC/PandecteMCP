@@ -38,10 +38,10 @@ from pandecte.config import load_dotenv
 from pandecte.credentials import mask_secrets, use_credentials
 from pandecte.errors import LegifranceError
 from pandecte import tools as legal_tools
-from mcp_server.access import AccessGrant, AccessVerifier
+from mcp_server.access import AccessGrant
 from mcp_server.cache import ResponseCache
 from mcp_server.http_guard import HttpGuard, client_ip
-from mcp_server.quotas import QuotaExceeded, QuotaPolicy
+from mcp_server.quotas import IpRateLimit, QuotaExceeded
 from mcp_server.store import Store
 from mcp_server.runtime import (
     OWNER_CREDENTIAL_VARIABLES,
@@ -53,9 +53,10 @@ from mcp_server.runtime import (
 
 load_dotenv(script_dir=SCRIPTS)
 SETTINGS = RuntimeSettings.from_env()
-#: Mode piste : les identifiants PISTE du titulaire sont retirés du processus
-#: dès le démarrage, pour qu'aucun chemin de code ne puisse s'en servir. Seule
-#: leur présence est retenue, pour que la validation de production la refuse.
+#: Serveur hébergé : les identifiants PISTE du titulaire sont retirés du
+#: processus dès le démarrage, pour qu'aucun chemin de code ne puisse s'en
+#: servir. Seule leur présence est retenue, pour que la validation de
+#: production la refuse.
 _OWNER_CREDENTIALS_SEEN: dict[str, str] = {}
 if SETTINGS.auth_mode == "piste":
     for _name in OWNER_CREDENTIAL_VARIABLES:
@@ -79,27 +80,15 @@ GOVERNOR = RequestGovernor(
     SETTINGS.queue_timeout_seconds,
 )
 
-#: Base SQLite (jetons personnels hachés, compteurs journaliers) et quotas :
-#: n'existent qu'avec l'authentification. En stdio local, seul le
-#: gouverneur d'instance s'applique.
+#: Cache des réponses (SQLite en mémoire vive) et limite de débit par IP :
+#: n'existent qu'avec l'authentification. En local, seul le gouverneur
+#: d'instance s'applique.
 STORE: Store | None = None
-QUOTAS: QuotaPolicy | None = None
+RATE_LIMIT: IpRateLimit | None = None
 CACHE: ResponseCache | None = None
 if SETTINGS.auth_enabled:
-    # Mode piste : rien à conserver d'un redémarrage à l'autre (ni jeton, ni
-    # quota partagé) ; la base ne sert qu'au cache, en mémoire vive.
-    STORE = Store(
-        ":memory:"
-        if SETTINGS.auth_mode == "piste"
-        else Path(SETTINGS.data_dir) / "pandecte.sqlite3"
-    )
-    QUOTAS = QuotaPolicy(
-        STORE,
-        user_per_minute=SETTINGS.user_calls_per_minute,
-        user_per_day=SETTINGS.user_calls_per_day,
-        global_per_day=SETTINGS.global_calls_per_day,
-        keys_per_minute_per_ip=SETTINGS.keys_calls_per_minute,
-    )
+    STORE = Store(":memory:")
+    RATE_LIMIT = IpRateLimit(SETTINGS.calls_per_minute_per_ip)
     CACHE = ResponseCache(
         STORE,
         text_ttl=SETTINGS.cache_text_ttl,
@@ -107,22 +96,6 @@ if SETTINGS.auth_enabled:
         max_bytes=SETTINGS.cache_max_mb * 1024 * 1024,
         suppressed=legal_tools._suppressed_decision_ids,
     )
-
-
-def token_pepper() -> bytes:
-    """Poivre des jetons personnels.
-
-    Exigé en production (``validate_public``). Hors production, un poivre
-    aléatoire par processus est tiré : les jetons émis ne survivent alors pas
-    à un redémarrage, ce qui suffit au développement.
-    """
-    configured = os.environ.get("PANDECTE_TOKEN_PEPPER", "").strip()
-    if configured:
-        return configured.encode("utf-8")
-    return _EPHEMERAL_PEPPER
-
-
-_EPHEMERAL_PEPPER = secrets.token_bytes(32)
 
 
 def seal_keys() -> tuple[bytes, tuple[bytes, ...]]:
@@ -164,58 +137,18 @@ def _load_suppression_list() -> int:
     return len(loaded)
 
 
-def _build_auth_options() -> dict[str, Any]:
-    """Configure le serveur en Resource Server OAuth 2.1, si demandé.
-
-    L'import du vérificateur reste local : le transport stdio, utilisé pour
-    un usage personnel, n'a alors besoin ni de PyJWT ni d'un émetteur.
-    """
-    if not SETTINGS.auth_enabled:
-        return {}
-    if SETTINGS.auth_mode == "piste":
-        return _build_piste_auth_options()
-
-    from mcp.server.auth.settings import AuthSettings
-
-    from mcp_server.auth import JwksTokenVerifier
-
-    oauth_verifier = JwksTokenVerifier(
-        issuer=SETTINGS.oauth_issuer,
-        jwks_url=SETTINGS.oauth_jwks_url,
-        audience=SETTINGS.oauth_audience,
-    )
-    verifier = AccessVerifier(
-        store=STORE,
-        pepper=token_pepper(),
-        resource=SETTINGS.resource_url,
-        scopes=SETTINGS.oauth_required_scopes,
-        oauth_verifier=oauth_verifier,
-        personal_keys_enabled=SETTINGS.personal_keys_enabled,
-    )
-    auth_settings: dict[str, Any] = {
-        "issuer_url": SETTINGS.oauth_issuer,
-        "resource_server_url": SETTINGS.resource_url,
-        "required_scopes": list(SETTINGS.oauth_required_scopes),
-    }
-    # SDK >= 2.2.0 : laissé vide, ce champ lève un MCPDeprecationWarning et
-    # passera à True en 3.0 (refus de tout jeton dont `resource` diffère de
-    # `resource_server_url`). Le vérificateur contrôle déjà `aud` contre
-    # l'audience configurée — un identifiant d'API Auth0 qui n'est pas
-    # forcément l'URL de ressource —, comme le recommande la documentation du
-    # SDK dans ce cas : False, explicitement. Champ absent des SDK antérieurs.
-    if "validate_token_resource" in AuthSettings.model_fields:
-        auth_settings["validate_token_resource"] = False
-    return {
-        "token_verifier": verifier,
-        "auth": AuthSettings(**auth_settings),
-    }
-
 PISTE_PROVIDER = None
 
 
-def _build_piste_auth_options() -> dict[str, Any]:
-    """Serveur d'autorisation intégré : connexion par identifiants PISTE."""
+def _build_auth_options() -> dict[str, Any]:
+    """Serveur d'autorisation intégré : connexion par identifiants PISTE.
+
+    L'import reste local : le transport stdio, utilisé pour un usage
+    personnel, n'en a pas besoin.
+    """
     global PISTE_PROVIDER
+    if not SETTINGS.auth_enabled:
+        return {}
     from mcp.server.auth.settings import AuthSettings, ClientRegistrationOptions
 
     from mcp_server.piste_oauth import PisteAuthProvider
@@ -326,8 +259,8 @@ def _current_scopes() -> str:
     return ",".join(access_token.scopes) if access_token.scopes else "aucune"
 
 
-#: Masquage des identifiants PISTE — ceux du titulaire comme ceux transmis par
-#: la requête en mode « clés personnelles » — avant toute réponse ou journal.
+#: Masquage des identifiants PISTE — ceux de l'environnement local comme ceux
+#: de l'utilisateur transmis par la requête — avant toute réponse ou journal.
 _mask_secrets = mask_secrets
 
 
@@ -339,29 +272,27 @@ def _safe_call(operation: Callable[..., dict[str, Any]], *args: Any, **kwargs: A
     complète, fragment de corps) va dans le journal sous le même identifiant :
     c'est là, et seulement là, qu'on dépanne.
 
-    En mode « clés personnelles », les identifiants de la requête sont posés
-    pour TOUTE la durée du traitement, gestion d'erreur comprise : le masquage
-    des messages doit encore les connaître au moment où il s'applique.
+    Sur le serveur hébergé, les identifiants de l'utilisateur sont posés pour
+    TOUTE la durée du traitement, gestion d'erreur comprise : le masquage des
+    messages doit encore les connaître au moment où il s'applique. Une
+    requête authentifiée sans identifiants est refusée : le serveur ne se
+    rabat jamais sur ceux de l'environnement.
     """
     grant = _current_grant()
-    if SETTINGS.auth_enabled and grant is None:
-        raise ToolError("Authentification requise.")
-    if grant is not None and grant.mode == "keys":
+    if SETTINGS.auth_enabled:
+        if grant is None or grant.credentials is None:
+            raise ToolError("Authentification requise.")
         credentials = use_credentials(grant.credentials)
     else:
-        # Mode partagé ou stdio local : identifiants de l'environnement.
+        # Usage local (stdio) : identifiants de l'environnement du poste.
         credentials = nullcontext()
     with credentials:
         return _guarded_call(grant, operation, *args, **kwargs)
 
 
 def _check_quota(grant: AccessGrant | None) -> None:
-    if grant is None:
-        return
-    if grant.mode == "keys":
-        QUOTAS.check_personal_keys(client_ip())
-    else:
-        QUOTAS.check_shared(grant.subject)
+    if grant is not None and RATE_LIMIT is not None:
+        RATE_LIMIT.check(client_ip())
 
 
 def _guarded_call(
@@ -455,40 +386,8 @@ if hasattr(server, "custom_route"):
                 "version": SERVER_VERSION,
                 "auth": SETTINGS.auth_mode,
                 "personal_keys": SETTINGS.auth_enabled and SETTINGS.personal_keys_enabled,
-                "account": SETTINGS.account_enabled,
             }
         )
-
-    _AUTH_SERVER_METADATA: dict[str, Any] = {}
-
-    @server.custom_route(
-        "/.well-known/oauth-authorization-server",
-        methods=["GET"],
-        include_in_schema=False,
-    )
-    async def authorization_server_metadata(_request: Request) -> Response:
-        """Relais des métadonnées du serveur d'autorisation (WorkOS AuthKit).
-
-        Certains clients ignorent les métadonnées RFC 9728 et cherchent celles
-        du serveur d'autorisation sur l'hôte du serveur MCP ; WorkOS recommande
-        de les relayer. Le document est mis en cache une heure ; une panne de
-        l'émetteur rend 502, sans détail. En mode piste, ce document est
-        celui du serveur lui-même, servi par la route du SDK enregistrée avant
-        celle-ci.
-        """
-        if not SETTINGS.shared_mode:
-            return PlainTextResponse("Not configured", status_code=404)
-        cached = _AUTH_SERVER_METADATA.get("document")
-        if cached is None or time.monotonic() >= _AUTH_SERVER_METADATA["expires_at"]:
-            import anyio
-
-            try:
-                cached = await anyio.to_thread.run_sync(_fetch_authorization_metadata)
-            except Exception as exc:  # panne réseau ou document invalide
-                LOGGER.warning("auth_metadata_unavailable reason=%s", type(exc).__name__)
-                return JSONResponse({"error": "issuer_unavailable"}, status_code=502)
-            _AUTH_SERVER_METADATA.update(document=cached, expires_at=time.monotonic() + 3600)
-        return JSONResponse(cached)
 
     @server.custom_route(
         "/.well-known/oauth-protected-resource",
@@ -509,30 +408,20 @@ if hasattr(server, "custom_route"):
             {
                 "resource": SETTINGS.resource_url,
                 "authorization_servers": [SETTINGS.oauth_issuer],
-                "scopes_supported": list(SETTINGS.oauth_required_scopes),
                 "bearer_methods_supported": ["header"],
             }
         )
 
-    if SETTINGS.auth_enabled:
-        from mcp_server.account import AccountPages
-
-        #: Pages « Mon compte » (si WORKOS_CLIENT_ID) et « Clé personnelle ».
-        #: La base et les quotas sont relus à chaque requête.
-        ACCOUNT_PAGES = AccountPages(
-            settings=SETTINGS,
-            store=lambda: STORE,
-            quotas=lambda: QUOTAS,
-            pepper=token_pepper,
-        )
-        ACCOUNT_PAGES.register(server)
-
     if PISTE_PROVIDER is not None:
+        from mcp_server.cle import PersonalKeyPage
         from mcp_server.connexion import ConnexionPage
 
         #: Page « Connexion PISTE » du serveur d'autorisation intégré.
         CONNEXION_PAGE = ConnexionPage(PISTE_PROVIDER, public_url=SETTINGS.public_url)
         CONNEXION_PAGE.register(server)
+        if SETTINGS.personal_keys_enabled:
+            #: Page « Clé personnelle » : clé pk1 des clients sans OAuth.
+            PersonalKeyPage(mcp_url=SETTINGS.resource_url).register(server)
 
     @server.custom_route(
         "/.well-known/openai-apps-challenge",
@@ -716,18 +605,6 @@ def get_text(id: str, date: str | None = None) -> dict[str, Any]:
     return _safe_call(legal_tools.get_text, id, date)
 
 
-def _fetch_authorization_metadata() -> dict[str, Any]:
-    import json
-    import urllib.request
-
-    url = f"{SETTINGS.oauth_issuer_base}/.well-known/oauth-authorization-server"
-    with urllib.request.urlopen(url, timeout=5) as response:
-        document = json.load(response)
-    if not isinstance(document, dict) or document.get("issuer") != SETTINGS.oauth_issuer:
-        raise ValueError("métadonnées d'émetteur inattendues")
-    return document
-
-
 LOOPBACK_HOSTS = ["127.0.0.1:*", "localhost:*", "[::1]:*"]
 LOOPBACK_ORIGINS = ["http://127.0.0.1:*", "http://localhost:*", "http://[::1]:*"]
 
@@ -766,34 +643,6 @@ def build_http_app(**transport_options: Any):
     )
 
 
-def check_issuer() -> None:
-    """Compare l'émetteur configuré à celui que publie le serveur d'autorisation.
-
-    OpenAI rapproche textuellement l'``issuer`` du document de découverte et la
-    valeur annoncée par les métadonnées RFC 9728 du serveur MCP : une barre
-    oblique finale de différence suffit à faire échouer le connecteur. Ce
-    contrôle est un appel réseau explicite, jamais joué au démarrage, pour que
-    le service ne dépende pas de la disponibilité de l'émetteur pour démarrer.
-    """
-    import json
-    import urllib.request
-
-    if not SETTINGS.auth_enabled:
-        raise RuntimeConfigurationError(
-            "--check-issuer exige MCP_AUTH_MODE=oauth."
-        )
-    url = f"{SETTINGS.oauth_issuer_base}/.well-known/oauth-authorization-server"
-    with urllib.request.urlopen(url, timeout=10) as response:
-        published = json.load(response).get("issuer")
-    if published != SETTINGS.oauth_issuer:
-        raise RuntimeConfigurationError(
-            "MCP_OAUTH_ISSUER ne correspond pas au document de découverte : "
-            f"configuré {SETTINGS.oauth_issuer!r}, publié {published!r}. "
-            "Recopier le champ « issuer » à l'identique, barre finale comprise."
-        )
-    print(f"Émetteur conforme au document de découverte : {published}")
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Serveur MCP PandecteMCP")
     parser.add_argument(
@@ -807,26 +656,12 @@ def main() -> None:
         action="store_true",
         help="Valide la configuration de production puis quitte.",
     )
-    parser.add_argument(
-        "--check-issuer",
-        action="store_true",
-        help=(
-            "Interroge le document de découverte de l'émetteur et exige "
-            "l'égalité stricte avec MCP_OAUTH_ISSUER, puis quitte."
-        ),
-    )
     args = parser.parse_args()
     try:
         SETTINGS.validate_public({**os.environ, **_OWNER_CREDENTIALS_SEEN})
         suppressed = _load_suppression_list()
     except RuntimeConfigurationError as exc:
         parser.error(str(exc))
-    if args.check_issuer:
-        try:
-            check_issuer()
-        except RuntimeConfigurationError as exc:
-            parser.error(str(exc))
-        return
     if args.check_config:
         print("Configuration MCP valide.")
         print(f"Retrait d'urgence Judilibre : {suppressed} identifiant(s) chargé(s).")

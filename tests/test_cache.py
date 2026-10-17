@@ -13,11 +13,13 @@ sys.path.insert(0, str(ROOT / "skill" / "scripts"))
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests"))
 
-from test_oauth_end_to_end import OAuthServerCase  # noqa: E402
+from test_piste_end_to_end import PisteServerCase  # noqa: E402
 
 from mcp_server import server as mcp_app  # noqa: E402
+from mcp_server.access import encode_personal_key  # noqa: E402
 from mcp_server.cache import ResponseCache  # noqa: E402
 from mcp_server.store import Store  # noqa: E402
+from pandecte.credentials import PisteCredentials  # noqa: E402
 from pandecte.errors import LegifranceError  # noqa: E402
 
 ARTICLE = {"id": "LEGIARTI000032041571", "title": "Article 1240", "text": "Tout fait…",
@@ -126,11 +128,16 @@ class ResponseCacheTests(unittest.TestCase):
         self.assertRegex(plan.key, r"^[0-9a-f]{64}$")
 
 
-class ServerCacheTests(OAuthServerCase):
+class ServerCacheTests(PisteServerCase):
     """Le cache tel que le serveur l'applique autour des outils."""
+
+    #: Limite par IP volontairement basse : le dépassement doit être atteint.
+    extra_env = {"MCP_CALLS_PER_MINUTE_PER_IP": "2"}
 
     def setUp(self):
         self.calls = 0
+        # Chaque test repart d'une limite par IP vierge.
+        mcp_app.RATE_LIMIT = type(mcp_app.RATE_LIMIT)(2)
 
     def counting(self, result=None, error=None):
         def get_article(id, date=None):  # noqa: A002 — même signature que l'outil
@@ -142,8 +149,18 @@ class ServerCacheTests(OAuthServerCase):
         return get_article
 
     def call(self, article_id):
-        # Un sujet par test : le quota par minute du socle (2) reste par sujet.
-        return self.call_tool(self.token(sub=self.id()), "get_article", {"id": article_id})
+        key = encode_personal_key(PisteCredentials("identifiant-test", "secret-de-test"))
+        status, message = self.run_tool(key, "get_article", {"id": article_id})
+        self.assertEqual(200, status)
+        return message["result"]
+
+    @staticmethod
+    def en_erreur(resultat) -> bool:
+        return bool(resultat.get("isError"))
+
+    @staticmethod
+    def contenu_structure(resultat):
+        return resultat.get("structuredContent")
 
     def test_second_read_does_not_reach_the_api(self):
         with mock.patch.object(mcp_app.legal_tools, "get_article", self.counting(ARTICLE)):
@@ -167,14 +184,14 @@ class ServerCacheTests(OAuthServerCase):
         self.assertNotIn("from_cache", self.contenu_structure(resultat)["metadata"])
         self.assertEqual(2, self.calls)
 
-    def test_cache_hits_still_count_against_the_user_quota(self):
-        # Le quota protège aussi le service contre l'abus, pas seulement PISTE.
+    def test_cache_hits_still_count_against_the_rate_limit(self):
+        # La limite protège le service contre l'abus, cache compris.
         with mock.patch.object(mcp_app.legal_tools, "get_article", self.counting(ARTICLE)):
             for _ in range(2):
                 self.call("LEGIARTI000000000103")
             troisieme = self.call("LEGIARTI000000000103")
         self.assertTrue(self.en_erreur(troisieme))
-        self.assertIn("par minute", str(troisieme.content))
+        self.assertIn("Trop d'appels", str(troisieme["content"]))
 
 
 if __name__ == "__main__":

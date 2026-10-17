@@ -53,7 +53,18 @@ def pkce() -> tuple[str, str]:
     return verifier, base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
 
 
-class PisteEndToEnd(unittest.TestCase):
+class PisteServerCase(unittest.TestCase):
+    """Socle : recharge le serveur en mode piste, application en processus.
+
+    Le module ``mcp_server.server`` lit sa configuration à l'import ; le
+    rechargement est le seul moyen d'exercer ce mode sans processus séparé,
+    et il impose de restaurer l'état d'origine pour les autres modules.
+    Des identifiants du « titulaire » sont placés dans l'environnement : le
+    serveur doit les retirer et ne jamais s'en servir.
+    """
+
+    extra_env: dict[str, str] = {}
+
     @classmethod
     def setUpClass(cls):
         cls._env = mock.patch.dict(os.environ, {
@@ -63,9 +74,7 @@ class PisteEndToEnd(unittest.TestCase):
             "PANDECTE_SEAL_KEY": new_key_text(),
             "LEGIFRANCE_CLIENT_ID": OWNER_ID,
             "LEGIFRANCE_CLIENT_SECRET": OWNER_SECRET,
-            # Sans cache : chaque appel doit atteindre l'outil et révéler les
-            # identifiants effectivement posés.
-            "PANDECTE_CACHE_TEXT_TTL": "0",
+            **cls.extra_env,
         }, clear=False)
         cls._env.start()
         importlib.reload(mcp_app)
@@ -76,6 +85,49 @@ class PisteEndToEnd(unittest.TestCase):
         for name in ("LEGIFRANCE_CLIENT_ID", "LEGIFRANCE_CLIENT_SECRET"):
             os.environ.pop(name, None)
         importlib.reload(mcp_app)
+
+    async def scenario(self, steps):
+        app = mcp_app.build_http_app(transport_security=TRANSPORT_SECURITY)
+        inner = app.inner
+        async with inner.router.lifespan_context(inner):
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app), base_url=f"http://{TRANSPORT_HOST}"
+            ) as client:
+                return await steps(client)
+
+    async def call_tool(self, client, access_token: str, name="get_article",
+                        arguments=None):
+        """(statut HTTP, message JSON-RPC) d'un appel d'outil complet."""
+        headers = {"Authorization": f"Bearer {access_token}",
+                   "Accept": "application/json, text/event-stream"}
+        init = await client.post("/mcp", headers=headers, json={
+            "jsonrpc": "2.0", "id": 1, "method": "initialize",
+            "params": {"protocolVersion": "2025-06-18", "capabilities": {},
+                       "clientInfo": {"name": "test", "version": "1"}}})
+        if init.status_code != 200:
+            return init.status_code, None
+        session = init.headers.get("mcp-session-id")
+        if session:
+            headers["mcp-session-id"] = session
+        await client.post("/mcp", headers=headers,
+                          json={"jsonrpc": "2.0", "method": "notifications/initialized"})
+        response = await client.post("/mcp", headers=headers, json={
+            "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+            "params": {"name": name,
+                       "arguments": arguments or {"id": "LEGIARTI000032041571"}}})
+        data = [line[5:] for line in response.text.splitlines() if line.startswith("data:")]
+        return response.status_code, json.loads(data[-1]) if data else response.json()
+
+    def run_tool(self, access_token: str, name="get_article", arguments=None):
+        """Appel d'outil isolé, avec un cycle de vie d'application neuf."""
+        return asyncio.run(self.scenario(
+            lambda client: self.call_tool(client, access_token, name, arguments)))
+
+
+class PisteEndToEnd(PisteServerCase):
+    # Sans cache : chaque appel doit atteindre l'outil et révéler les
+    # identifiants effectivement posés.
+    extra_env = {"PANDECTE_CACHE_TEXT_TTL": "0"}
 
     def setUp(self):
         self.verified = []
@@ -89,15 +141,6 @@ class PisteEndToEnd(unittest.TestCase):
         patcher = mock.patch.object(mcp_app.legal_tools, "get_article", get_article)
         patcher.start()
         self.addCleanup(patcher.stop)
-
-    async def scenario(self, steps):
-        app = mcp_app.build_http_app(transport_security=TRANSPORT_SECURITY)
-        inner = app.inner
-        async with inner.router.lifespan_context(inner):
-            async with httpx2.AsyncClient(
-                transport=httpx2.ASGITransport(app=app), base_url=f"http://{TRANSPORT_HOST}"
-            ) as client:
-                return await steps(client)
 
     async def connect(self, client) -> dict:
         """Parcours complet d'un client OAuth ; rend la réponse de /token."""
@@ -145,30 +188,10 @@ class PisteEndToEnd(unittest.TestCase):
         self.assertEqual(200, token.status_code, token.text)
         return dict(token.json(), client_id=client_id)
 
-    async def call_tool(self, client, access_token: str):
-        headers = {"Authorization": f"Bearer {access_token}",
-                   "Accept": "application/json, text/event-stream"}
-        init = await client.post("/mcp", headers=headers, json={
-            "jsonrpc": "2.0", "id": 1, "method": "initialize",
-            "params": {"protocolVersion": "2025-06-18", "capabilities": {},
-                       "clientInfo": {"name": "test", "version": "1"}}})
-        if init.status_code != 200:
-            return init.status_code, None
-        session = init.headers.get("mcp-session-id")
-        if session:
-            headers["mcp-session-id"] = session
-        await client.post("/mcp", headers=headers,
-                          json={"jsonrpc": "2.0", "method": "notifications/initialized"})
-        response = await client.post("/mcp", headers=headers, json={
-            "jsonrpc": "2.0", "id": 2, "method": "tools/call",
-            "params": {"name": "get_article", "arguments": {"id": "LEGIARTI000032041571"}}})
-        data = [line[5:] for line in response.text.splitlines() if line.startswith("data:")]
-        return response.status_code, json.loads(data[-1]) if data else response.json()
-
     def test_owner_credentials_are_removed_at_startup(self):
         self.assertNotIn("LEGIFRANCE_CLIENT_ID", os.environ)
         self.assertNotIn("LEGIFRANCE_CLIENT_SECRET", os.environ)
-        self.assertFalse(mcp_app.SETTINGS.shared_mode)
+        self.assertTrue(mcp_app.SETTINGS.auth_enabled)
 
     def test_full_oauth_flow_uses_only_the_user_keys(self):
         async def steps(client):
@@ -200,6 +223,23 @@ class PisteEndToEnd(unittest.TestCase):
 
         asyncio.run(self.scenario(steps))
         self.assertEqual(USER_SECRET, self.seen_credentials[-1].client_secret)
+
+    def test_personal_key_header_uses_its_own_credentials(self):
+        from mcp_server.access import encode_personal_key
+        from pandecte.credentials import PisteCredentials
+
+        key = encode_personal_key(PisteCredentials(USER_ID, USER_SECRET))
+
+        async def steps(client):
+            page = await client.get("/cle")
+            self.assertEqual(200, page.status_code)
+            status, message = await self.call_tool(client, key)
+            self.assertEqual(200, status)
+            self.assertFalse(message["result"].get("isError"), message)
+
+        asyncio.run(self.scenario(steps))
+        used = self.seen_credentials[-1]
+        self.assertEqual((USER_ID, USER_SECRET), (used.client_id, used.client_secret))
 
     def test_without_a_valid_token_nothing_runs(self):
         async def steps(client):

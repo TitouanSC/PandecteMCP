@@ -101,18 +101,20 @@ les limites de capacité, la configuration de production, les annotations et
 une session MCP `stdio` réelle. `test_deployment.py` contrôle le paquet Docker
 sans lancer de conteneur.
 
-`test_auth.py` vérifie le vérificateur de jetons isolément, ainsi que
-l'écriture canonique de l'émetteur publiée par les deux routes de métadonnées.
+La connexion par identifiants PISTE est couverte à trois niveaux, sans
+réseau ni secret réel :
 
-`test_oauth_end_to_end.py` exerce la **chaîne complète** en processus :
-application ASGI construite par le SDK, middleware d'authentification,
-transport Streamable HTTP, dispatch d'outil. Seuls le JWKS de l'émetteur —
-remplacé par une clé RSA engendrée à la volée — et les appels aux API
-juridiques sont simulés. Sont couverts : le refus anonyme et son challenge,
-le jeton valide menant à un appel d'outil réussi, les refus pour audience,
-émetteur, expiration, signature et sujet manquant, le quota isolé par sujet,
-et le comportement du contrôle de portée dans ses deux réglages. Aucun secret
-n'est lu, aucun jeton réel n'est nécessaire.
+- `test_sealed.py` — enveloppes chiffrées : confidentialité, intégrité, usage
+  lié, expiration, rotation de clé ;
+- `test_piste_oauth.py` et `test_connexion.py` — serveur d'autorisation sans
+  stockage (enregistrement, code à usage unique, jetons, renouvellement
+  glissant) et page « Connexion PISTE » (origine, consentement, refus de
+  PISTE, redirection) ;
+- `test_piste_end_to_end.py` — la **chaîne complète** en processus, comme un
+  client OAuth : découverte, enregistrement, `/authorize`, page de connexion,
+  `/token`, appel d'outil avec les identifiants de l'utilisateur,
+  renouvellement. Des identifiants « du titulaire » placés dans
+  l'environnement doivent être retirés au démarrage et jamais utilisés.
 
 Le CI démarre en plus le serveur Streamable HTTP, vérifie `/health`, initialise
 une vraie session sur `/mcp`, découvre les six outils, puis construit l'image

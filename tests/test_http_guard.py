@@ -76,14 +76,14 @@ class DiagnosticTests(unittest.TestCase):
 
     def test_reports_the_caller_view_when_enabled(self):
         guard = HttpGuard(self.inner(), trusted_hops=1, diagnostic=True)
-        s = scope({"x-forwarded-for": "198.51.100.7, 10.1.1.1", "authorization": "Bearer pdt_x"},
+        s = scope({"x-forwarded-for": "198.51.100.7, 10.1.1.1", "authorization": "Bearer pk1.secret_x"},
                   path=DIAGNOSTIC_PATH)
         status, body = self.run_guard(guard, s)
         report = json.loads(body)
         self.assertEqual(200, status)
         self.assertEqual("10.1.1.1", report["resolved_ip"])
         self.assertEqual(["198.51.100.7, 10.1.1.1"], report["headers"]["x-forwarded-for"])
-        self.assertNotIn(b"pdt_x", body)
+        self.assertNotIn(b"pk1.secret_x", body)
 
 
 if __name__ == "__main__":

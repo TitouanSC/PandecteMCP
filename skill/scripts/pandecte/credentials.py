@@ -2,17 +2,17 @@
 
 Deux origines possibles :
 
-* **la requête** — mode « clés personnelles » du serveur MCP : l'utilisateur
-  transmet ses propres identifiants, qui ne servent que le temps de l'appel.
-  Ils vivent dans une ``ContextVar`` : jamais dans ``os.environ``, jamais sur
-  disque, jamais partagés avec un appel concurrent ;
-* **l'environnement** — CLI, transport stdio et mode « serveur partagé » :
+* **la requête** — serveur MCP hébergé : l'utilisateur transmet ses propres
+  identifiants (connexion PISTE ou clé ``pk1``), qui ne servent que le temps
+  de l'appel. Ils vivent dans une ``ContextVar`` : jamais dans ``os.environ``,
+  jamais sur disque, jamais partagés avec un appel concurrent ;
+* **l'environnement** — usage local (CLI, transport stdio) :
   ``LEGIFRANCE_CLIENT_ID``, ``LEGIFRANCE_CLIENT_SECRET`` et, facultatif,
-  ``JUDILIBRE_KEY_ID`` (ou ``PISTE_KEY_ID``).
+  ``JUDILIBRE_KEY_ID`` (ou ``PISTE_KEY_ID``). Le serveur hébergé les retire
+  de son processus au démarrage.
 
 Des identifiants posés pour la requête l'emportent toujours et ne retombent
-jamais sur ceux de l'environnement, même incomplets : un appel en mode
-« clés personnelles » ne doit pas consommer le quota du titulaire du serveur.
+jamais sur ceux de l'environnement, même incomplets.
 """
 
 from __future__ import annotations

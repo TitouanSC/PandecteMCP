@@ -7,7 +7,7 @@
 # production. Une plage de versions ferait donc diverger poste, CI et Render sur
 # le point précis dont dépend le connecteur ChatGPT.
 mcp==2.3.0
-# Vérification locale des jetons OAuth 2.1 (JWKS de l'émetteur, RS256 exact).
+# Dépendance du SDK MCP (pyjwt[crypto]), épinglée sur la version corrigée.
 # Correctif amont du parseur de payload récursif (GHSA-42vr-xj54-vc7v).
 PyJWT[crypto]==2.15.1
 # Enveloppes chiffrées AES-256-GCM de l'état OAuth (mcp_server/sealed.py).

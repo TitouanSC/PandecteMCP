@@ -1,30 +1,20 @@
-"""Quotas d'appels d'outils des deux modes d'accès.
+"""Limite de débit des appels d'outils.
 
-* Mode « serveur partagé » : les appels consomment le quota PISTE du titulaire.
-  Chaque utilisateur est limité par minute (en mémoire) et par jour (SQLite),
-  et l'ensemble des utilisateurs par une limite journalière globale.
-* Mode « clés personnelles » : les appels consomment le quota PISTE de
-  l'utilisateur ; seule une limite de débit par adresse IP s'applique, contre
-  les abus de l'instance elle-même.
-
-Un dépassement lève ``QuotaExceeded``, qui porte un message explicite et le
-délai d'attente en secondes (``retry_after``). Un appel refusé ne consomme
-aucun compteur.
+Chaque utilisateur consulte PISTE avec ses propres identifiants, donc sur son
+propre quota : le serveur ne protège plus que lui-même, par une limite de
+débit par adresse IP. Un dépassement lève ``QuotaExceeded``, qui porte un
+message explicite et le délai d'attente en secondes (``retry_after``). Un
+appel refusé ne consomme rien.
 """
 
 from __future__ import annotations
 
-import datetime as dt
 import threading
 import time
 from collections import deque
 from typing import Callable
 
 from mcp_server.runtime import RuntimeCapacityError
-from mcp_server.store import Store
-
-GLOBAL_SCOPE = "global"
-
 
 class QuotaExceeded(RuntimeCapacityError):
     """Quota atteint : message destiné à l'utilisateur et délai d'attente."""
@@ -96,98 +86,21 @@ class SlidingWindow:
             return len(self._buckets)
 
 
-def _seconds_until_utc_midnight(now: dt.datetime) -> int:
-    tomorrow = (now + dt.timedelta(days=1)).date()
-    midnight = dt.datetime.combine(tomorrow, dt.time(0), tzinfo=dt.timezone.utc)
-    return int((midnight - now).total_seconds()) + 1
+class IpRateLimit:
+    """Appels d'outils par minute et par adresse IP."""
 
+    def __init__(self, per_minute: int, clock: Callable[[], float] = time.monotonic) -> None:
+        self._window = SlidingWindow(per_minute, 60.0, clock)
+        self._lock = threading.Lock()
 
-class QuotaPolicy:
-    """Applique les quotas des deux modes."""
-
-    def __init__(
-        self,
-        store: Store,
-        *,
-        user_per_minute: int,
-        user_per_day: int,
-        global_per_day: int,
-        keys_per_minute_per_ip: int,
-        clock: Callable[[], float] = time.monotonic,
-        now: Callable[[], dt.datetime] = lambda: dt.datetime.now(dt.timezone.utc),
-    ) -> None:
-        self._store = store
-        self._user_per_day = user_per_day
-        self._global_per_day = global_per_day
-        self._user_minute = SlidingWindow(user_per_minute, clock=clock)
-        self._ip_minute = SlidingWindow(keys_per_minute_per_ip, clock=clock)
-        self._now = now
-        self._last_day: str | None = None
-        self._day_lock = threading.Lock()
-        #: Rend atomique « vérifier la minute, consommer le jour, compter la
-        #: minute » : deux appels simultanés ne peuvent pas franchir ensemble
-        #: le dernier créneau disponible.
-        self._shared_lock = threading.Lock()
-        self._ip_lock = threading.Lock()
-
-    def _today(self) -> tuple[str, dt.datetime]:
-        now = self._now()
-        day = now.date().isoformat()
-        with self._day_lock:
-            if day != self._last_day:
-                self._store.purge_counters_before(day)
-                self._last_day = day
-        return day, now
-
-    def check_shared(self, subject: str) -> None:
-        """Mode partagé : minute et jour par utilisateur, puis jour global."""
-        key = f"user:{subject}"
-        with self._shared_lock:
-            self._check_shared_locked(key)
-
-    def _check_shared_locked(self, key: str) -> None:
-        wait = self._user_minute.wait_time(key)
-        if wait > 0:
-            raise QuotaExceeded(
-                "Quota par minute atteint pour votre compte ; "
-                f"réessayez dans {format_delay(int(wait) + 1)}.",
-                int(wait) + 1,
-            )
-        day, now = self._today()
-        saturated = self._store.consume(
-            day, ((key, self._user_per_day), (GLOBAL_SCOPE, self._global_per_day))
-        )
-        if saturated is not None:
-            retry = _seconds_until_utc_midnight(now)
-            if saturated == GLOBAL_SCOPE:
-                message = (
-                    "Le serveur partagé a atteint sa limite d'appels pour aujourd'hui. "
-                    f"Réessayez dans {format_delay(retry)} (00:00 UTC), "
-                    "ou utilisez vos propres clés PISTE."
-                )
-            else:
-                message = (
-                    f"Quota journalier atteint pour votre compte ({self._user_per_day} "
-                    f"appels). Réessayez dans {format_delay(retry)} (00:00 UTC), "
-                    "ou utilisez vos propres clés PISTE."
-                )
-            raise QuotaExceeded(message, retry)
-        self._user_minute.hit(key)
-
-    def usage_today(self, subject: str) -> tuple[int, int]:
-        """Appels consommés aujourd'hui par un sujet, et son plafond journalier."""
-        day, _ = self._today()
-        return self._store.count(f"user:{subject}", day), self._user_per_day
-
-    def check_personal_keys(self, client_ip: str) -> None:
-        """Mode clés personnelles : seul le débit par adresse IP est limité."""
+    def check(self, client_ip: str) -> None:
         key = f"ip:{client_ip}"
-        with self._ip_lock:
-            wait = self._ip_minute.wait_time(key)
+        with self._lock:
+            wait = self._window.wait_time(key)
             if wait > 0:
                 raise QuotaExceeded(
                     "Trop d'appels depuis cette adresse ; "
                     f"réessayez dans {format_delay(int(wait) + 1)}.",
                     int(wait) + 1,
                 )
-            self._ip_minute.hit(key)
+            self._window.hit(key)

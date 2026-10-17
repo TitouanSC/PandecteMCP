@@ -107,6 +107,14 @@ class KeyTests(unittest.TestCase):
     def test_new_key_parses(self):
         self.assertEqual(32, len(parse_key(new_key_text())))
 
+    def test_standard_base64_with_padding_is_accepted(self):
+        # Forme produite par les générateurs d'hébergeurs (Render :
+        # « generateValue ») : base64 standard, « + », « / » et « = ».
+        import base64
+
+        raw = bytes(range(250, 256)) + bytes(range(26))
+        self.assertEqual(raw, parse_key(base64.b64encode(raw).decode()))
+
     def test_bad_keys_are_refused(self):
         for text in ("", "trop-court", _b64encode(b"x" * 31), "@@@"):
             with self.assertRaises(ValueError):

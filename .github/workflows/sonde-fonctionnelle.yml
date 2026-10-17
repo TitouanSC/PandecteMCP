@@ -5,13 +5,14 @@ name: Sonde fonctionnelle
 # applicable_at_as_of_date à la lecture d'un article.
 #
 # Déclenchement manuel uniquement, et c'est délibéré : chaque exécution
-# consomme le quota PISTE du titulaire. Elle se lance après un déploiement,
-# après un incident, ou avant une publication.
+# consomme le quota PISTE de la clé utilisée. Elle se lance après un
+# déploiement, après un incident, ou avant une publication.
 #
-# Authentification : un jeton personnel pdt_… généré sur la page /compte du
-# service, stocké dans le secret de dépôt PANDECTE_PROBE_TOKEN. Il est durable
-# et révocable à tout moment depuis la même page. Il ne passe jamais par une
-# ligne de commande, visible dans la liste des processus du runner.
+# Authentification : une clé personnelle pk1.… assemblée sur la page /cle du
+# service avec les identifiants PISTE de la personne qui sonde, stockée dans
+# le secret de dépôt PANDECTE_PROBE_KEY. Pour la révoquer : régénérer le
+# Client Secret sur PISTE. Elle ne passe jamais par une ligne de commande,
+# visible dans la liste des processus du runner.
 
 on:
   workflow_dispatch:
@@ -44,16 +45,16 @@ jobs:
       - name: Installer le SDK MCP
         run: python -m pip install -r requirements-mcp.txt
 
-      - name: Vérifier la présence du jeton
+      - name: Vérifier la présence de la clé
         env:
-          MCP_ACCESS_TOKEN: ${{ secrets.PANDECTE_PROBE_TOKEN }}
+          MCP_ACCESS_TOKEN: ${{ secrets.PANDECTE_PROBE_KEY }}
         run: |
           if [ -z "$MCP_ACCESS_TOKEN" ]; then
-            echo "::error::secret PANDECTE_PROBE_TOKEN absent : générer un jeton sur /compte et l'enregistrer dans Settings → Secrets and variables → Actions."
+            echo "::error::secret PANDECTE_PROBE_KEY absent : assembler une clé sur /cle et l'enregistrer dans Settings → Secrets and variables → Actions."
             exit 1
           fi
 
       - name: Sonder les outils
         env:
-          MCP_ACCESS_TOKEN: ${{ secrets.PANDECTE_PROBE_TOKEN }}
+          MCP_ACCESS_TOKEN: ${{ secrets.PANDECTE_PROBE_KEY }}
         run: python tests/check_live_tools.py "${{ inputs.url }}"

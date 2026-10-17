@@ -515,27 +515,26 @@ class RuntimeSafetyTests(unittest.TestCase):
         for regle in ("de mémoire", "en vigueur", "ne concluez pas"):
             self.assertIn(regle, texte)
 
-    def test_production_requires_server_side_credentials(self):
+    def test_production_refuses_an_anonymous_public_gateway(self):
         settings = RuntimeSettings.from_env({"MCP_ENV": "production"})
         with self.assertRaises(RuntimeConfigurationError) as caught:
             settings.validate_public({"MCP_ENV": "production"})
-        message = str(caught.exception)
-        self.assertIn("LEGIFRANCE_CLIENT_ID", message)
-        self.assertIn("JUDILIBRE_KEY_ID", message)
+        self.assertIn("MCP_AUTH_MODE", str(caught.exception))
 
-    def test_production_accepts_judilibre_alias_without_exposing_values(self):
+    def test_production_errors_never_echo_values(self):
+        from mcp_server.sealed import new_key_text
+
         env = {
             "MCP_ENV": "production",
-            "MCP_AUTH_MODE": "oauth",
-            "MCP_PUBLIC_URL": "https://exemple.onrender.com",
-            "MCP_OAUTH_ISSUER": "https://exemple-idp.eu.auth0.com",
-            "LEGIFRANCE_CLIENT_ID": "client-secret-value",
-            "LEGIFRANCE_CLIENT_SECRET": "oauth-secret-value",
-            "PISTE_KEY_ID": "key-secret-value",
-            "PANDECTE_TOKEN_PEPPER": "pepper-secret-value-" + "x" * 20,
+            "MCP_AUTH_MODE": "piste",
+            "MCP_PUBLIC_URL": "https://pandecte.example.org",
+            "PANDECTE_SEAL_KEY": new_key_text(),
+            "LEGIFRANCE_CLIENT_SECRET": "valeur-secrete-du-titulaire",
         }
-        settings = RuntimeSettings.from_env(env)
-        settings.validate_public(env)
+        with self.assertRaises(RuntimeConfigurationError) as caught:
+            RuntimeSettings.from_env(env).validate_public(env)
+        self.assertIn("LEGIFRANCE_CLIENT_SECRET", str(caught.exception))
+        self.assertNotIn("valeur-secrete", str(caught.exception))
 
     def test_invalid_port_is_explicit(self):
         with self.assertRaises(RuntimeConfigurationError) as caught:
@@ -561,7 +560,7 @@ class RuntimeSafetyTests(unittest.TestCase):
         # à chaque montée de version sans rien prouver de plus. Ce qui compte
         # est la forme de la charge et l'absence de toute autre information.
         attendu = (
-            '{"status":"ok","version":"%s","auth":"disabled","personal_keys":false,"account":false}'
+            '{"status":"ok","version":"%s","auth":"disabled","personal_keys":false}'
             % mcp_app.SERVER_VERSION
         ).encode()
         self.assertEqual(attendu, health.body)
@@ -690,12 +689,11 @@ class PisteModeSettingsTests(unittest.TestCase):
         env = dict(self.BASE, **extra)
         return RuntimeSettings.from_env(env), env
 
-    def test_issuer_is_the_server_itself_and_no_shared_mode(self):
+    def test_issuer_is_the_server_itself(self):
         settings, _ = self.settings()
         self.assertEqual("https://pandecte.example.org", settings.oauth_issuer)
         self.assertEqual("https://pandecte.example.org/mcp", settings.resource_url)
-        self.assertFalse(settings.shared_mode)
-        self.assertFalse(settings.account_enabled)
+        self.assertTrue(settings.auth_enabled)
 
     def test_seal_key_is_required_and_checked(self):
         from mcp_server.sealed import new_key_text
