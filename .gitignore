@@ -44,3 +44,7 @@ tests/bench/runs/
 
 # Base SQLite locale du serveur (jetons hachés, compteurs) — jamais versionnée.
 /data/
+
+# État local de Wrangler (essais Cloudflare)
+.wrangler/
+.dev.vars*
