@@ -1,134 +1,111 @@
-# Installer et vérifier Droit français
+# Installer et vérifier PandecteMCP
 
-État du guide : 10 octobre 2026. Les commandes sont relevées sur Claude Code
-2.1.288 et Codex CLI 0.162.0-alpha.2. Leur aide a été contrôlée ; le parcours
-complet d'installation puis OAuth n'est pas encore qualifié sur ces versions.
-Ce relevé de versions, d'aide et de sources est daté du 10/10/2026, pas une
-garantie pour les versions futures. À chaque release, relever les versions
-réellement testées, relire l'aide et les sources officielles, rejouer la
-recette prévue pour le canal concerné, puis actualiser cette date et ses
-limites. Conserver le relevé antérieur dans le bilan de sa recette.
-Un smoke local du paquet a réussi le 10/10/2026 dans des profils temporaires
-vides : installation, liste et retrait sur les deux CLI, réinstallation
-Codex et contrôle de mise à jour Claude sans changement de version. Il porte
-sur une copie locale des fichiers du dépôt, pas sur l'acquisition GitHub,
-la mise à niveau vers une autre version, une nouvelle session ou OAuth.
-Voir les preuves et limites du correctif.
+État du guide : 18 octobre 2026. Version du skill et des plugins : 0.1.0.
 
-Le noyau présent dans le dépôt est 0.1.0 ; le plugin 0.1.0 est un candidat.
-La dernière release plugin relevée lors de l'audit porte le numéro 0.7.0.
-Une installation depuis main prend le candidat, pas une release stable figée.
-Pour une recette reproductible, noter le commit et la version réellement installés.
+**Qualifié le 17/10/2026** sur le serveur hébergé
+`https://pandecte-mcp.onrender.com/mcp` : connexion par la page « Connexion
+PISTE » puis recherche et lecture d'article réelles depuis **claude.ai**,
+**ChatGPT** (mode développeur) et **Claude Code** (`claude mcp add`). Les
+parcours par plugin (marketplaces Claude Code et Codex) ne sont pas encore
+qualifiés : les commandes ci-dessous suivent la documentation officielle.
 
 ## Choisir le canal
 
-- **Skill autonome** : méthode uniquement. L'absence de clé PISTE est compatible
-  avec une recherche web sur sources officielles si le client permet cet accès.
-  Sans moyen de vérification, la réponse doit expliciter cette limite.
-- **Plugin du dépôt** : méthode et serveur MCP distant annoncé par la racine
-  .mcp.json. Python et PISTE ne sont pas nécessaires sur le poste, mais OAuth
-  reste nécessaire pour les outils.
-- **Serveur local** : Python, dépendances MCP et identifiants PISTE nécessaires.
-  Les huit outils du candidat ne sont pas automatiquement ceux du service distant.
+- **Connecteur hébergé** : outils juridiques sans rien installer. Il faut
+  ses propres identifiants PISTE (gratuits), saisis une fois à la connexion.
+  Voir le [README](../README.md#utiliser-pandectemcp-sans-rien-installer).
+- **Plugin du dépôt** : skill méthodologique et même serveur hébergé, déclaré
+  par la racine `.mcp.json`. Python n'est pas nécessaire sur le poste.
+- **Skill autonome** : méthode uniquement. Sans outil, la récupération passe
+  par une recherche web sur sources officielles si le client le permet ; sinon
+  la réponse doit expliciter cette limite.
+- **Serveur local** : Python, dépendances MCP et identifiants PISTE dans un
+  `.env`. Personne d'autre ne voit vos identifiants.
 
 ## Claude Code
 
-> **Connexion OAuth bloquée pour une installation neuve du plugin** : le
-> client prédéfini et le callback restent à configurer
-> ([#88](https://github.com/brissonjo-sudo/droit-francais-skill/issues/88)).
-> L'installation du paquet et le chargement de la méthode peuvent être
-> vérifiés séparément ; ils ne donnent pas accès aux outils distants.
-
-Installation depuis la marketplace du dépôt :
+Connecteur seul (qualifié) :
 
 ~~~powershell
-claude plugin marketplace add brissonjo-sudo/droit-francais-skill
-claude plugin install droit-francais-skill@droit-francais
+claude mcp add --transport http pandecte https://pandecte-mcp.onrender.com/mcp
+~~~
+
+Puis `/mcp` → `pandecte` → **Authenticate** : le navigateur ouvre la page
+« Connexion PISTE » ; le retour se fait sur une adresse `localhost`.
+
+Plugin complet (skill et connecteur), depuis la marketplace du dépôt :
+
+~~~powershell
+claude plugin marketplace add TitouanSC/PandecteMCP
+claude plugin install pandecte@pandecte
 claude plugin list
 ~~~
 
-Ouvrir une nouvelle session. Contrôler la présence du skill pandecte-recherche
-et du serveur dans /mcp. Demander une recherche puis une lecture d'article ;
-conserver l'identifiant, la date et les appels observés. Une réponse rappelant
-la méthode, sans appel réel, ne prouve pas que le connecteur fonctionne.
+Ouvrir une nouvelle session. Contrôler la présence du skill
+`pandecte-recherche` et du serveur dans `/mcp`. Demander une recherche puis une
+lecture d'article ; une réponse rappelant la méthode, sans appel réel, ne
+prouve pas que le connecteur fonctionne.
 
-Pour mettre à jour, puis relancer la session :
-
-~~~powershell
-claude plugin marketplace update droit-francais
-claude plugin update droit-francais-skill@droit-francais
-~~~
-
-Pour retirer ce plugin uniquement :
+Mise à jour, puis nouvelle session :
 
 ~~~powershell
-claude plugin uninstall droit-francais-skill@droit-francais
-claude plugin list
-~~~
-
-## Codex
-
-Le dépôt contient une marketplace native .agents/plugins/marketplace.json :
-
-~~~powershell
-codex plugin marketplace add brissonjo-sudo/droit-francais-skill
-codex plugin add droit-francais-skill@droit-francais
-codex plugin list --json
-~~~
-
-Le catalogue est présent dans main depuis l'intégration de
-[#115](https://github.com/brissonjo-sudo/droit-francais-skill/pull/115).
-Pour tester une branche de recette, remplacer la source GitHub par son
-checkout absolu, ou figer la source Git avec --ref COMMIT.
-
-Le catalogue indique l'origine, le nom et la politique d'installation. La
-version 0.1.0 et la description du plugin se trouvent dans
-.codex-plugin/plugin.json, conformément aux exemples officiels OpenAI ;
-elles ne sont pas dupliquées dans les entrées du catalogue. Le chemin ./
-est relatif à la racine de la marketplace, pas à .agents/plugins/.
-
-Au 10/10/2026, codex --version et l'aide de chaque sous-commande ci-dessus
-ont été relus sur Codex CLI 0.162.0-alpha.2. Les liens officiels en fin de
-guide répondent et documentent ces commandes. Ce contrôle d'aide et de
-documentation ne constitue pas une recette d'installation ou d'OAuth.
-
-Dans l'application, ajouter la marketplace dans le répertoire des plugins,
-installer Droit français puis ouvrir une nouvelle tâche. Vérifier séparément
-le skill chargé et l'authentification du MCP. Un catalogue visible n'atteste
-ni la connexion OAuth ni une lecture juridique réussie.
-
-Mise à jour de la source puis réinstallation et nouvelle session :
-
-~~~powershell
-codex plugin marketplace upgrade droit-francais
-codex plugin add droit-francais-skill@droit-francais
+claude plugin marketplace update pandecte
+claude plugin update pandecte@pandecte
 ~~~
 
 Retrait du plugin uniquement :
 
 ~~~powershell
-codex plugin remove droit-francais-skill@droit-francais
+claude plugin uninstall pandecte@pandecte
+claude plugin list
+~~~
+
+Si le même nom `pandecte` est déclaré dans plusieurs portées (projet et
+utilisateur) avec des adresses différentes, Claude Code le signale dans
+`claude mcp list` : n'en garder qu'une.
+
+## Codex
+
+Le dépôt contient une marketplace native `.agents/plugins/marketplace.json` :
+
+~~~powershell
+codex plugin marketplace add TitouanSC/PandecteMCP
+codex plugin add pandecte@pandecte
 codex plugin list --json
 ~~~
 
-## OAuth et dépannage
+La version 0.1.0 et la description du plugin se trouvent dans
+`.codex-plugin/plugin.json`, conformément aux exemples officiels OpenAI. Le
+chemin `./` est relatif à la racine de la marketplace, pas à
+`.agents/plugins/`.
 
-Les nouveaux clients Claude Code et ChatGPT restent en qualification.
-Pour Codex, l'installation complète et le parcours OAuth de cette version
-restent également à qualifier ; un succès dans un autre client ne les valide pas.
-Voir la proposition de recette OAuth, le
-guide OAuth et les issues
-[#88](https://github.com/brissonjo-sudo/droit-francais-skill/issues/88) et
-[#89](https://github.com/brissonjo-sudo/droit-francais-skill/issues/89).
+Mise à jour de la source puis réinstallation :
 
-- Plugin absent : contrôler la marketplace, le nom, le commit, puis redémarrer
-  le client. Ne pas confondre codex mcp add avec une installation du skill.
-- Outils absents ou 401 : noter le client et la phase OAuth, sans copier jeton,
-  code d'autorisation ni secret dans une issue.
-- Outils présents mais erreur de récupération : conserver un constat assaini
-  séparé ; cela ne valide ni n'invalide la méthode juridique.
-- Deux installations du skill : choisir une seule origine active pour la
-  recette ; conserver les autres installations sans les réécrire automatiquement.
+~~~powershell
+codex plugin marketplace upgrade pandecte
+codex plugin add pandecte@pandecte
+~~~
+
+Retrait du plugin uniquement :
+
+~~~powershell
+codex plugin remove pandecte@pandecte
+codex plugin list --json
+~~~
+
+## Dépannage
+
+- **Premier appel en échec ou très lent** : le serveur gratuit sortait de
+  veille (environ 30 secondes). Réessayer.
+- **« PISTE refuse ces identifiants »** sur la page de connexion : vérifier le
+  Client ID et le Client Secret de l'application en environnement
+  **Production**, et son abonnement aux API Légifrance et JUDILIBRE.
+- **Connexion qui échoue avant la page « Connexion PISTE »** : supprimer le
+  connecteur et le recréer, pour forcer un nouvel enregistrement du client.
+- **Outils présents mais erreur de récupération** : noter l'outil, l'heure et
+  le message, sans copier de jeton, de code d'autorisation ni d'identifiant
+  dans une issue.
+- **Deux installations du skill** : n'en garder qu'une active.
 
 ## Skill autonome
 
@@ -138,9 +115,8 @@ npx skills update pandecte-recherche
 ~~~
 
 La méthode est utilisable sans le plugin. La gestion et le retrait dépendent
-du client et de la portée choisie par skills ; vérifier npx skills --help et
-la liste des installations avant de supprimer un répertoire. Ne pas retirer
-le dossier du dépôt de développement à la place du skill installé.
+du client et de la portée choisie par `skills` ; vérifier `npx skills --help` et
+la liste des installations avant de supprimer un répertoire.
 
 Sources des commandes : [Claude Code](https://code.claude.com/docs/en/discover-plugins),
 [Codex CLI](https://learn.chatgpt.com/docs/developer-commands) et
