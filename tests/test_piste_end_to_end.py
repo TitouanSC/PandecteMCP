@@ -149,6 +149,9 @@ class PisteEndToEnd(PisteServerCase):
         meta = (await client.get("/.well-known/oauth-authorization-server")).json()
         self.assertIn("registration_endpoint", meta)
         self.assertIn("S256", meta["code_challenge_methods_supported"])
+        # Clients publics (PKCE sans secret, comme claude.ai) : annoncés.
+        self.assertIn("none", meta["token_endpoint_auth_methods_supported"])
+        self.assertEqual(PUBLIC, meta["issuer"])
 
         registered = (await client.post("/register", json={
             "redirect_uris": [CLAUDE], "client_name": "Claude",

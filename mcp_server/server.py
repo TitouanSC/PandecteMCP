@@ -629,12 +629,52 @@ def transport_security_for(public_url: str) -> TransportSecuritySettings:
     )
 
 
+AUTHORIZATION_METADATA_PATH = "/.well-known/oauth-authorization-server"
+
+
+def _advertise_public_clients(app: Any) -> None:
+    """Annonce ``none`` parmi les méthodes d'authentification au jeton.
+
+    Le SDK accepte les clients publics (PKCE sans secret, comme claude.ai)
+    mais publie une liste figée qui l'omet. Un client qui confronte son
+    enregistrement à cette liste renonce alors avant même /authorize. La
+    route est reconstruite avec les briques du SDK, liste corrigée.
+    """
+    from mcp.server.auth.handlers.metadata import MetadataHandler
+    from mcp.server.auth.routes import build_metadata, cors_middleware
+    from mcp.server.auth.settings import ClientRegistrationOptions, RevocationOptions
+    from starlette.routing import Route
+
+    metadata = build_metadata(
+        SETTINGS.public_url,
+        None,
+        ClientRegistrationOptions(enabled=True),
+        RevocationOptions(enabled=False),
+    )
+    metadata.token_endpoint_auth_methods_supported = [
+        *(metadata.token_endpoint_auth_methods_supported or []),
+        "none",
+    ]
+    routes = app.router.routes
+    for index, route in enumerate(routes):
+        if getattr(route, "path", None) == AUTHORIZATION_METADATA_PATH:
+            routes[index] = Route(
+                AUTHORIZATION_METADATA_PATH,
+                endpoint=cors_middleware(MetadataHandler(metadata).handle, ["GET", "OPTIONS"]),
+                methods=["GET", "OPTIONS"],
+            )
+            return
+    raise RuntimeError("Route des métadonnées d'autorisation introuvable.")
+
+
 def build_http_app(**transport_options: Any):
     """Application HTTP complète : transport MCP du SDK derrière le garde HTTP."""
     transport_options.setdefault(
         "transport_security", transport_security_for(SETTINGS.public_url)
     )
     app = server.streamable_http_app(**transport_options)
+    if PISTE_PROVIDER is not None:
+        _advertise_public_clients(app)
     return HttpGuard(
         app,
         trusted_hops=SETTINGS.trusted_proxy_hops,
