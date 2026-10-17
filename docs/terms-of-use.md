@@ -42,7 +42,7 @@ pas, ne les journalise pas, ne les communique à personne et ne s'en sert à
 aucune autre fin.
 
 **Responsabilité de l'utilisateur.** Les CGU de l'API Légifrance (§ III.3) et
-de l'API Judilibre (§ XI) réservent les clés à l'application de leur titulaire
+de l'API Judilibre (§ XI.C) réservent les clés à l'application de leur titulaire
 et interdisent de les divulguer à un tiers. L'utilisateur reste seul
 responsable, vis-à-vis de PISTE et des producteurs de données, de l'usage de
 ses identifiants et de leur confiance au service. Pour ne les confier à

@@ -39,7 +39,7 @@ VS Code, Gemini CLI… Avec claude.ai ou ChatGPT, ajoutez simplement le connecte
 <code>{url}</code> : la connexion vous demandera vos identifiants PISTE.</p>
 <div class="box warn">
 <p><strong>À lire avant de continuer.</strong> Les conditions générales d'utilisation de
-l'API Légifrance (§ III.3) et de l'API Judilibre (§ XI) indiquent que vos clés sont
+l'API Légifrance (§ III.3) et de l'API Judilibre (§ XI.C) indiquent que vos clés sont
 réservées à votre application et ne doivent pas être divulguées à un tiers.</p>
 <p>Avec cette clé, votre client d'IA transmet vos identifiants à ce serveur à chaque requête.
 Le serveur s'en sert uniquement le temps de l'appel, en votre nom, comme intermédiaire

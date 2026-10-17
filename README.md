@@ -129,7 +129,7 @@ Seuls claude.ai, ChatGPT et Claude Code ont été testés à ce jour.
 - **Retirer l'accès** : déconnectez le connecteur, ou régénérez votre Client
   Secret sur PISTE (cela invalide immédiatement tout jeton qui le contient).
 - **Responsabilité** : vos identifiants restent réservés à votre usage (CGU
-  Légifrance § III.3, Judilibre § XI). En les confiant au service, vous lui
+  Légifrance § III.3, Judilibre § XI.C). En les confiant au service, vous lui
   donnez mandat de consulter les API **en votre nom**, comme intermédiaire
   technique — voir les [conditions d'utilisation](docs/terms-of-use.md). Pour
   ne les confier à personne, hébergez votre propre instance.

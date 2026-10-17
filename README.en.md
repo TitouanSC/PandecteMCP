@@ -125,7 +125,7 @@ Only claude.ai, ChatGPT and Claude Code have been tested so far.
 - **Revoking access**: disconnect the connector, or regenerate your Client
   Secret on PISTE (this immediately invalidates any token containing it).
 - **Responsibility**: your credentials remain reserved for your own use
-  (Légifrance terms § III.3, Judilibre § XI). By entrusting them to the
+  (Légifrance terms § III.3, Judilibre § XI.C). By entrusting them to the
   service, you authorise it to call the APIs **on your behalf**, as a technical
   intermediary — see the [terms of use](docs/terms-of-use.md). To share them
   with no one, host your own instance.
