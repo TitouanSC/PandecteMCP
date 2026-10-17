@@ -275,8 +275,9 @@ les plugins Claude Code et OpenAI.
 | [`vibe_skill/`](vibe_skill) | Vibe (Mistral) | Noyau condensé, outils `web_search` / `web_fetch` |
 | [`manus_skill/`](manus_skill) | Manus | Noyau condensé, connecteur MCP en priorité |
 
-Ces déclinaisons reprennent les principes du noyau ; `skill/` reste la source
-de vérité méthodologique.
+Ces paquets sont **générés** depuis une source unique
+([`declinaisons/`](declinaisons/README.md)) : un noyau condensé commun et une
+fiche par plateforme. `skill/` reste la source de vérité méthodologique.
 
 ---
 

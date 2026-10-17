@@ -72,6 +72,8 @@ jobs:
           python -m py_compile tests/test_connexion.py
           python -m py_compile tests/test_piste_end_to_end.py
           python -m py_compile tests/test_cle.py
+          python -m py_compile declinaisons/generer.py
+          python -m py_compile tests/test_declinaisons.py
           python -m py_compile tests/test_access.py
           python -m py_compile mcp_server/http_guard.py
           python -m py_compile mcp_server/cache.py
@@ -97,6 +99,9 @@ jobs:
           python -m py_compile tests/test_text_consultation.py
           python -m py_compile tests/test_affirmations.py
           python -m py_compile tests/test_skills.py
+
+      - name: Vérifier que les déclinaisons générées sont à jour
+        run: python declinaisons/generer.py --check
 
       - name: Tester la bibliothèque et le serveur MCP hors réseau
         run: python -m unittest discover -s tests -v

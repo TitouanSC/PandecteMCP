@@ -1,6 +1,6 @@
 ---
-name: recherche-juridique
-description: Méthodologie rigoureuse de recherche en droit français — sources primaires Légifrance et Judilibre, vérification de vigueur et d'applicabilité, citations traçables. Active dès qu'une requête cite ou demande un article, code, décret, arrêté, circulaire, qualification (pénale, admin, civile), jurisprudence (Cass., CE, CC, CJUE, CEDH), vérification de vigueur, rédaction d'acte/note/mémoire, audit juridique ou préparation de concours. Ne pas activer pour droit étranger non européen ni questions purement doctrinales.
+name: pandecte-recherche
+description: Méthodologie rigoureuse de recherche en droit français et européen, fondée sur des sources primaires officielles (Légifrance, Judilibre), la vérification de provenance, de vigueur et d'applicabilité à une date donnée, et des citations traçables. Utiliser pour toute demande portant sur des articles, codes, lois, décrets, arrêtés, circulaires, qualifications, jurisprudences, actes, notes, mémoires, audits ou concours juridiques. Ne pas utiliser pour le droit étranger non européen ni pour une question doctrinale sans citation normative.
 license: CC-BY-SA-4.0
 user-invocable: false
 allowed-tools:
@@ -9,348 +9,234 @@ allowed-tools:
   - read_file
   - ask_user_question
 metadata:
-  version: 3.3.0-vibe
-  date_derniere_revue_methodologique: 2026-09-05
-  date_derniere_verification_sources: 2026-09-04
+  version: 0.1.0-vibe
+  base: pandecte-recherche 0.1.0
   langue: français
-  adapted_for: vibe
+  adapted_for: Vibe
 ---
 
-# Skill : recherche-juridique (v3.3.0-vibe)
+<!-- Généré par declinaisons/generer.py depuis declinaisons/noyau-compact.md et declinaisons/plateformes/vibe.md : ne pas modifier à la main. -->
 
-**Objet** : empêcher toute invention de droit français. Toute référence (article, décision, date, identifiant) doit provenir d'une source primaire vérifiée. Abstention informée prime sur complétion spéculative.
+# Recherche juridique PandecteMCP — déclinaison Vibe
 
-Conçu contre les modes d'erreur LLM courants en droit (hallucination d'identifiants, confusion version historique / en vigueur, confusion authenticité / applicabilité, interprétation sans jurisprudence, etc.).
+## Objet et règle cardinale
 
-> **⚠️ À LIRE IMPÉRATIVEMENT AVANT TOUTE UTILISATION**
-> Ce skill est un **adaptateur** vers le noyau méthodologique universel.
-> **Toute analyse juridique DOIT commencer par la lecture intégrale de :**
-> → [`../skill/SKILL.md`](../skill/SKILL.md)
->
-> **Si le fichier cible est absent ou illisible**, signaler que l'installation est incomplète.
-> Ne pas improviser de règle juridique ni d'identifiant officiel pour compenser.
+Ne produire **aucune référence juridique de mémoire** : article, décision,
+identifiant officiel (`LEGIARTI`, `JORFTEXT`, n° de pourvoi), date de version,
+délai ou montant doit être vérifié par un outil ou une source primaire.
+Vérifier séparément la provenance officielle, la version du texte, sa vigueur
+et son applicabilité à la date pertinente. Si une source n'est pas confirmée,
+le signaler et ne pas conclure sur le point concerné : l'abstention informée
+prime toujours sur la complétion spéculative.
 
----
+Déclinaison pour Mistral Vibe. Les outils natifs `web_search` et `web_fetch`
+assurent la récupération ; le connecteur PandecteMCP est utilisé en priorité
+s'il a été configuré.
 
-## Déclenchement
+## Déclenchement et modes
 
 Activer pour toute demande impliquant :
-- citation ou lecture d'article de code/loi/décret/arrêté/circulaire ;
-- qualification juridique ;
-- vérification de vigueur, abrogation ou modification ;
-- jurisprudence officielle ;
-- rédaction ou audit d'acte, note, mémoire, conclusions ;
-- préparation de concours avec références juridiques.
 
-Ne pas activer pour pure doctrine sans citation, ni droit non européen.
+- un article, code, loi, ordonnance, décret, arrêté ou circulaire ;
+- une qualification civile, pénale, administrative ou procédurale ;
+- la vigueur, l'abrogation, l'entrée en vigueur ou l'applicabilité d'une norme ;
+- une décision de la Cour de cassation, du Conseil d'État, du Conseil
+  constitutionnel, de la CJUE ou de la CEDH ;
+- la rédaction, l'audit ou la relecture d'un acte, d'une note, d'un mémoire ou
+  de conclusions ;
+- un écrit ou oral de concours avec références juridiques.
 
----
+Ne pas activer pour le droit étranger non européen ni pour une question
+doctrinale sans citation normative.
 
-## Principes invariants (P1–P7)
+Le mode par défaut active le noyau et les modules détectés. Balises :
 
-**P1 — Primauté des sources.**
-Aucune affirmation normative sans source primaire officielle (Légifrance, Judilibre, sites des juridictions). Doctrine privée = outil de repérage uniquement.
+- `[complet]` — tous les contrôles et tous les modules, encart de synthèse ;
+- `[express]` — affichage et recherches facultatives réduits, mais **jamais**
+  de désactivation des contrôles **PÉNAL** et **DOC-AUDIT** applicables ;
+- `[syllogisme]` — majeure (norme vérifiée), mineure (faits qualifiés),
+  conclusion ;
+- `[lookup]` — voie rapide : une référence ponctuelle, sortie minimale.
 
-**P2 — Date de référence explicite.**
-Toujours préciser la date d'évaluation (`as_of`). Distinguer version officielle récupérée et applicabilité à cette date (`applicable_at_as_of_date`).
+Ne jamais demander rituellement à l'utilisateur une clé API ou un connecteur :
+constater les capacités disponibles et appliquer l'échelle de récupération.
 
-**P3 — Autorité, authenticité et articulation.**
-Ne pas confondre :
-1. authenticité de la source ;
-2. rang de la norme ;
-3. effet d'une décision sur l'application.
+## Principes invariants P1–P7
 
-Ordre de recherche (pas hiérarchie abstraite) :
-1. Textes officiels publiés (Légifrance / JORF)
-2. Décisions juridictionnelles officielles (Cass., CE, CC, CJUE, CEDH) — peuvent interpréter, écarter ou neutraliser
-3. Circulaires et instructions officielles
-4. Doctrine institutionnelle
+**P1 — Primauté des sources officielles.** Toute affirmation normative repose
+sur Légifrance, le JORF, EUR-Lex, HUDOC ou le site officiel de la juridiction.
+La doctrine privée sert au repérage uniquement, jamais de fondement.
 
-**P4 — Citation traçable.**
-Identifiant officiel + URL canonique + date de version. Pas de citation « article X du Code Y » sans ID ou lien vérifié.
+**P2 — Datation.** Toujours fixer `as_of`, la date d'évaluation. Distinguer
+`version_start_date`, `version_end_date`, `verified` et
+`applicable_at_as_of_date`. Une source officielle peut être historique ;
+`verified: true` signifie seulement que la source officielle a répondu.
 
-**P5 — Séparation des registres.**
-Distinguer clairement :
-- (a) Texte (citation exacte, identifiant vérifié)
-- (b) Jurisprudence (ratio decidendi vs obiter dictum)
-- (c) Déduction (introduite par « J'en déduis que… »)
-- (d) Incertitude (introduite par « Reste à vérifier… » ou bloc `⚠️ À VÉRIFIER`)
+**P3 — Autorité et articulation.** Ne pas confondre authenticité de la source,
+rang de la norme et effet d'une décision sur l'application. L'ordre de
+recherche est un ordre pratique, pas une hiérarchie des normes : textes
+officiels, jurisprudence officielle, circulaires et instructions, doctrine
+institutionnelle. Détail : [`references/sources-autorisees.md`](references/sources-autorisees.md).
 
-**P6 — Légalité criminelle stricte.**
-En matière pénale : texte d'incrimination + éléments constitutifs exacts ; pas d'analogie ; non-rétroactivité de la loi plus sévère ; rétroactivité in mitius de la loi plus douce (art. 112-1 al. 3 CP).
+**P4 — Traçabilité.** Toute citation comporte, lorsque disponible, identifiant
+officiel, intitulé, URL canonique, date de version ou de décision, source et
+applicabilité.
 
-**P7 — Abstention informée.**
-Si vérification impossible → le dire explicitement et s'abstenir sur le point concerné. Pas de « probablement » déguisé en certitude.
+**P5 — Registres séparés.** Distinguer droit positif, interprétation
+jurisprudentielle, faits fournis, inférence, hypothèse et opinion.
 
----
+**P6 — Légalité criminelle stricte.** En pénal, vérifier le texte
+d'incrimination applicable à la date des faits et les éléments légal,
+matériel et moral. Ne jamais appliquer une analogie défavorable.
 
-## Procédure (exécutée en interne)
+**P7 — Abstention informée.** Une source inaccessible, illisible,
+contradictoire ou non datée entraîne une réserve explicite et l'abstention sur
+la proposition non vérifiée.
 
-Les contrôles sont obligatoires. Leur affichage est proportionné au livrable :
-- réponse courte / lookup → sources, date applicable, réserves, confiance ;
-- note de fond / audit / `[complet]` → encart récapitulatif + auto-critique si utile.
+**Règle de provenance.** Tout identifiant officiel cité provient d'une
+récupération réussie **dans la session courante**, quelle que soit la voie ;
+sinon il est omis ou marqué `⚠️ non vérifié — identifiant non récupéré`.
 
-### Étape 0 — Qualification et désambiguïsation
+## Procédure obligatoire
 
-Répondre (en interne) aux six questions :
-1. Quel est l'objet exact de la demande (lecture, qualification, rédaction, audit…) ?
-2. Quels faits sont établis / à établir ?
-3. Quelle(s) branche(s) du droit ?
-4. Contexte territorial / compétence (si décisionnel) ?
-5. Date de référence demandée ou implicite ?
-6. Livrable attendu (longueur, formalisme, destinataire) ?
+### Étape 0 — Qualifier la demande
 
-Si une ambiguïté bloque réellement l'analyse → poser la question (étape 0 bis, économie du questionnement).
+Déterminer en interne l'objet exact, les faits établis et à établir, les
+branches du droit, le territoire et la compétence, la date des faits, la date
+d'application et le livrable attendu. Poser une question seulement si une
+ambiguïté bloque réellement l'analyse.
 
-### Étape 1 — Recherche des textes primaires
+### Étape 1 — Récupérer les sources
 
-Utiliser en priorité les **outils Vibe natifs** :
-- `web_search` avec `site:legifrance.gouv.fr` ou `site:courdecassation.fr`
-- `web_fetch` sur les URLs Légifrance pour lecture complète
+L'échelle se **constate** dans la session, elle ne se demande pas.
 
-**Exemples de requêtes optimisées** :
-```
-site:legifrance.gouv.fr "article L2212-2" CGCT
-site:legifrance.gouv.fr code général des collectivités territoriales L2212-2
-site:courdecassation.fr "Cass. Crim." 2024
-```
+**1. Connecteur MCP PandecteMCP (priorité).** S'il est exposé dans la
+session, il interroge Légifrance et Judilibre avec les identifiants PISTE que
+l'utilisateur a lui-même confiés au connecteur. Ses outils :
 
-Conserver code + date + numéro d'article reconnus dans la requête (ex. « L. 2212-2 CGCT », « article 1240 Code civil au 1er janvier 2010 »).
+| Outil | Paramètres | Usage |
+|---|---|---|
+| `search` | `query` | Routeur générique : article si la requête en contient un, jurisprudence sinon |
+| `fetch` | `id` (identifiant renvoyé par `search`, pas une URL) | Lecture du résultat désigné |
+| `search_articles` | `number`, `code`, `date` | Recherche d'article ciblée, avec code et date |
+| `get_article` | `id`, `date` | Lecture par identifiant `LEGIARTI`, évalue `applicable_at_as_of_date` |
+| `search_case_law` | `query`, `jurisdiction`, `date_start`, `date_end` | Recherche de jurisprudence |
+| `get_decision` | `id` | Lecture d'une décision |
+| `get_section` | `id`, `text_id`, `date` | Lecture datée d'une section de code |
+| `get_text` | `id`, `date` | Lecture d'un texte consolidé |
 
-**Vérifier tout identifiant LEGIARTI fourni avant de le restituer** (règle de provenance, P1).
+Préférer `search_articles` → `get_article` à `search` → `fetch` dès qu'un
+numéro d'article est identifié. Un refus d'accès du connecteur (connexion à
+refaire, identifiants refusés) vaut « outil indisponible ».
 
-### Étape 2 — Vérification de vigueur et d'applicabilité
+Vibe peut se connecter à des serveurs MCP déclarés dans sa configuration ; si
+le connecteur PandecteMCP y figure, ses outils sont prioritaires. Ne pas le
+supposer sans l'avoir constaté dans la session.
 
-Pour chaque version récupérée :
-- noter `version_start_date` / `version_end_date` (si disponibles dans la page)
-- évaluer `applicable_at_as_of_date` (date de référence de la question)
-- si non applicable → caveat explicite + rechercher la version correcte
+**2. Voie de repli web** — sans connecteur, ou s'il refuse l'accès :
 
-Une source officielle peut être historique. `verified: true` atteste seulement la réponse officielle, pas l'applicabilité.
+- `web_search` (paramètre `query`) avec `site:legifrance.gouv.fr` ou un
+  domaine juridictionnel ;
+- `web_fetch` (paramètre `url`) sur la page trouvée, pour lire l'identifiant,
+  la date et le texte.
 
-### Étape 3 — Jurisprudence pertinente
+Restreindre les requêtes aux domaines officiels de
+[`references/sources-autorisees.md`](references/sources-autorisees.md) et lire
+la page trouvée plutôt que de se fier au seul extrait de recherche.
 
-Rechercher les décisions qui confirment, contredisent ou précisent l'interprétation.
-**Absence de jurisprudence localisable ≠ texte clair devient incertain.** Signaler l'absence ; exiger une décision seulement pour présenter comme établie une interprétation contentieuse.
+**3. Abstention** (P7) si aucune voie n'aboutit.
 
-### Étape 4 — Triangulation (quand requise)
+Ne jamais inventer un appel d'outil ni supposer la disponibilité d'un outil
+non constaté dans la session. Seulement si l'utilisateur demande comment
+fiabiliser la récupération, indiquer le connecteur PandecteMCP
+(`https://pandecte-mcp.onrender.com/mcp`, connexion avec ses propres
+identifiants PISTE, gratuits).
 
-**Obligatoire si :**
-- qualification ou élément constitutif discutable ;
-- application analogique apparente ;
-- jurisprudence divergente connue ;
-- citation destinée à un acte officiel portant interprétation.
+### Étape 2 — Vérifier la version et l'applicabilité
 
-**Non requise** pour lecture pure d'un texte clair ou constatation matérielle non ambiguë.
+Pour chaque texte, relever les bornes de validité et l'historique. Si
+l'utilisateur fournit un identifiant `LEGIARTI`, le vérifier et lire la
+version désignée ; ne pas la remplacer silencieusement par la version
+actuelle. Conserver le code et la date exprimés dans la requête.
 
-### Étape 5 — Articulation et qualification
+| Champ | Signification |
+|---|---|
+| `verified` | La source officielle a été retrouvée et lue |
+| `as_of_date` | Date à laquelle l'applicabilité est évaluée |
+| `version_start_date` / `version_end_date` | Bornes de la version consultée |
+| `applicable_at_as_of_date` | La version couvre ou non la date évaluée |
 
-Appliquer la norme aux faits en respectant P3 et P6. Identifier exceptions, seuils, cumuls.
+### Étape 3 — Vérifier la jurisprudence
 
-### Étape 6 — Rédaction / synthèse
+Rechercher les décisions qui confirment, précisent ou contredisent
+l'interprétation. Relever juridiction, formation, date, identifiant,
+dispositif et motifs utiles. Distinguer *ratio decidendi* et *obiter dictum*.
+L'absence de jurisprudence localisable ne rend pas incertain un texte clair ;
+elle doit seulement être signalée.
 
-Sortie proportionnée. Toujours inclure provenance des identifiants.
+### Étape 4 — Trianguler si nécessaire
 
-### Étape 7 — Auto-critique adversariale (interne)
+Triangulation obligatoire en cas d'élément constitutif discutable,
+qualification concurrente, analogie apparente, divergence ou revirement connu,
+articulation de compétences ou proportionnalité. Vérifier la source primaire
+par deux chemins indépendants lorsque c'est possible. Une décision est
+requise pour présenter comme établie une interprétation contentieuse ; à
+défaut, produire une sortie dégradée balisée par P7.
 
-Jouer trois rôles :
-1. adversaire qui cherche la faille de droit ;
-2. juge / contrôleur qui exige la preuve ;
-3. praticien du métier (si profil connu).
+### Étape 5 — Articuler et qualifier
 
-N'afficher le résultat que si une objection subsiste ou pour livrable complet.
+Appliquer les normes aux faits sans dépasser les sources. Identifier
+exceptions, seuils, cumuls, conflits de normes, dispositions transitoires,
+compétence, preuve et conséquences pratiques. Activer les modules requis
+(section « Modules »).
 
----
+### Étape 6 — Rédiger
 
-## Échelle de récupération (Vibe)
+Adapter la traçabilité au livrable. Une réponse simple expose les sources, la
+date applicable et les réserves utiles sans réciter les étapes internes. Une
+note de fond, un audit ou `[complet]` inclut la synthèse des contrôles, les
+limites et les objections restantes.
 
-1. **Outils web officiels** (priorité) —
-   `web_search` avec `site:legifrance.gouv.fr` ou domaines juridictionnels,
-   `web_fetch` sur les pages articles / codes / décisions.
-2. **Sites juridictionnels** —
-   `courdecassation.fr`, `conseil-etat.fr`, `conseil-constitutionnel.fr`, `eur-lex.europa.eu`, `echr.coe.int`.
-3. **Abstention** si sources inaccessibles ou illisibles → aucune citation inventée.
+### Étape 7 — Auto-critique adversariale
 
-**Invariant** : la voie de récupération ne modifie jamais l'exigence de provenance (P1).
-Un identifiant non récupéré via ces outils **doit être marqué** `⚠️ non vérifié — identifiant non récupéré`.
+Relire l'analyse depuis trois rôles : l'adversaire qui cherche une faille, le
+juge ou contrôleur qui exige la preuve, et le praticien du métier. Si un rôle
+découvre un défaut, revenir à l'étape concernée avant livraison.
 
----
+## Format minimal de sortie
 
-## Outils Vibe disponibles
+Pour chaque référence normative ou jurisprudentielle, fournir :
 
-Noms vérifiés contre le registre public des outils intégrés de Vibe Code
-(`mistralai/mistral-vibe`, `vibe/core/tools/builtins/`, au 5 septembre 2026).
-Vérifier qu'ils correspondent à la version de Vibe effectivement installée.
+- identifiant officiel : `LEGIARTI`, numéro de pourvoi, ECLI ou numéro de
+  décision ;
+- titre, article ou objet ;
+- URL canonique ;
+- date de version ou de décision ;
+- `as_of` et applicabilité ;
+- source officielle et réserve éventuelle.
 
-| Outil Vibe | Paramètre(s) | Usage | Équivalent noyau | Obligatoire ? |
-|------------|--------------|-------|------------------|---------------|
-| `web_search` | `query` | Recherche dans Légifrance ou jurisprudence | `scripts/legifrance.py:search()` | ✅ Oui |
-| `web_fetch` | `url` | Lecture complète d'une page officielle | `scripts/legifrance.py:article()` | ✅ Oui |
+Employer exactement la réserve suivante lorsque nécessaire : **« Source non
+confirmée — abstention sur ce point. »**
 
-**Exemple d'utilisation combinée** :
-```
-1. web_search(query="site:legifrance.gouv.fr article L111-1 Code pénal")
-2. Pour chaque résultat → web_fetch(url=result.url) pour extraire LEGIARTI, date, texte
-3. Si échec → abstention (P7)
-```
+## Modules
 
----
-
-## Intégration Python optionnelle — squelette non connecté
-
-`tools/legifrance_vibe.py` (retiré de PandecteMCP) esquissait un wrapper structuré
-autour de `web_search` / `web_fetch` : extraction d'identifiant `LEGIARTI`,
-normalisation en dataclasses. **Ce module ne fonctionne pas tel quel** : ses
-fonctions ne contiennent aucun appel réel à `web_search` ou `web_fetch` — elles
-retournent une liste vide ou un texte vide, silencieusement, sans lever
-d'erreur. Rien ne doit s'y fier pour une citation réelle.
-
-Utiliser directement `web_search` et `web_fetch`, comme décrit ci-dessus.
-Ce squelette n'a d'intérêt que pour qui veut le compléter — brancher les
-appels réels aux emplacements commentés `# Dans Vibe : …` — avant de
-l'utiliser en production.
-
----
-
-## Sources autorisées (résumé)
-
-Voir [`../skill/references/sources-autorisees.md`](../skill/references/sources-autorisees.md) pour le détail.
-
-- **Niveau 1** : Légifrance (codes, lois, décrets…), JORF, EUR-Lex, CEDH.
-- **Niveau 2** : Cassation (Judilibre), CE, CC, TA/CAA, CJUE.
-- **Niveau 3** : Circulaires Légifrance, bulletins officiels.
-- **Doctrine privée** : repérage uniquement, jamais fondement normatif.
-
----
-
-## Format de sortie minimal
-
-Pour toute citation :
-- Identifiant (LEGIARTI… ou n° de pourvoi / décision)
-- Titre / numéro d'article
-- URL canonique
-- Date de version + applicabilité à la date évaluée
-- Source (Légifrance / page officielle)
-
-**Exemple** :
-```
-Art. L. 2212-2, Code général des collectivités territoriales, version en vigueur depuis le 01/01/2024,
-identifiant Légifrance LEGIARTI000043183456, consulté le 05/09/2026
-[confiance : élevée — texte clair, source officielle confirmée]
-```
-
-En cas de doute ou d'échec de vérification :
-```
-⚠️ Source non confirmée — abstention sur ce point.
-Démarches alternatives :
-- Accéder directement à : [URL officielle]
-- Consulter : [autre source officielle]
-```
-
----
+Lire [`references/modules.md`](references/modules.md) dès qu'un module est
+activé. Les modules sont **PÉNAL**, **ACTE-ADMIN**, **PA-PJ**, **FOND**,
+**CONTENTIEUX** et **DOC-AUDIT**. En cas de doute sur un déclencheur, activer
+le module.
 
 ## Notes d'adaptation Vibe
 
-- **Pas de serveur MCP local supposé.** Les outils natifs (`web_search`, `web_fetch`) remplacent les appels PISTE/Judilibre directs.
-- **Préférer toujours les domaines officiels** `.gouv.fr` et sites des juridictions.
-- **Conserver le code et la date** dans les requêtes de recherche.
-- **Distinguer explicitement** provenance officielle et applicabilité temporelle (héritage v3.3.0).
-- **Traçabilité proportionnée** : ne pas réciter les étapes internes dans une réponse simple.
-- **Règle de provenance stricte** : tout identifiant cité doit provenir d'un appel à `web_search` **suivi** d'un `web_fetch` confirmant l'identifiant sur la page.
-
----
-
-## Modules activables (mode A)
-
-Chaque module se déclenche automatiquement selon des critères explicites.
-**Règle conservatrice** : en cas de doute, le module s'active.
-Le mode B / `[complet]` force tous les modules.
-`[express]` allège les activations automatiques (exceptions : PÉNAL et DOC-AUDIT restent actifs).
-
-Lire [`../skill/references/modules.md`](../skill/references/modules.md) dès qu'un module s'active.
-
-### Modules disponibles
-
-| Module | Déclencheurs principaux | Statut |
-|--------|-------------------------|--------|
-| **PÉNAL** | Fait à qualifier pénalement, infraction, visa pénal, PV | Non désactivable par `[express]` |
-| **ACTE-ADMIN** | Rédaction / analyse / contrôle d'acte administratif | — |
-| **PA-PJ** | Opération susceptible d'être PA ou PJ | — |
-| **FOND** | Note de fond, citation pour acte, interprétation controversée | — |
-| **CONTENTIEUX** | Risque de recours, stratégie procédurale | — |
-| **DOC-AUDIT** | Audit / relecture / correction de document(s) | Non désactivable par `[express]` |
-
----
-
-## Mode A / Mode B
-
-- **Mode A** (défaut) : noyau + modules utiles détectés.
-- **Mode B** / `[complet]` : tous les modules + encart récapitulatif.
-- **Profil utilisateur** (`profil.md`) : défauts métier uniquement, jamais certitudes.
-
-En cas de conflit entre fluidité et rigueur, **choisir la rigueur**.
-
----
-
-## Balises de contrôle
-
-| Balise | Effet |
-|--------|-------|
-| `[complet]` | Force le mode B (tous modules activés). |
-| `[express]` | Mode A allégé : supprime l'activation automatique des modules même si leurs déclencheurs sont réunis. **Exceptions** : PÉNAL reste actif en matière répressive (P6) et DOC-AUDIT reste actif pour tout audit ou correction de documents. |
-| `[syllogisme]` | Active le sous-gabarit « note de concours » (structure majeure / mineure / conclusion). |
-| `[opérationnel]` | Active la section « Implications opérationnelles » et le rôle *responsable opérationnel* à l'étape 7. |
-| `[lookup]` | **Voie rapide** : référence ponctuelle non controversée. Sortie minimale (voir ci-dessous). **N'allège aucune exigence de fond** : P1, règle de provenance et étape 0 bis restent dues. |
-
-### Voie rapide `[lookup]` — sortie minimale
-
-Pour la simple lecture-référence d'un texte non controversé (« quel article réprime X ? », « L. 2212-2 CGCT est-il en vigueur ? »), l'appareil complet est disproportionné. La balise `[lookup]` produit :
-
-```
-[Citation normalisée avec identifiant récupéré] — fonction juridique : […]
-[Réponse en 1–3 phrases] [confiance : élevée | modérée | faible — 1 ligne]
-```
-
-**Garde-fous** : la citation suppose une récupération réelle en source primaire (P1) et un identifiant de provenance vérifiée ; si la récupération échoue, la voie rapide bascule en **abstention motivée** (P7).
-
----
-
-## Déclencheurs d'abstention
-
-Le skill s'arrête sur le point concerné et le signale dans **dix cas** (voir [`../skill/SKILL.md`](../skill/SKILL.md#7-déclencheurs-dabstention-ou-sortie-dégradée-balisée)) :
-
-1. Source primaire inaccessible
-2. Texte trouvé mais date d'entrée en vigueur impossible à confirmer
-3. Décision juridictionnelle invoquée dont la référence exacte est introuvable
-4. Circulaire interne non publique
-5. Faits postérieurs au cutoff d'entraînement, non vérifiables
-6. Matière répressive : doute sérieux sur un élément constitutif (P6)
-7. Échec de la triangulation obligatoire (étape 4)
-8. Renvoi normatif essentiel introuvable ou non résolu
-9. Délai de prescription ou de forclusion possiblement expiré
-10. Information décisionnelle détenue par le seul utilisateur, manquante (étape 0 bis)
-
----
-
-## Cas particuliers métier
-
-Défis par le **profil utilisateur** (`profil.md` à la racine du skill).
-Voir [`../skill/profils/`](../skill/profils/) pour les profils disponibles (police-gendarmerie, avocat, juriste-entreprise, collectivités, étudiant-concours).
-
-Sans `profil.md` → **profil neutre** : aucun contexte métier n'est présumé.
-
----
-
-## Maintenance
-
-- **Source de vérité** : [`../skill/SKILL.md`](../skill/SKILL.md) (version 3.3.0)
-- **Synchronisation** : Mettre à jour `metadata.version` dans ce fichier à chaque release du noyau (ex: `3.3.0-vibe` → `3.4.0-vibe`)
-- **Tests** : Vérifier que les outils Vibe (`web_search`, `web_fetch`) répondent aux exigences P1–P7
-
----
+- Noms d'outils vérifiés contre le registre public des outils intégrés de
+  Vibe (`mistralai/mistral-vibe`, `vibe/core/tools/builtins/`, relevé du
+  5 septembre 2026) ; vérifier qu'ils correspondent à la version installée.
+- Tout identifiant cité provient d'un `web_search` **suivi** d'un `web_fetch`
+  qui le confirme sur la page officielle.
 
 ## Limites
 
-- Ce skill ne remplace pas l'avis d'un juriste ou d'un avocat pour les décisions à fort enjeu contentieux.
-- La qualité dépend de l'accessibilité de Légifrance et des autres sources au moment de la requête.
-- Pour les textes anciens non codifiés, la vérification manuelle au JORF papier peut être nécessaire.
+Cette déclinaison condense le skill complet `pandecte-recherche` : les profils
+métier, les gabarits de sortie détaillés, la checklist de vigueur et le détail
+des dix-huit modes d'erreur n'y sont pas repris. Le skill complet reste la
+source de vérité : <https://github.com/TitouanSC/PandecteMCP/tree/main/skill>.
+Ce skill ne remplace pas un avocat.

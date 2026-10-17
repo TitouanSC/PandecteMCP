@@ -1,59 +1,104 @@
 # Modules activables — détail
 
-Référencé depuis `SKILL.md`. Activer le module dès qu’un déclencheur est présent ; en cas de doute, l’activer. `[complet]` force tous les modules. PÉNAL et DOC-AUDIT ne sont pas désactivables par `[express]`.
+> Référencé depuis `SKILL.md §5`. Lire ce fichier dès qu'un module s'active.
+> **Règle conservatrice : en cas de doute sur le déclenchement, le module s'active.**
+> Le mode B force l'activation de tous les modules.
 
 ---
 
-## Module PÉNAL
+Chaque module est déclenché automatiquement par des critères explicites.
+**En cas de doute sur le déclenchement, règle conservatrice : le
+module s'active.** Le mode B force l'activation de tous les modules.
 
-**Déclencheurs :** fait à qualifier pénalement, infraction, contravention, délit, crime, visa pénal ou préparation de procès-verbal.
+### Module PÉNAL
+- **Déclencheurs** : toute requête comportant un fait à qualifier
+  pénalement, toute mention d'infraction (contravention, délit,
+  crime), toute demande de visa pénal, toute préparation de PV.
+- **Statut** : **non désactivable par `[express]`** (P6).
+- **Contenu** : application stricte de P6 ; **règle de triangulation
+  unifiée de l'étape 4** (obligatoire dès qu'une interprétation est en
+  jeu, non requise pour la simple constatation matérielle) ;
+  **décomposition élémentaire de qualification** :
+  - élément **légal** : texte d'incrimination en vigueur à la date des faits,
+  - élément **matériel** : acte ou abstention prévu par le texte,
+  - élément **moral** : intention ou caractère intentionnel /
+    non intentionnel,
+  - **circonstances aggravantes** éventuelles,
+  - **faits justificatifs** ou causes d'irresponsabilité,
+  - **régime procédural applicable** : cadre d'enquête, compétence
+    juridictionnelle, prescription ;
+  - **contrôle de la charge et des modes de preuve** des éléments
+    constitutifs.
 
-**Contrôles obligatoires :** appliquer la légalité criminelle stricte ; vérifier sur Légifrance le texte d’incrimination en vigueur à la date des faits ; décomposer les éléments légal, matériel et moral ; rechercher les circonstances aggravantes, faits justificatifs, causes d’irresponsabilité, prescription, compétence, régime d’enquête, modes de preuve et charge de la preuve. Trianguler dès qu’une interprétation est en jeu.
+### Module ACTE-ADMIN
+- **Déclencheurs** : rédaction, analyse ou contrôle d'un acte
+  administratif (arrêté, décision individuelle, mesure de police,
+  sanction disciplinaire, refus d'autorisation), y compris en analyse
+  rétrospective d'un acte existant.
+- **Contenu** :
+  - **contrôle de compétence renforcé** (auteur, délégation,
+    territoriale, temporelle),
+  - **contrôle de proportionnalité Benjamin** (CE, 19 mai 1933,
+    *Benjamin*, Lebon) en trois temps consolidé :
+    - **adaptée** : la mesure est-elle apte à atteindre le but
+      d'intérêt général visé ?
+    - **nécessaire** : le but ne pourrait-il être atteint par une
+      mesure moins attentatoire ?
+    - **proportionnée stricto sensu** : l'atteinte aux libertés
+      est-elle en équilibre raisonnable avec le bénéfice attendu pour
+      l'ordre public ?
+  - **contrôle de motivation** (CRPA, art. L.211-2 et s. — anciennement loi
+    n° 79-587 du 11 juillet 1979, recodifiée par l'ordonnance n° 2015-1341
+    du 23 octobre 2015, en vigueur depuis le 1er janvier 2016 —, lorsqu'applicable),
+  - **contrôle d'opposabilité** (publication, affichage, signalisation),
+  - **contrôle des éléments de preuve** justifiant la mesure,
+  - **triangulation obligatoire si l'acte fait grief**.
 
-## Module ACTE-ADMIN
+### Module PA-PJ
+- **Déclencheurs** : question portant sur des opérations susceptibles
+  d'appartenir à la police administrative ou à la police judiciaire,
+  mention de constatation, d'interpellation, de contrôle, de mesure
+  préventive.
+- **Contenu** — mini-grille obligatoire :
+  - **finalité** : préventive (PA) ou répressive (PJ) ?
+  - **autorité agissante**,
+  - **temporalité** par rapport au fait,
+  - **régime procédural applicable**.
 
-**Déclencheurs :** rédaction, analyse ou contrôle d’un arrêté, d’une décision individuelle, d’une mesure de police, d’une sanction disciplinaire ou d’un refus d’autorisation.
+### Module FOND
+- **Déclencheurs** : niveau d'exigence = note de fond / citation pour
+  acte / préparation de concours ; ou question d'interprétation
+  explicitement controversée.
+- **Contenu** :
+  - **archéologie textuelle (T3)** obligatoire,
+  - **grille d'autorité jurisprudentielle** pour chaque arrêt cité :
+    arrêt de principe / solution constante / solution isolée / espèce
+    factuellement atypique / formation solennelle ou ordinaire / ratio
+    decidendi ou obiter dictum.
 
-**Contrôles obligatoires :** compétence de l’auteur, délégation, compétence territoriale et temporelle ; motivation au regard du CRPA lorsque celui-ci s’applique ; publication, affichage et opposabilité ; éléments de preuve ; proportionnalité de la mesure selon les tests d’adaptation, nécessité et proportionnalité stricte, notamment au regard de la jurisprudence officielle pertinente. Trianguler si l’acte fait grief.
+### Module CONTENTIEUX
+- **Déclencheurs** : question portant explicitement sur un risque de
+  recours, une stratégie procédurale, une voie de droit envisagée.
+- **Contenu** : identification du régime contentieux applicable —
+  REP / plein contentieux / référé suspension / référé liberté /
+  exception d'illégalité / nullité pénale — avec ses conséquences sur :
+  - l'**office du juge**,
+  - la **charge argumentative**,
+  - les **moyens opérants**,
+  - les **délais de recours**.
 
-## Module PA-PJ
+### Module DOC-AUDIT
+- **Déclencheurs** : audit, relecture juridique ou correction d'un document
+  existant ; contrôle d'un corpus ; reprise d'un document annoncé comme déjà
+  audité.
+- **Statut** : **non désactivable par `[express]`**. Le précédent audit ne
+  réduit pas le périmètre de revérification.
+- **Contenu** : lire et exécuter intégralement
+  [`audit-documentaire.md`](audit-documentaire.md) : inventaire du corpus,
+  registre des affirmations, contrôle en source primaire de 100 % du risque
+  élevé, matrice acteur–lieu–propriétaire–pouvoir, double test
+  source/conséquence, cohérence interdocuments et contrôle post-correction.
+- **Porte bloquante** : ne pas déclarer l'audit achevé si une affirmation à
+  risque élevé reste sans vérification, correction ou abstention ciblée.
 
-**Déclencheurs :** constatation, interpellation, contrôle, mesure préventive ou opération susceptible de relever de la police administrative ou judiciaire.
-
-| Critère | Police administrative | Police judiciaire |
-|---|---|---|
-| Finalité | Prévention et ordre public | Recherche et poursuite des infractions |
-| Autorité | Autorité administrative | Autorité judiciaire ou agents agissant sous sa direction |
-| Temporalité | Avant ou indépendamment d’une infraction | À partir d’une infraction constatée ou suspectée |
-| Régime | Droit administratif | Code de procédure pénale |
-
-Qualifier explicitement l’opération selon ces quatre critères avant d’analyser sa légalité ou son régime.
-
-## Module FOND
-
-**Déclencheurs :** note de fond, citation pour acte officiel, préparation de concours ou interprétation controversée.
-
-**Contrôles obligatoires :** reconstituer l’évolution du texte et les dispositions transitoires ; rechercher les travaux préparatoires lorsqu’ils sont pertinents ; qualifier l’autorité de chaque décision citée (principe, solution constante ou isolée, formation, atypicité factuelle) ; distinguer ratio decidendi et obiter dictum ; présenter les divergences et l’état du droit à la date de référence ; trianguler systématiquement.
-
-## Module CONTENTIEUX
-
-**Déclencheurs :** risque de recours, stratégie procédurale ou voie de droit envisagée.
-
-**Contrôles obligatoires :** identifier le régime — REP, plein contentieux, référé suspension, référé liberté, référé conservatoire, exception d’illégalité ou nullité pénale selon le cas — puis vérifier l’office du juge, les moyens opérants, la charge argumentative et probatoire, les délais et conditions de recevabilité, l’intérêt à agir et les éventuelles forclusions à la date de référence.
-
-## Module DOC-AUDIT
-
-**Déclencheurs :** audit, relecture, correction d’un document ou contrôle d’un corpus.
-
-**Contrôles obligatoires :**
-
-1. Reprendre depuis les sources primaires toutes les affirmations à risque élevé et établir le delta temporel.
-2. Qualifier le livrable par son contenu et ses effets, non par son seul titre.
-3. Inventorier fichiers, versions, annexes et doublons ; séparer faits confirmés, hypothèses et recommandations.
-4. Extraire chaque affirmation juridiquement significative avec son fichier, emplacement, registre, niveau de risque, acteur, lieu, pouvoir, source et conséquence revendiquée.
-5. Vérifier à 100 % les affirmations à risque élevé : compétence, infractions, peines, montants, délais, contrôles, fouilles, lieux privés et données personnelles.
-6. Construire une matrice acteur–lieu–propriétaire–pouvoir pour chaque action sensible.
-7. Contrôler séparément la source, la conséquence et la cohérence interdocuments.
-8. Relire le document corrigé pour s’assurer qu’aucune affirmation risquée n’a été introduite ou laissée sans source.
-
-Sortie recommandée : registre des affirmations, corrections proposées, sources vérifiées et réserves restantes.
+---

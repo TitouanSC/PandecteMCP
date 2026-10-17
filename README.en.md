@@ -269,8 +269,9 @@ and OpenAI plugins.
 | [`vibe_skill/`](vibe_skill) | Vibe (Mistral) | Condensed core, `web_search` / `web_fetch` tools |
 | [`manus_skill/`](manus_skill) | Manus | Condensed core, MCP connector first |
 
-These variants follow the principles of the core; `skill/` remains the
-methodological source of truth.
+These packages are **generated** from a single source
+([`declinaisons/`](declinaisons/README.md)): a shared condensed core and one
+sheet per platform. `skill/` remains the methodological source of truth.
 
 ---
 

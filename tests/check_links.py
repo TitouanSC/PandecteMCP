@@ -29,6 +29,10 @@ EXCLUDE_DIRS = {".git", ".claude", ".venv", "vault", "__pycache__", ".github"}
 # Artefacts privés ignorés par Git ; exclure ce chemin depuis la racine,
 # sans ignorer un clone dont un répertoire parent s'appelle « runs ».
 PRIVATE_RUNS = ("tests", "bench", "runs")
+# Modèles des déclinaisons : leurs liens sont relatifs au paquet généré, pas
+# à leur propre emplacement. tests/test_declinaisons.py les vérifie dans
+# chaque paquet produit, où ils doivent résoudre.
+TEMPLATES = {("declinaisons", "noyau-compact.md"), ("declinaisons", "README-modele.md")}
 LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 
 
@@ -36,7 +40,11 @@ def iter_markdown() -> list[Path]:
     files = []
     for path in ROOT.rglob("*.md"):
         parts = path.relative_to(ROOT).parts
-        if parts[:3] == PRIVATE_RUNS or any(part in EXCLUDE_DIRS for part in parts):
+        if (
+            parts[:3] == PRIVATE_RUNS
+            or parts in TEMPLATES
+            or any(part in EXCLUDE_DIRS for part in parts)
+        ):
             continue
         files.append(path)
     return sorted(files)
