@@ -123,5 +123,24 @@ class DepotReelTests(unittest.TestCase):
         self.assertNotIn("mcpServers", manifeste_claude)
 
 
+class CiEnvironmentTests(unittest.TestCase):
+    """Le dépôt réel passe le contrôle dans l'environnement de la CI GitHub.
+
+    La CI fournit GITHUB_REPOSITORY, absent en local : un contrôle qui en
+    dépend peut passer sur le poste et échouer en CI (incident du 18/10/2026).
+    """
+
+    def test_real_repository_passes_with_the_github_environment(self):
+        import contextlib
+        import io
+        import os
+        from unittest import mock
+
+        with mock.patch.dict(os.environ, {"GITHUB_REPOSITORY": "TitouanSC/PandecteMCP"}):
+            with contextlib.redirect_stdout(io.StringIO()) as sortie:
+                code = check_plugin.main()
+        self.assertEqual(0, code, sortie.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()

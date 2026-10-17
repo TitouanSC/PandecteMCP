@@ -9,7 +9,6 @@ point d'entrée historique.
 from __future__ import annotations
 
 import json
-import os
 import re
 import sys
 from pathlib import Path
@@ -173,16 +172,13 @@ def main() -> int:
         if field not in manifest:
             fail(f"champ obligatoire absent : {field}", problems)
 
-    repository = os.environ.get("GITHUB_REPOSITORY", "")
-    repository_name = repository.rsplit("/", 1)[-1] if repository else ""
+    # Le nom du plugin (« pandecte ») diffère volontairement de celui du dépôt
+    # (« PandecteMCP ») : l'égalité qu'exigeait le projet d'origine n'a pas
+    # cours ici. La cohérence qui compte — même nom dans les deux manifestes
+    # et les marketplaces — est contrôlée plus bas.
     name = manifest.get("name")
     if not isinstance(name, str) or PLUGIN_NAME.fullmatch(name) is None:
         fail("name doit être un slug en minuscules séparé par des tirets", problems)
-    if repository_name and name != repository_name:
-        fail(
-            f"name doit correspondre au dépôt GitHub ({repository_name!r})",
-            problems,
-        )
 
     version = manifest.get("version")
     if not isinstance(version, str) or SEMVER.fullmatch(version) is None:
