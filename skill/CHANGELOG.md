@@ -17,17 +17,34 @@ et le candidat plugin 0.9.0 à huit outils MCP. L'historique antérieur reste
 consultable dans le
 [CHANGELOG d'origine à ce commit](https://github.com/brissonjo-sudo/droit-francais-skill/blob/f0ce68a/skill/CHANGELOG.md).
 
+#### Ajouté
+- Serveur hébergé sans identifiants propres : chaque utilisateur se connecte
+  avec ses identifiants PISTE sur la page « Connexion PISTE » (OAuth 2.1,
+  PKCE, enregistrement dynamique), ou les transmet en clé `pk1` (page « Clé
+  personnelle »). Le serveur est son propre serveur d'autorisation et ne
+  stocke rien : l'état OAuth voyage chez le client en enveloppes
+  AES-256-GCM.
+- Cache des lectures en mémoire vive (textes 6 h, décisions 24 h), limite de
+  débit par adresse IP.
+- Déploiement Render sans disque (`render.yaml`), instance publique
+  `https://pandecte-mcp.onrender.com/mcp`, qualifiée depuis claude.ai,
+  ChatGPT et Claude Code.
+
 #### Modifié
 - Projet renommé PandecteMCP : paquet Python `pandecte`, skill
   `pandecte-recherche`, serveur MCP `pandecte`.
 - Numérotation repartie à 0.1.0, en série unique.
-- Manifestes de plugin rattachés au dépôt TitouanSC/PandecteMCP ;
-  URL du serveur distant à configurer au déploiement.
+- Manifestes de plugin rattachés au dépôt TitouanSC/PandecteMCP.
+- Documentation publique réécrite : README FR/EN, conditions d'utilisation
+  (clause de mandat), politique de confidentialité, registre CGU, audit de
+  sécurité.
 
 #### Retiré
 - Infrastructure, identifiants, visuels et documents de travail propres au
   projet d'origine : workflows liés à son serveur, notes Obsidian, banc
   agentique, dossier de soumission ChatGPT, logo.
+- Consultation avec les identifiants PISTE de l'exploitant (mode partagé),
+  fournisseur OAuth externe, base de données et disque persistant.
 - Code des déclinaisons `gemini_agent/` et `vibe_skill/tools/`, remplacé par
   le serveur MCP.
 
