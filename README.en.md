@@ -68,6 +68,11 @@ On first connection, your assistant opens the server's **"Connexion PISTE"**
 page: you enter your PISTE Client ID and Client Secret there, once. After that,
 every lookup uses these credentials without asking again.
 
+**The method comes with the connector.** With no skill installed, the assistant
+reads the research method through the `get_method` tool before any legal
+analysis. The full skill (below) remains preferable when it can be installed:
+it is more detailed and loads without a tool call.
+
 ### Getting PISTE credentials (free)
 
 1. Create an account on [piste.gouv.fr](https://piste.gouv.fr).

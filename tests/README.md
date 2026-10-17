@@ -96,7 +96,7 @@ signification, qualité générale). Inclut une sonde d'hallucination
 python tests/test_tools.py
 ```
 
-`test_mcp_app.py` couvre le contrat des huit outils, le masquage des secrets,
+`test_mcp_app.py` couvre le contrat des neuf outils, le masquage des secrets,
 les limites de capacité, la configuration de production, les annotations et
 une session MCP `stdio` réelle. `test_deployment.py` contrôle le paquet Docker
 sans lancer de conteneur.
@@ -117,7 +117,7 @@ réseau ni secret réel :
   l'environnement doivent être retirés au démarrage et jamais utilisés.
 
 Le CI démarre en plus le serveur Streamable HTTP, vérifie `/health`, initialise
-une vraie session sur `/mcp`, découvre les huit outils, puis construit l'image
+une vraie session sur `/mcp`, découvre les neuf outils, puis construit l'image
 Docker. La même sonde HTTP peut viser un déploiement de test :
 
 ```bash
@@ -138,7 +138,7 @@ python tests/check_oauth_metadata.py https://domaine.example --discover
 ```
 
 `check_live_tools.py` valide les **outils contre le service déployé**, avec
-une vraie clé personnelle `pk1.…` : découverte et annotations, appel effectif de chacun des huit,
+une vraie clé personnelle `pk1.…` : découverte et annotations, appel effectif de chacun des neuf,
 latence des premiers appels Légifrance et Judilibre, lectures avec texte,
 datation, provenance, parcours `search → fetch` et article inexistant. Lorsque
 les valeurs des clés fournisseur existent localement, la sonde vérifie aussi

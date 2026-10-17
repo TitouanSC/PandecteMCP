@@ -41,6 +41,7 @@ from pandecte import tools as legal_tools
 from mcp_server.access import AccessGrant
 from mcp_server.cache import ResponseCache
 from mcp_server.http_guard import HttpGuard, client_ip
+from mcp_server.methode import Section as MethodSection, read_method
 from mcp_server.quotas import IpRateLimit, QuotaExceeded
 from mcp_server.store import Store
 from mcp_server.runtime import (
@@ -183,6 +184,7 @@ def _build_auth_options() -> dict[str, Any]:
 #: annotations ; le paramètre de date, par les descriptions de get_article et
 #: search_articles, là où le modèle en a besoin au moment de décider.
 INSTRUCTIONS = (
+    "Avant toute analyse juridique, lisez la méthode avec get_method. "
     "Aucune référence juridique — article, décision, identifiant, date — ne se "
     "produit de mémoire : toutes viennent des outils. Vérifiez la version en "
     "vigueur et son champ applicable_at_as_of_date : une source officielle peut "
@@ -603,6 +605,31 @@ def get_section(id: str, text_id: str, date: str | None = None,
 def get_text(id: str, date: str | None = None) -> dict[str, Any]:
     """Lit un texte LEGI consolidé, daté et sans troncature."""
     return _safe_call(legal_tools.get_text, id, date)
+
+
+@server.tool(
+    name="get_method",
+    title="Lire la méthode de recherche PandecteMCP",
+    description=(
+        "Méthode de recherche juridique à lire AVANT toute analyse et à suivre "
+        "pendant toute la conversation : principes P1 à P7, procédure, règle de "
+        "provenance, usage des outils, format de sortie. Sans argument : la "
+        "méthode condensée. section : une référence détaillée (modes d'erreur, "
+        "gabarits de sortie, checklist de vigueur…) ou un profil métier. "
+        "N'interroge aucune source juridique."
+    ),
+    annotations=READ_ONLY,
+)
+def get_method(section: MethodSection | None = None) -> dict[str, Any]:
+    """Rend la méthode de recherche, ou l'une de ses références."""
+    started = time.monotonic()
+    result = read_method(section, SERVER_VERSION)
+    LOGGER.info(
+        "tool_call tool=get_method section=%s outcome=success duration_ms=%d",
+        section or "methode",
+        int((time.monotonic() - started) * 1000),
+    )
+    return result
 
 
 LOOPBACK_HOSTS = ["127.0.0.1:*", "localhost:*", "[::1]:*"]

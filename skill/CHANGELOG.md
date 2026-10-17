@@ -24,6 +24,10 @@ consultable dans le
   personnelle »). Le serveur est son propre serveur d'autorisation et ne
   stocke rien : l'état OAuth voyage chez le client en enveloppes
   AES-256-GCM.
+- Outil `get_method` : le connecteur sert lui-même la méthode condensée et
+  les références détaillées (modes d'erreur, gabarits, profils…), pour les
+  utilisateurs qui ne peuvent installer aucun skill (claude.ai sur un poste
+  tiers, mobile, ChatGPT) ; les consignes de connexion y renvoient d'abord.
 - Cache des lectures en mémoire vive (textes 6 h, décisions 24 h), limite de
   débit par adresse IP.
 - Déploiement Render sans disque (`render.yaml`), instance publique

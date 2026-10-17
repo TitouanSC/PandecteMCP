@@ -579,7 +579,8 @@ La voie de récupération n'est pas un choix soumis à l'utilisateur : elle se
 1. **Outil officiel disponible dans l'environnement** — utiliser en priorité
    le connecteur MCP **PandecteMCP** s'il est exposé (outils `search`,
    `fetch`, `search_articles`, `get_article`, `search_case_law`,
-   `get_decision`, `get_section`, `get_text`) : il interroge Légifrance et
+   `get_decision`, `get_section`, `get_text`, et `get_method`, qui sert une
+   version condensée de cette méthode aux assistants sans skill) : il interroge Légifrance et
    Judilibre avec les identifiants PISTE que l'utilisateur a lui-même confiés
    au connecteur. Sinon utiliser
    [`scripts/legifrance.py`](scripts/legifrance.py) : `article` / `search`

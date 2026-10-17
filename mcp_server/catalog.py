@@ -22,6 +22,7 @@ TOOL_NAMES: tuple[str, ...] = (
     "get_decision",
     "get_section",
     "get_text",
+    "get_method",
 )
 
 #: Même contrat, sous la forme attendue par les comparaisons d'ensembles.

@@ -244,6 +244,18 @@ class PisteEndToEnd(PisteServerCase):
         used = self.seen_credentials[-1]
         self.assertEqual((USER_ID, USER_SECRET), (used.client_id, used.client_secret))
 
+    def test_method_is_served_through_the_hosted_connector(self):
+        from mcp_server.access import encode_personal_key
+        from pandecte.credentials import PisteCredentials
+
+        key = encode_personal_key(PisteCredentials(USER_ID, USER_SECRET))
+        status, message = self.run_tool(key, "get_method", {})
+        self.assertEqual(200, status)
+        resultat = message["result"]
+        self.assertFalse(resultat.get("isError"), message)
+        self.assertIn("**P1 —", resultat["structuredContent"]["text"])
+        self.assertEqual([], self.seen_credentials)  # aucun appel PISTE
+
     def test_without_a_valid_token_nothing_runs(self):
         async def steps(client):
             for token in ("", "pse1.faux", "jeton-quelconque"):

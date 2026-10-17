@@ -74,6 +74,8 @@ jobs:
           python -m py_compile tests/test_cle.py
           python -m py_compile declinaisons/generer.py
           python -m py_compile tests/test_declinaisons.py
+          python -m py_compile mcp_server/methode.py
+          python -m py_compile tests/test_methode.py
           python -m py_compile tests/test_access.py
           python -m py_compile mcp_server/http_guard.py
           python -m py_compile mcp_server/cache.py

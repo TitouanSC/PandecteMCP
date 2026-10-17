@@ -69,6 +69,11 @@ du serveur : vous y saisissez votre Client ID et votre Client Secret PISTE, une
 seule fois. Ensuite, chaque consultation se fait avec ces identifiants, sans
 rien ressaisir.
 
+**La méthode arrive avec le connecteur.** Sans aucun skill installé, l'assistant
+lit la méthode de recherche par l'outil `get_method` avant toute analyse
+juridique. Le skill complet (ci-dessous) reste préférable quand on peut
+l'installer : il est plus détaillé et se charge sans appel d'outil.
+
 ### Obtenir ses identifiants PISTE (gratuit)
 
 1. Créez un compte sur [piste.gouv.fr](https://piste.gouv.fr).

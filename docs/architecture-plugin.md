@@ -138,8 +138,9 @@ JSON indépendantes du rendu terminal et sont testés sans réseau.
 
 Critère de sortie atteint hors réseau : les résultats simulés conservent
 l'identifiant et l'URL officiels, et un client MCP réel découvre les outils
-sur stdio — six à l'origine, huit depuis l'ajout de `get_section` et
-`get_text` (voir `extension-sections-textes.md`). Le transport Streamable HTTP sert le même serveur sur `/mcp`.
+sur stdio — six à l'origine, huit avec `get_section` et
+`get_text` (voir `extension-sections-textes.md`), neuf avec `get_method`,
+qui sert la méthode de recherche aux assistants sans skill installé. Le transport Streamable HTTP sert le même serveur sur `/mcp`.
 
 Le déploiement HTTPS et la connexion à un compte ChatGPT restent des opérations
 de distribution de l'étape 4 : aucune URL distante n'est inventée dans le dépôt.

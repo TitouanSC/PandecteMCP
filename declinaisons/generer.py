@@ -38,6 +38,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 HERE = ROOT / "declinaisons"
 NOYAU = HERE / "noyau-compact.md"
+CONNECTEUR = HERE / "connecteur.md"
+#: Méthode servie par l'outil get_method du serveur MCP.
+METHODE_SERVEUR = ROOT / "mcp_server" / "methode.md"
 README_MODELE = HERE / "README-modele.md"
 PLATEFORMES = HERE / "plateformes"
 REFERENCES = ("audit-documentaire.md", "modules.md", "sources-autorisees.md")
@@ -71,7 +74,13 @@ def version() -> str:
     return manifeste["version"]
 
 
-def lire_plateforme(chemin: Path) -> Plateforme:
+SECTIONS_PLATEFORME = frozenset(
+    {"intro", "connecteur", "repli", "notes", "presentation", "installation"}
+)
+SECTIONS_CONNECTEUR = frozenset({"intro", "connecteur", "repli", "notes"})
+
+
+def lire_plateforme(chemin: Path, attendues: frozenset[str] = SECTIONS_PLATEFORME) -> Plateforme:
     texte = chemin.read_text(encoding="utf-8")
     if not texte.startswith("---\n"):
         raise ValueError(f"{chemin.name} : en-tête --- attendu")
@@ -90,11 +99,10 @@ def lire_plateforme(chemin: Path) -> Plateforme:
         elif courante is not None:
             sections[courante] += ligne + "\n"
     sections = {cle: valeur.strip() for cle, valeur in sections.items()}
-    attendues = {"intro", "connecteur", "repli", "notes", "presentation", "installation"}
     manquantes = attendues - sections.keys()
     if manquantes:
         raise ValueError(f"{chemin.name} : sections manquantes {sorted(manquantes)}")
-    return Plateforme(champs["cle"], champs["plateforme"], champs["dossier"], sections)
+    return Plateforme(champs["cle"], champs["plateforme"], champs.get("dossier", ""), sections)
 
 
 def plateformes() -> list[Plateforme]:
@@ -133,7 +141,11 @@ def skill_md(plateforme: Plateforme, numero: str) -> str:
         "",
         "",
     ]
-    corps = remplir(
+    return "\n".join(entete) + corps_methode(plateforme)
+
+
+def corps_methode(plateforme: Plateforme) -> str:
+    return remplir(
         NOYAU.read_text(encoding="utf-8"),
         {
             "PLATEFORME": plateforme.nom,
@@ -142,8 +154,17 @@ def skill_md(plateforme: Plateforme, numero: str) -> str:
             "REPLI": plateforme.sections["repli"],
             "NOTES": plateforme.sections["notes"],
         },
+    ).rstrip() + "\n"
+
+
+def methode_serveur() -> str:
+    """Texte renvoyé par l'outil get_method, sans en-tête de skill."""
+    connecteur = lire_plateforme(CONNECTEUR, SECTIONS_CONNECTEUR)
+    return (
+        "<!-- Généré par declinaisons/generer.py depuis declinaisons/noyau-compact.md "
+        "et declinaisons/connecteur.md : ne pas modifier à la main. -->\n\n"
+        + corps_methode(connecteur)
     )
-    return "\n".join(entete) + corps.rstrip() + "\n"
 
 
 def readme_md(plateforme: Plateforme) -> str:
@@ -256,6 +277,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"✅ {plateforme.dossier}/ ({plateforme.nom})")
         if args.zip:
             print(f"   📦 {zipper(plateforme, fichiers, args.zip, numero)}")
+    methode = methode_serveur()
+    if args.check:
+        if not METHODE_SERVEUR.is_file() or METHODE_SERVEUR.read_text(encoding="utf-8") != methode:
+            problemes.append("mcp_server/methode.md : périmé")
+    else:
+        METHODE_SERVEUR.write_text(methode, encoding="utf-8")
+        print("✅ mcp_server/methode.md (outil get_method)")
     if args.zip and not args.check:
         print(f"✅ skill complet (claude.ai, application Claude)\n   📦 {zipper_skill_complet(args.zip, numero)}")
     if args.check:

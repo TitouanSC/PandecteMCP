@@ -32,7 +32,8 @@ RUN python -m pip install --no-cache-dir --requirement requirements-mcp.txt \
     && python -m pip uninstall --yes pip setuptools
 
 COPY mcp_server/ ./mcp_server/
-COPY skill/scripts/ ./skill/scripts/
+# skill/ entier : scripts (accès PISTE), références et profils (outil get_method).
+COPY skill/ ./skill/
 
 # Aucun disque : le serveur ne stocke rien (état OAuth scellé chez le client,
 # cache en mémoire vive). Il tourne entièrement sous l'utilisateur « app ».

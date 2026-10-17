@@ -360,6 +360,16 @@ async def sonder(url: str, token: str) -> None:
                         raise SondeError(f"{nom} n'évalue pas explicitement sa datation")
                     print(f"✅ {nom} : lecture officielle datée, sans troncature.")
 
+                # ---- 7 bis. Méthode servie par le connecteur --------------
+                resultat, _ = await appeler("get_method", {})
+                charge = _exiger_succes(resultat, "get_method")
+                texte_methode = charge.get("text", "")
+                if "P1" not in texte_methode or "provenance" not in texte_methode:
+                    raise SondeError("get_method ne renvoie pas la méthode attendue")
+                if "modes-erreur" not in charge.get("sections", []):
+                    raise SondeError("get_method n'annonce pas ses sections détaillées")
+                print("✅ get_method : méthode servie par le connecteur.")
+
                 # ---- 8. Comportement en cas d'absence ---------------------
                 resultat, _ = await appeler(
                     "search_articles",

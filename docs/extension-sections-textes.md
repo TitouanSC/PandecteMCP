@@ -1,7 +1,7 @@
 # Extension locale : sections CODE et textes consolidés LEGI
 
 Préparée le 4 octobre 2026 dans le projet d'origine. Depuis le 17 octobre
-2026, le serveur hébergé de PandecteMCP expose les huit outils, dont
+2026, le serveur hébergé de PandecteMCP expose les outils de lecture, dont
 `get_section` et `get_text` ; ces deux lectures n'y ont **pas encore été
 qualifiées en lecture métier réelle**.
 

@@ -32,7 +32,13 @@ PRIVATE_RUNS = ("tests", "bench", "runs")
 # Modèles des déclinaisons : leurs liens sont relatifs au paquet généré, pas
 # à leur propre emplacement. tests/test_declinaisons.py les vérifie dans
 # chaque paquet produit, où ils doivent résoudre.
-TEMPLATES = {("declinaisons", "noyau-compact.md"), ("declinaisons", "README-modele.md")}
+# La méthode servie par get_method garde les liens « references/… » du noyau :
+# servie hors de tout dossier, elle les présente comme des sections de l'outil.
+TEMPLATES = {
+    ("declinaisons", "noyau-compact.md"),
+    ("declinaisons", "README-modele.md"),
+    ("mcp_server", "methode.md"),
+}
 LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 
 

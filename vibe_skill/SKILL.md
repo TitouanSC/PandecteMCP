@@ -124,6 +124,7 @@ l'utilisateur a lui-même confiés au connecteur. Ses outils :
 | `get_decision` | `id` | Lecture d'une décision |
 | `get_section` | `id`, `text_id`, `date` | Lecture datée d'une section de code |
 | `get_text` | `id`, `date` | Lecture d'un texte consolidé |
+| `get_method` | `section` (facultatif) | Cette méthode, et ses références détaillées |
 
 Préférer `search_articles` → `get_article` à `search` → `fetch` dès qu'un
 numéro d'article est identifié. Un refus d'accès du connecteur (connexion à

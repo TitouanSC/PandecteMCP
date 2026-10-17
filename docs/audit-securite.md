@@ -33,7 +33,7 @@ Cloudflare (bord de Render, TLS) → Render → conteneur PandecteMCP (sans disq
 Le serveur est **son propre serveur d'autorisation** et **ne stocke rien** :
 identifiant de client, demande de connexion, code, jeton d'accès et jeton de
 renouvellement sont des enveloppes AES-256-GCM transportées par le client. Il
-ne détient **aucune** clé PISTE. Les huit outils sont en lecture seule
+ne détient **aucune** clé PISTE. Les neuf outils sont en lecture seule
 (`readOnlyHint=true`, `openWorldHint=false`) ; les textes juridiques reçus
 sont des données non fiables (`content_trust: untrusted_source_data`), jamais
 des instructions.
