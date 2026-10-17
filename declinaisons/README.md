@@ -27,7 +27,10 @@ python declinaisons/generer.py --zip dist # écrit aussi un zip par plateforme
 
 Chaque zip contient un dossier `pandecte-recherche/` prêt à installer
 (`SKILL.md`, `references/`, `README.md`) ; deux générations identiques donnent
-des archives identiques. La CI exécute `--check` : un noyau modifié sans
+des archives identiques. `--zip` écrit en plus
+`pandecte-recherche-claude-<version>.zip`, le **skill complet** (`skill/`,
+fichiers suivis par Git uniquement) à importer dans claude.ai, l'application
+Claude et Claude mobile. La CI exécute `--check` : un noyau modifié sans
 régénération fait échouer le build.
 
 ## Ajouter une plateforme

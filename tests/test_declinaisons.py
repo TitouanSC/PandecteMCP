@@ -128,5 +128,18 @@ class ZipTests(unittest.TestCase):
             self.assertEqual({f"pandecte-recherche/{c}" for c in fichiers}, noms)
 
 
+class FullSkillZipTests(unittest.TestCase):
+    def test_full_skill_zip_holds_only_tracked_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            archive = generer.zipper_skill_complet(Path(tmp), VERSION)
+            with zipfile.ZipFile(archive) as zf:
+                noms = zf.namelist()
+        self.assertIn("pandecte-recherche/SKILL.md", noms)
+        self.assertIn("pandecte-recherche/references/modes-erreur.md", noms)
+        for nom in noms:
+            self.assertTrue(nom.startswith("pandecte-recherche/"), nom)
+            self.assertNotRegex(nom, r"(^|/)(\.env|profil\.md)$|__pycache__")
+
+
 if __name__ == "__main__":
     unittest.main()

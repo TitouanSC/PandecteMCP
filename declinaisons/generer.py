@@ -13,7 +13,8 @@ Sources, seules à modifier à la main :
 
 Sorties, à ne jamais modifier à la main : ``gemini_skill/``, ``grok_skill/``,
 ``manus_skill/``, ``vibe_skill/``, et, sur demande, un zip par plateforme
-contenant un dossier ``pandecte-recherche/`` prêt à installer.
+contenant un dossier ``pandecte-recherche/`` prêt à installer, plus le zip du
+skill complet (``skill/``) pour claude.ai et l'application Claude.
 
     python declinaisons/generer.py            # régénère les dossiers
     python declinaisons/generer.py --check    # échoue si un dossier est périmé
@@ -28,6 +29,7 @@ import argparse
 import json
 import re
 import shutil
+import subprocess
 import sys
 import zipfile
 from dataclasses import dataclass
@@ -206,6 +208,38 @@ def zipper(plateforme: Plateforme, fichiers: dict[str, str], dossier: Path, nume
     return archive
 
 
+def fichiers_skill_complet() -> dict[str, bytes]:
+    """Skill complet, limité aux fichiers suivis par Git.
+
+    Jamais de fichier local : ni ``scripts/.env`` (identifiants), ni
+    ``profil.md`` (choix de l'utilisateur), ni cache Python.
+    """
+    sortie = subprocess.run(
+        ["git", "ls-files", "-z", "skill"], cwd=ROOT, capture_output=True, check=True
+    ).stdout.decode("utf-8")
+    fichiers = {}
+    for chemin in sorted(filter(None, sortie.split("\0"))):
+        relatif = chemin[len("skill/"):]
+        nom = Path(relatif).name
+        if nom == ".env" or nom == "profil.md" or "__pycache__" in relatif:
+            raise RuntimeError(f"fichier local suivi par Git, refusé : {chemin}")
+        fichiers[relatif] = (ROOT / chemin).read_bytes()
+    return fichiers
+
+
+def zipper_skill_complet(dossier: Path, numero: str) -> Path:
+    dossier.mkdir(parents=True, exist_ok=True)
+    archive = dossier / f"{NOM_SKILL}-claude-{numero}.zip"
+    fichiers = fichiers_skill_complet()
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
+        for chemin in sorted(fichiers):
+            info = zipfile.ZipInfo(f"{NOM_SKILL}/{chemin}", date_time=ZIP_DATE)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o644 << 16
+            zf.writestr(info, fichiers[chemin])
+    return archive
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true", help="échoue si un dossier généré est périmé")
@@ -222,6 +256,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"✅ {plateforme.dossier}/ ({plateforme.nom})")
         if args.zip:
             print(f"   📦 {zipper(plateforme, fichiers, args.zip, numero)}")
+    if args.zip and not args.check:
+        print(f"✅ skill complet (claude.ai, application Claude)\n   📦 {zipper_skill_complet(args.zip, numero)}")
     if args.check:
         if problemes:
             print("❌ Déclinaisons périmées — lancer python declinaisons/generer.py :")
