@@ -24,6 +24,11 @@ administrative et constitutionnelle.
 > clé PISTE (gratuite). Une clé partagée dans un paquet public ne serait plus
 > un secret — voir la note de sécurité en bas de page.
 
+> **Sans rien installer.** Le connecteur hébergé PandecteMCP
+> (`https://pandecte-mcp.onrender.com/mcp`) applique le même modèle : chacun
+> s'y connecte avec **ses** identifiants PISTE, que le serveur ne stocke pas.
+> Voir le [README du dépôt](../../README.md).
+
 > **La clé est optionnelle.** Sans identifiants PISTE, le skill reste
 > pleinement opérationnel : il bascule sur la **voie de repli web**
 > (`web_search` / `web_fetch` sur domaines officiels,
@@ -83,7 +88,8 @@ installation autonome du dossier `skill/`.
 ### Étape 1 — Obtenir des identifiants PISTE (gratuit)
 
 1. Créer un compte sur <https://piste.gouv.fr>.
-2. Menu **« Applications »** → créer une application.
+2. Menu **« Applications »**, environnement **Production** → créer une
+   application (les identifiants Sandbox ne fonctionnent pas en production).
 3. L'**abonner à l'API « Légifrance »** (catalogue des API → Légifrance →
    souscrire). L'abonnement peut demander une courte validation.
 4. Dans la fiche de l'application, relever le **`client_id`** et le

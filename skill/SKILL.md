@@ -577,18 +577,26 @@ La voie de récupération n'est pas un choix soumis à l'utilisateur : elle se
 **constate**, par le code de sortie de l'outil.
 
 1. **Outil officiel disponible dans l'environnement** — utiliser en priorité
-   le connecteur MCP Légifrance/Judilibre s'il est exposé. Sinon utiliser
+   le connecteur MCP **PandecteMCP** s'il est exposé (outils `search`,
+   `fetch`, `search_articles`, `get_article`, `search_case_law`,
+   `get_decision`, `get_section`, `get_text`) : il interroge Légifrance et
+   Judilibre avec les identifiants PISTE que l'utilisateur a lui-même confiés
+   au connecteur. Sinon utiliser
    [`scripts/legifrance.py`](scripts/legifrance.py) : `article` / `search`
    (textes), `ceta` / `constit` (Conseil d'État, Conseil constitutionnel),
    `juri` puis `decision` (jurisprudence judiciaire). Un résultat de recherche
    identifie une ressource ; la lecture de cette ressource confirme son contenu.
-2. **Voie de repli web** — outil indisponible ou identifiants PISTE absents :
+2. **Voie de repli web** — outil indisponible, identifiants PISTE absents, ou
+   connecteur qui refuse l'accès (connexion à refaire, identifiants refusés) :
    basculer sur les gabarits `web_search` / `web_fetch`, domaines officiels
    exclusivement, **sans l'annoncer et sans poser de question**. Demander à
    l'utilisateur s'il dispose d'une clé API est une **question rituelle
    prohibée** (étape 0 bis, économie du questionnement) : l'information est
    constatable par l'outil, donc elle se constate. La clé est un confort,
-   jamais une condition d'exercice.
+   jamais une condition d'exercice. Seulement si l'utilisateur demande
+   comment fiabiliser la récupération, indiquer le connecteur PandecteMCP
+   (`https://pandecte-mcp.onrender.com/mcp`, connexion avec ses propres
+   identifiants PISTE, gratuits).
 3. **Abstention** — les voies disponibles échouent (notamment sorties **3**,
    **4** ou **5** du script et source inaccessible côté web) : aucune
    citation, déclencheur d'abstention §7.

@@ -168,6 +168,18 @@ class TokenCacheIsolationTests(unittest.TestCase):
         self.assertIs(ALICE, anyio.run(scenario))
 
 
+class MissingCredentialsMessageTests(unittest.TestCase):
+    def test_message_points_to_the_hosted_connector_and_the_local_file(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(LegifranceError) as ctx:
+                legifrance_client.get_token()
+        message = str(ctx.exception)
+        self.assertEqual(2, ctx.exception.exit_code)
+        self.assertIn("Ne pas demander de clé", message)
+        self.assertIn("https://pandecte-mcp.onrender.com/mcp", message)
+        self.assertIn("skill/scripts/.env", message)
+
+
 class MaskingTests(unittest.TestCase):
     def test_request_credentials_are_masked_raw_and_encoded(self):
         creds = PisteCredentials("id/avec+signes", "secret à masquer", "cle-judilibre")
