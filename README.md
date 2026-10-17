@@ -1,39 +1,31 @@
 [🇫🇷 Français](README.md) | [🇬🇧 English](README.en.md)
 
-# droit-francais-skill
+# PandecteMCP
 
-**Skill LLM — méthodologie de recherche en droit français (v0.1.0)**
+**Recherche en droit français pour les assistants d'IA : une méthode
+anti-hallucination et un serveur MCP qui interroge Légifrance et Judilibre
+avec vos propres identifiants PISTE (v0.1.0).**
 
-**Distribution autonome + plugins OpenAI et Claude Code avec outils MCP (candidat plugin v0.1.0, non publié)**
+> **Projet indépendant**, sans lien avec l'auteur du projet d'origine, avec une
+> personnalité ou une institution, ni avec l'État. PandecteMCP **ne remplace pas
+> un avocat** : il aide à trouver et à vérifier des sources, il ne donne pas de
+> conseil juridique. Il consulte les API Légifrance et Judilibre dans le respect
+> de leurs conditions générales d'utilisation (CGU).
 
-La version locale prépare deux lectures supplémentaires : sections de code et
-textes consolidés. Le service distant reste à la version publiée antérieure ;
-les nouvelles lectures ne sont disponibles qu'après un déploiement explicitement
-autorisé et leur qualification. Voir la préparation.
+PandecteMCP réunit deux briques :
 
-[![CI](https://github.com/brissonjo-sudo/droit-francais-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/brissonjo-sudo/droit-francais-skill/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/brissonjo-sudo/droit-francais-skill)](https://github.com/brissonjo-sudo/droit-francais-skill/releases)
-[![License: CC BY-SA 4.0](https://img.shields.io/badge/license-CC%20BY--SA%204.0-blue)](LICENSE)
+- **un skill** (méthode) qui impose à l'assistant de travailler sur sources
+  primaires, de vérifier la version en vigueur et de dire ce qui reste
+  invérifiable ;
+- **un serveur MCP** hébergé, que vous ajoutez à votre assistant comme un
+  connecteur : **rien à installer**, et chaque consultation passe par **vos
+  propres** identifiants PISTE, gratuits.
 
-> **Droit français** aide à vérifier les références, les versions applicables
-> et le raisonnement avant de rédiger un avis ou un acte. Il impose une méthode
-> de recherche sur sources primaires et demande de signaler ce qui reste
-> invérifiable. Son apport sur les modèles actuels reste à mesurer ; aucune
-> garantie d'absence d'erreur n'est revendiquée.
-
-**Pour commencer :** choisir un [canal d'installation](docs/installation.md),
-puis vérifier la méthode et, séparément, l'accès aux outils.
-
-| Canal | État au 10 octobre 2026 | Outils |
+| Usage | Ce qu'il faut | Pour qui |
 |---|---|---|
-| Skill autonome | Noyau 0.1.0 présent dans `main` ; paquet publié distinct | Web officiel si le client le permet ; PISTE facultatif |
-| Plugin depuis le dépôt | Candidat 0.1.0 ; connexion distante dans `.mcp.json` | Service publié antérieur, six outils ; OAuth à qualifier par client |
-| Serveur local du candidat | Huit outils dans le code, avec Python et PISTE | Articles, décisions, sections et textes ; mesure séparée du service distant |
-
-Les nouveaux parcours OAuth Claude Code et ChatGPT restent suivis dans
-[#88](https://github.com/brissonjo-sudo/droit-francais-skill/issues/88) et
-[#89](https://github.com/brissonjo-sudo/droit-francais-skill/issues/89).
-La présence du manifeste ne prouve pas une installation fonctionnelle.
+| Connecteur hébergé | Une adresse à ajouter, vos identifiants PISTE | claude.ai, ChatGPT, Claude Code et tout client MCP |
+| Skill seul | Rien, ou une clé PISTE facultative | Assistants qui chargent des skills |
+| Instance personnelle | Un hébergeur ou votre poste | Qui ne veut confier ses clés à personne |
 
 ---
 
@@ -44,10 +36,10 @@ modèle récent rejette). C'est le **mensonge plausible** : une référence
 parfaitement formatée, mais fausse — impossible à repérer à l'œil.
 
 **Illustration historique** — Gemini 3.5 extended, 5 juillet 2026, selon le
-compte rendu conservé. Cet essai isolé ne mesure ni les modèles actuels ni
-l'effet causal du plugin. Question : *« Donne-moi
-la référence exacte (chambre, date, n° de pourvoi) de trois arrêts de la Cour
-de cassation. »* Vérification en source primaire des trois réponses :
+compte rendu conservé par le projet d'origine. Cet essai isolé ne mesure ni les
+modèles actuels ni l'effet de l'outil. Question : *« Donne-moi la référence
+exacte (chambre, date, n° de pourvoi) de trois arrêts de la Cour de
+cassation. »* Vérification en source primaire des trois réponses :
 
 | Réponse de l'IA | Réalité (Légifrance) | Verdict |
 |---|---|---|
@@ -66,8 +58,87 @@ démontre pas quel outil aurait produit ces références.
 > ⚠️ *Je ne produis pas ces numéros de pourvoi sans les avoir vérifiés en
 > source primaire (Judilibre / Légifrance) — je ne les invente pas.*
 
-Une campagne distincte devra mesurer cet apport avant de publier de nouveaux
-exemples. Aucun résultat nouveau n’est annoncé ici.
+---
+
+## Utiliser PandecteMCP sans rien installer
+
+Adresse du serveur : **`https://pandecte-mcp.onrender.com/mcp`**
+
+À la première connexion, votre assistant ouvre la page **« Connexion PISTE »**
+du serveur : vous y saisissez votre Client ID et votre Client Secret PISTE, une
+seule fois. Ensuite, chaque consultation se fait avec ces identifiants, sans
+rien ressaisir.
+
+### Obtenir ses identifiants PISTE (gratuit)
+
+1. Créez un compte sur [piste.gouv.fr](https://piste.gouv.fr).
+2. Acceptez les CGU des API **Légifrance** et **JUDILIBRE** (menu API →
+   consentement CGU), en environnement **Production**.
+3. Applications → **Créer une application** (environnement Production), en
+   cochant Légifrance et JUDILIBRE.
+4. Sur la fiche de l'application, bloc **OAuth** : relevez le **Client ID** et
+   le **Client Secret**. Ce sont les deux seules valeurs demandées.
+
+Le pas à pas détaillé et les erreurs fréquentes sont dans
+[`skill/scripts/README.md`](skill/scripts/README.md).
+
+### claude.ai (web, application, mobile)
+
+Paramètres → **Connecteurs** → *Ajouter un connecteur personnalisé* : nom
+`PandecteMCP`, URL `https://pandecte-mcp.onrender.com/mcp`, champs OAuth
+avancés laissés vides. Cliquez sur **Se connecter**, puis renseignez vos
+identifiants sur la page « Connexion PISTE ».
+
+### ChatGPT
+
+Paramètres → **Applications et connecteurs** → Paramètres avancés → activez le
+**Mode développeur** (selon votre offre), puis **Créer** : URL
+`https://pandecte-mcp.onrender.com/mcp`, authentification **OAuth**. ChatGPT
+ouvre ensuite la page « Connexion PISTE ».
+
+### Claude Code
+
+```bash
+claude mcp add --transport http pandecte https://pandecte-mcp.onrender.com/mcp
+```
+
+Puis `/mcp` → `pandecte` → **Authenticate** : le navigateur ouvre la page
+« Connexion PISTE ». Le plugin du dépôt déclare le même serveur :
+
+```bash
+claude plugin marketplace add TitouanSC/PandecteMCP
+claude plugin install pandecte@pandecte
+```
+
+### Autres clients MCP
+
+Cursor, VS Code, Gemini CLI et les autres clients compatibles MCP « HTTP »
+se connectent de la même façon (OAuth). Ceux qui ne gèrent pas OAuth acceptent
+une **clé personnelle** en en-tête `Authorization: Bearer pk1.…`, assemblée
+dans votre navigateur sur
+[la page « Clé personnelle »](https://pandecte-mcp.onrender.com/cle).
+Seuls claude.ai, ChatGPT et Claude Code ont été testés à ce jour.
+
+### Vos identifiants, et les limites du service
+
+- **Rien n'est stocké.** Le serveur vérifie vos identifiants auprès de PISTE,
+  puis les **chiffre** (AES-256-GCM) dans le jeton que garde votre assistant.
+  Il ne les déchiffre que le temps de chaque consultation ; il ne les écrit
+  nulle part et ne les journalise jamais. Le serveur ne possède **aucun**
+  identifiant PISTE à lui.
+- **Retirer l'accès** : déconnectez le connecteur, ou régénérez votre Client
+  Secret sur PISTE (cela invalide immédiatement tout jeton qui le contient).
+- **Responsabilité** : vos identifiants restent réservés à votre usage (CGU
+  Légifrance § III.3, Judilibre § XI). En les confiant au service, vous lui
+  donnez mandat de consulter les API **en votre nom**, comme intermédiaire
+  technique — voir les [conditions d'utilisation](docs/terms-of-use.md). Pour
+  ne les confier à personne, hébergez votre propre instance.
+- **Quotas** : vos consultations consomment **votre** quota PISTE. Le serveur
+  limite en outre chaque adresse IP à 30 appels d'outil par minute.
+- **Hébergement gratuit** : le serveur s'endort après 15 minutes sans
+  activité ; le premier appel suivant attend son réveil (environ 30 secondes)
+  et peut échouer une fois. Réessayez simplement.
+- **Données traitées** : voir la [politique de confidentialité](docs/privacy-policy.md).
 
 ---
 
@@ -86,55 +157,41 @@ Tout praticien du droit français — **le métier se configure via un profil**
 
 ---
 
-## Ce que fait ce skill
+## Ce que fait le skill
 
-Quand Claude détecte une requête juridique (article de loi, qualification
+Quand l'assistant détecte une requête juridique (article de loi, qualification
 pénale, jurisprudence, rédaction d'acte, vérification d'un texte en
-vigueur…), ce skill active une procédure en 9 étapes incluant :
+vigueur…), le skill active une procédure en 9 étapes incluant :
 
 - **7 principes** anti-hallucination (primarité des sources, date de
   référence, hiérarchie des normes, citation traçable, séparation des
   registres, légalité criminelle, abstention informée)
 - **9 étapes** avec critères de sortie explicites : qualification (0) →
-  **arbitrage informations manquantes (0 bis, v2.1.0)** → cartographie (1) →
+  arbitrage des informations manquantes (0 bis) → cartographie (1) →
   récupération (2) → fraîcheur (3) → jurisprudence (4) → articulation (5) →
   rédaction (6) → auto-critique (7)
+- **18 modes d'erreur** documentés et contrés
 - **4 techniques** de raisonnement (qualification adversariale,
   triangulation, archéologie textuelle, distinction)
 - **6 modules activables** selon la requête (PÉNAL, ACTE-ADMIN, PA-PJ,
   FOND, CONTENTIEUX, DOC-AUDIT)
-- **Double mode opératoire** A (noyau + modules) / B (exhaustif avec
-  balise `[complet]`)
 - **Gabarits de sortie** normalisés (express, fond, citation pour acte,
   audit documentaire, note de concours)
-- **Audit documentaire** (v3.2.0) : registre des affirmations, vérification
-  de 100 % du risque élevé, matrice acteur–lieu–propriétaire–pouvoir,
-  cohérence d'un corpus et contrôle post-correction
-- **Règle de provenance** (v2.3.0) : tout identifiant officiel
-  (`LEGIARTI`, `NOR`, n° de pourvoi…) doit provenir d'un appel d'outil
-  de la session, jamais de la mémoire — sinon marqué « non vérifié »
-- **Voie rapide `[lookup]`** (v2.3.0) : sortie minimale pour une
-  référence ponctuelle non controversée, sans dégrader le fond
-- **Récupération outillée** (v2.3.0, jurisprudence en v2.4.0, Judilibre en
-  v3.1.0) : `skill/scripts/legifrance.py` interroge deux API officielles via
-  PISTE — **Légifrance** (articles de code, textes, décisions CE et CC) et
-  **Judilibre** (Cour de cassation, cours d'appel, tribunaux, avec texte
-  intégral) — pour fiabiliser l'étape 2. Sans clé, l'étape 2 bascule sur la
-  voie web sans rien perdre en exigence de provenance
-- **Profils configurables** (v3.0.0) : le métier de l'utilisateur (contexte
-  territorial, domaines, 3ᵉ regard d'auto-critique) se règle via un `profil.md`
-  — le noyau méthodologique reste universel
+- **Règle de provenance** : tout identifiant officiel (`LEGIARTI`, `NOR`,
+  n° de pourvoi…) doit provenir d'un appel d'outil de la session, jamais de la
+  mémoire — sinon il est marqué « non vérifié »
+- **Récupération outillée** : le serveur MCP, ou le script
+  `skill/scripts/legifrance.py`, interroge **Légifrance** (codes, textes,
+  décisions CE et CC) et **Judilibre** (Cour de cassation, cours d'appel,
+  tribunaux). Sans accès, l'étape 2 bascule sur la recherche web encadrée sur
+  domaines officiels, sans rien perdre en exigence de provenance
+- **Profils configurables** : le métier de l'utilisateur se règle via un
+  `profil.md` — le noyau méthodologique reste universel
 
----
-
-## Fonctionne sans clé API
-
-> 🔑 **Aucune configuration obligatoire.** Le skill fonctionne immédiatement :
-> à défaut d'API, la récupération passe par la recherche web sur les domaines
-> officiels (Légifrance, Cour de cassation, Conseil d'État…). Une **clé PISTE
-> gratuite** (API Légifrance) est *optionnelle* : elle rend la récupération
-> déterministe et fiabilise la règle de provenance. Voir
-> [`skill/scripts/README.md`](skill/scripts/README.md).
+> 🔑 **Le skill fonctionne sans clé.** À défaut d'outil, la récupération passe
+> par la recherche web sur les domaines officiels. Le serveur MCP, ou une clé
+> PISTE locale, rend la récupération déterministe et fiabilise la règle de
+> provenance.
 
 ---
 
@@ -157,7 +214,6 @@ contexte, jamais des certitudes — voir [`skill/profils/`](skill/profils/)) :
 ```bash
 cd ~/.claude/skills/pandecte-recherche
 cp profils/avocat.md profil.md      # remplacer par votre profil
-# puis compléter les champs [à compléter] du profil.md
 ```
 
 Sans `profil.md`, le skill tourne en **profil neutre** : il ne présume aucun
@@ -165,193 +221,68 @@ contexte et pose la question quand elle devient décisionnelle.
 
 ---
 
-## Installation
+## Installer le skill
 
-### Installation suivie et mises à jour via `npx` (recommandée)
-
-Pour que le CLI conserve la source du skill et puisse le mettre à jour sans
-recopie manuelle :
+### Avec `npx` (recommandé)
 
 ```bash
 npx skills add https://github.com/TitouanSC/PandecteMCP/tree/main/skill --skill pandecte-recherche
 ```
 
-Le skill vérifie une fois par session si une nouvelle version est disponible,
-sans interrompre une recherche juridique. Si une mise à jour est signalée,
-l'utilisateur garde la main :
+Le skill signale une fois par session qu'une nouvelle version existe, sans
+interrompre une recherche. La mise à jour reste à votre main :
 
 ```bash
 npx skills update pandecte-recherche
 ```
 
-La commande ne doit pas être lancée automatiquement par l'agent. Pour mettre
-à jour toutes les compétences suivies : `npx skills update`.
-
-#### Mises à jour automatiques (facultatif)
-
-Pour une installation **globale** suivie par le CLI `skills`, créez le fichier
+Pour une mise à jour automatique (installation globale), créez le fichier
 `.pandecte-recherche-update.json` à la racine installée du skill :
 
 ```json
 { "automatic": true }
 ```
 
-Au premier emploi quotidien, le skill lance alors sa mise à jour ciblée. Il
-conserve votre `profil.md` et votre fichier `scripts/.env`; il reste silencieux
-en l'absence de nouvelle version ou si le réseau est indisponible. Pour couper
-ce comportement, remplacez `true` par `false` ou supprimez le fichier.
+Votre `profil.md` et votre `scripts/.env` sont conservés.
 
-### Comme plugin OpenAI — candidat v0.1.0
+### Manuellement
 
-Le dépôt contient désormais un manifeste `.codex-plugin/plugin.json` et un
-point d'entrée natif `skills/pandecte-recherche/`. L'adaptateur charge le
-noyau historique depuis `skill/` : il n'existe donc qu'une seule source de
-vérité méthodologique.
-
-Le manifeste pointe vers `.mcp.json`, qui déclare une **connexion distante**.
-Pour installer, vérifier, mettre à jour et retirer le plugin, suivre le
-[guide de cycle de vie](docs/installation.md). Le démarrage ci-dessous est une
-variante de serveur local, avec huit outils ; il ne constitue pas une
-installation de plugin. Le serveur et le CLI historique partagent la même
-bibliothèque ; la méthode reste dans `skill/SKILL.md`.
+Copier le **contenu** du dossier `skill/` dans
+`~/.claude/skills/pandecte-recherche/` (macOS, Linux) :
 
 ```bash
-python -m pip install -r requirements-mcp.txt
-python mcp_server/server.py
-python mcp_server/server.py --transport streamable-http
-docker build -t droit-francais-mcp .
+git clone https://github.com/TitouanSC/PandecteMCP
+cp -r PandecteMCP/skill ~/.claude/skills/pandecte-recherche
 ```
 
-Les identifiants PISTE restent fournis par variables d'environnement ou `.env`,
-jamais dans le manifeste. Voir le guide MCP et
-l'[architecture progressive](docs/architecture-plugin.md).
-
-Cette version est directement testable comme plugin local dans Codex. Un service
-distant distinct est déployé en HTTPS à l'adresse
-`https://droit-francais-skill.onrender.com/mcp`. Sa version historique expose six
-outils ; le candidat local en expose huit. Une recette de ce service ne qualifie
-pas le candidat local. Le service comporte un contrôle de configuration,
-limitation de charge et journaux sans arguments ni secrets. Voir le
-[guide de déploiement](docs/deployment.md) et le
-guide de connexion/soumission ChatGPT. L'accès
-public est protégé par OAuth 2.1 : le serveur vérifie un jeton porteur émis par
-un serveur d'autorisation externe et applique un quota par utilisateur, afin
-que les clés PISTE du titulaire ne soient jamais consommées anonymement — voir
-le guide OAuth. Le mapping
-`.app.json` ne sera ajouté qu'après création d'une intégration réelle ; aucun
-identifiant distant fictif n'est placé dans le dépôt.
-
-### Comme plugin Claude Code — candidat v0.1.0
-
-> **OAuth Claude Code reste bloqué sur une installation neuve** : le client
-> prédéfini et son callback ne sont pas encore configurés dans le plugin
-> ([#88](https://github.com/brissonjo-sudo/droit-francais-skill/issues/88)).
-> Installer le paquet ne suffit donc pas à utiliser ses outils distants.
-
-Le manifeste `.claude-plugin/plugin.json` réutilise les mêmes briques que le
-plugin OpenAI : le point d'entrée `skills/pandecte-recherche/` (adaptateur
-vers le noyau `skill/`). Le serveur MCP est déclaré une seule fois, dans le
-`.mcp.json` de la racine que Claude Code reprend automatiquement, en
-**connexion distante** vers le service déployé. Le dépôt sert aussi de
-marketplace (`.claude-plugin/marketplace.json`) :
-
-```bash
-claude plugin marketplace add brissonjo-sudo/droit-francais-skill
-claude plugin install droit-francais-skill@droit-francais
-```
-
-Ou, en session interactive : `/plugin marketplace add
-brissonjo-sudo/droit-francais-skill` puis `/plugin install
-droit-francais-skill@droit-francais`.
-
-**Aucune installation locale requise** : ni Python, ni dépendances, ni identifiants
-PISTE. Le service distant porte ses propres clés et l'accès est protégé par
-OAuth 2.1 avec quota par utilisateur — voir le guide OAuth.
-
-**Connexion : un identifiant de client à saisir.** Le serveur d'autorisation
-n'accepte pas l'enregistrement automatique de nouveaux clients ; la connexion
-passe donc par un client prédéfini.
-
-- **Depuis claude.ai ou l'application Claude** : à l'ajout du connecteur,
-  ouvrir *Advanced settings* et saisir `UydR0hHVgqArHoQpoonkYUN1vSLfaptD` dans
-  « OAuth Client ID », en laissant le secret vide. Sans cet identifiant, la
-  connexion échoue. Voie vérifiée le 16 septembre 2026.
-- **Depuis Claude Code** : la déclaration `.mcp.json` du plugin ne porte pas
-  encore d'identifiant de client, et la connexion échouera avec « Incompatible
-  auth server: does not support dynamic client registration ». Voie non encore
-  configurée — voir le guide OAuth § 4.
-
-#### Variante — serveur MCP local
-
-Pour l'auto-hébergement ou le développement, remplacer la déclaration du
-`.mcp.json` par un lancement local, `${CLAUDE_PLUGIN_ROOT}` résolvant le
-chemin une fois le plugin installé :
-
-```json
-{
-  "mcpServers": {
-    "droit-francais": {
-      "command": "python",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp_server/server.py"]
-    }
-  }
-}
-```
-
-Cette variante, elle, suppose un `python` dans le PATH avec les dépendances
-(`python -m pip install -r requirements-mcp.txt`) et les identifiants PISTE
-fournis par variables d'environnement ou par un `.env` désigné via
-`LEGIFRANCE_DOTENV` — le `.env` n'étant pas versionné, il ne voyage pas avec
-le plugin. Sans identifiants, le skill méthodologique reste utilisable ; seuls les outils MCP de récupération déterministe sont
-indisponibles.
-
-### Comme skill Claude Code — inchangé
-
-> **Installation autonome :** empaqueter uniquement le dossier `skill/` — il contient le
-> noyau (`SKILL.md`), l'historique (`CHANGELOG.md`), les références
-> (`references/`) et l'outillage (`scripts/`).
-
-### Windows
+Sous Windows :
 
 ```powershell
-# Cloner puis copier uniquement skill/ dans le dossier skills Claude Code
-git clone https://github.com/brissonjo-sudo/droit-francais-skill
-Copy-Item -Recurse droit-francais-skill\skill "$env:USERPROFILE\.claude\skills\pandecte-recherche"
+git clone https://github.com/TitouanSC/PandecteMCP
+Copy-Item -Recurse PandecteMCP\skill "$env:USERPROFILE\.claude\skills\pandecte-recherche"
 ```
 
-### macOS / Linux
-
-```bash
-git clone https://github.com/brissonjo-sudo/droit-francais-skill
-cp -r droit-francais-skill/skill ~/.claude/skills/pandecte-recherche
-```
-
-### Installation manuelle
-
-Copier le dossier `skill/` (contenu, pas le dossier lui-même) dans
-`~/.claude/skills/pandecte-recherche/`. Le champ `name:` dans
-`skill/SKILL.md` doit correspondre au nom du dossier d'installation.
+Le champ `name:` de `skill/SKILL.md` doit correspondre au nom du dossier
+d'installation. Le guide [`docs/installation.md`](docs/installation.md) couvre
+les plugins Claude Code et OpenAI.
 
 ### Sur d'autres plateformes
 
-Cinq déclinaisons et compagnons vivent dans ce dépôt, chacun autonome et documenté par
-son propre README :
-
 | Dossier | Plateforme | Nature |
 |---|---|---|
-| [`gemini_skill/`](gemini_skill) | Gemini (Google) | Noyau condensé v3.3.0, support prioritaire du serveur MCP de ce dépôt, repli grounding Google Search sur sources officielles |
-| [`grok_skill/`](grok_skill) | Grok (xAI) | Noyau condensé, droit français, récupération par les outils web natifs (`web_search`, `open_page`) au lieu du connecteur MCP et des API PISTE |
-| [`vibe_skill/`](vibe_skill) | Vibe (Mistral) | Noyau condensé, outils natifs `web_search`/`web_fetch` vérifiés contre le code source public ; wrapper Python fourni en squelette non connecté |
-| [`manus_skill/`](manus_skill) | Manus | Noyau condensé ; connecteur MCP personnalisé de ce dépôt en priorité (outils vérifiés), capacité web native de Manus en repli sans nom d'outil supposé |
+| [`gemini_skill/`](gemini_skill) | Gemini (Google) | Noyau condensé, connecteur MCP en priorité, repli sur la recherche Google |
+| [`grok_skill/`](grok_skill) | Grok (xAI) | Noyau condensé, outils web natifs |
+| [`vibe_skill/`](vibe_skill) | Vibe (Mistral) | Noyau condensé, outils `web_search` / `web_fetch` |
+| [`manus_skill/`](manus_skill) | Manus | Noyau condensé, connecteur MCP en priorité |
 
-Elles reprennent les principes du noyau mais ne s'y synchronisent pas
-d'elles-mêmes : `skill/` reste la source de vérité méthodologique.
+Ces déclinaisons reprennent les principes du noyau ; `skill/` reste la source
+de vérité méthodologique.
 
 ---
 
 ## Déclenchement
 
-Le skill s'active automatiquement quand vous :
+Le skill s'active quand vous :
 - citez ou demandez un article de loi, de code, un décret, un arrêté
 - demandez une qualification juridique (pénale, administrative, civile)
 - vérifiez si un texte est en vigueur, abrogé ou modifié
@@ -369,82 +300,54 @@ Le skill s'active automatiquement quand vous :
 
 ---
 
-## Arborescence (skill v0.1.0 / candidat plugin v0.1.0)
+## Héberger sa propre instance
+
+Pour ne confier vos identifiants à personne, faites tourner le serveur
+vous-même :
+
+- **En local** (Claude Code, Claude Desktop, Cursor…), avec vos identifiants
+  dans un `.env` :
+
+```bash
+python -m pip install -r requirements-mcp.txt
+python mcp_server/server.py
+```
+
+- **En ligne**, sur Render (offre gratuite possible) ou tout hébergeur Docker :
+  voir le [guide de déploiement](docs/deployment.md). L'instance n'a besoin
+  d'aucun identifiant PISTE : chacun de ses utilisateurs se connecte avec les
+  siens.
+
+---
+
+## Arborescence
 
 ```
-droit-francais-skill/
-├── .claude-plugin/
-│   ├── plugin.json                ← manifeste du plugin Claude Code
-│   └── marketplace.json           ← distribution directe depuis le dépôt
-├── .codex-plugin/
-│   └── plugin.json                ← manifeste du plugin OpenAI
-├── .mcp.json                       ← connexion au service MCP distant
+PandecteMCP/
+├── .claude-plugin/                 ← plugin et marketplace Claude Code
+├── .codex-plugin/                  ← plugin OpenAI
+├── .mcp.json                       ← connexion au serveur hébergé
 ├── mcp_server/
-│   ├── server.py                   ← outils MCP stdio ou HTTP /mcp
-│   └── catalog.py                  ← liste des outils publiés (source unique)
-├── skills/
-│   └── pandecte-recherche/
-│       └── SKILL.md               ← adaptateur plugin vers le noyau
-├── skill/                          ← paquet autonome et source de vérité
-│   ├── SKILL.md                    ← noyau méthodologique (universel)
+│   ├── server.py                   ← outils MCP (stdio ou HTTP /mcp)
+│   ├── piste_oauth.py              ← serveur d'autorisation sans stockage
+│   ├── sealed.py                   ← enveloppes chiffrées (AES-256-GCM)
+│   ├── connexion.py                ← page « Connexion PISTE »
+│   ├── cle.py                      ← page « Clé personnelle »
+│   └── catalog.py                  ← liste des outils publiés
+├── skills/pandecte-recherche/      ← adaptateur plugin vers le noyau
+├── skill/                          ← skill autonome, source de vérité
+│   ├── SKILL.md                    ← noyau méthodologique
 │   ├── CHANGELOG.md                ← historique des versions
-│   ├── profils/                    ← profils métier (v3.0.0)
-│   │   ├── _modele.md              ← gabarit vierge
-│   │   ├── police-gendarmerie.md   ← PN / gendarmerie / police municipale
-│   │   ├── avocat.md
-│   │   ├── juriste-entreprise.md
-│   │   ├── collectivites.md
-│   │   └── etudiant-concours.md
-│   ├── references/
-│   │   ├── gabarits-sortie.md      ← gabarits A/B/C/D + syllogisme (détail §6)
-│   │   ├── modules.md              ← 6 modules activables (détail §5)
-│   │   ├── modes-erreur.md         ← détail des 18 modes d'erreur (détail §1)
-│   │   ├── audit-documentaire.md   ← protocole DOC-AUDIT (détail §2 bis)
-│   │   ├── gabarits-requetes.md    ← requêtes Légifrance optimisées
-│   │   ├── checklist-vigueur.md    ← checklist 14 points vérification
-│   │   ├── maintenance.md          ← procédure de revue annuelle
-│   │   ├── sources-autorisees.md   ← hiérarchie des sources (complément P3)
-│   │   └── format-citation.md      ← formats de citation normalisés (complément P4)
-│   └── scripts/                    ← outillage Palier 3
-│       ├── legifrance.py           ← API Légifrance + Judilibre (via PISTE)
-│       ├── update_skill.py          ← mise à jour automatique optionnelle
-│       ├── pandecte/         ← bibliothèque réutilisable embarquée
-│       │   ├── errors.py           ← erreurs et codes de sortie communs
-│       │   ├── config.py           ← environnements et chargement .env
-│       │   ├── transport.py        ← transport HTTP JSON
-│       │   ├── legifrance.py       ← client OAuth/API Légifrance
-│       │   ├── judilibre.py        ← client KeyId/OAuth Judilibre
-│       │   └── tools.py            ← opérations structurées partagées
-│       ├── .env.example            ← gabarit de configuration (BYOK)
-│       └── README.md               ← configuration PISTE + usage
-├── .github/workflows/ci.yml        ← CI (py_compile + liens + doc↔CLI + éval)
-├── docs/
-│   ├── architecture-plugin.md      ← audit, cible et étapes de migration
-│   ├── mcp-app.md                  ← configuration et contrat des outils
-│   ├── deployment.md               ← exploitation de l'endpoint Render
-│   ├── chatgpt-submission.md       ← connexion et soumission OpenAI
-│   ├── oauth.md                    ← authentification OAuth 2.1 du serveur
-│   ├── audit-securite.md           ← plan d'audit sécurité de l'outil déployé
-│   ├── obligations-cgu.md          ← obligations CGU Légifrance et Judilibre
-│   ├── privacy-checklist.md        ← checklist avant publication
-│   ├── privacy-policy.md           ← politique publique
-│   └── terms-of-use.md             ← conditions publiques
-├── gemini_skill/                   ← déclinaison Gemini (noyau condensé, Agent Skills, MCP prioritaire)
-├── grok_skill/                     ← déclinaison Grok (noyau condensé, outils web natifs)
-├── vibe_skill/                     ← déclinaison Vibe (outils web_search/web_fetch vérifiés)
-├── manus_skill/                    ← déclinaison Manus (connecteur MCP en priorité)
-├── tests/                          ← invariants, outils MCP + évals historiques
-├── requirements-mcp.txt            ← dépendance du serveur uniquement
-├── README.md
+│   ├── profils/                    ← profils métier
+│   ├── references/                 ← gabarits, modules, modes d'erreur…
+│   └── scripts/                    ← accès PISTE (Légifrance, Judilibre)
+├── docs/                           ← déploiement, CGU, confidentialité…
+├── gemini_skill/ grok_skill/ vibe_skill/ manus_skill/
+├── tests/                          ← tests hors réseau et contrôles du dépôt
+├── Dockerfile, render.yaml         ← image et Blueprint Render
+├── README.md, README.en.md
 └── LICENSE
 ```
-
-> Le fichier `profil.md` (choix de l'utilisateur, copié depuis `profils/`)
-> est local et gitignoré — il n'est pas versionné.
-
-Le détail de l'architecture cible `skill + bibliothèque + app/plugin` et de ses
-invariants de non-régression est documenté dans
-[`docs/architecture-plugin.md`](docs/architecture-plugin.md).
 
 ---
 
@@ -453,20 +356,28 @@ invariants de non-régression est documenté dans
 Revue annuelle recommandée le **1er septembre** (rentrée juridique).
 Procédure détaillée → [`skill/references/maintenance.md`](skill/references/maintenance.md).
 
-> **Note de synchronisation :** à chaque release, mettre à jour `README.md` et
-> sa traduction complète `README.en.md`
-> (version, arborescence) et `skill/CHANGELOG.md` (entrée Ajouté/Modifié/Conservé)
-> avant de pousser le tag, préfixé selon sa série : `skill-v*` (méthodologie)
-> ou `plugin-v*` (empaquetage OpenAI et Claude Code, dont les notes de
-> soumission ChatGPT référencent le tag).
+> **Note de synchronisation :** à chaque version, mettre à jour `README.md` et
+> sa traduction complète `README.en.md`, ainsi que `skill/CHANGELOG.md`.
 
 ---
 
-## Licence
+## Crédits et licence
 
-[Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)](LICENSE)
+PandecteMCP est une **version modifiée** de
+[droit-francais-skill](https://github.com/brissonjo-sudo/droit-francais-skill),
+créé par **@brissonjo-sudo** : la méthode de recherche, les modes d'erreur, les
+profils et l'accès aux API PISTE en proviennent. Les modifications (serveur
+hébergé, connexion par identifiants PISTE de l'utilisateur, renommage,
+documentation) sont de **@TitouanSC**. Le projet n'est ni affilié ni approuvé
+par l'auteur d'origine.
 
-© 2026 @brissonjo-sudo
+- © 2026 @brissonjo-sudo — œuvre d'origine
+- Modifications © 2026 @TitouanSC
+
+L'ensemble est publié sous
+[Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)](LICENSE),
+comme l'œuvre d'origine. Les données consultées proviennent de Légifrance
+(DILA) et de la base Open Data de la Cour de cassation (Judilibre).
 
 ---
 
