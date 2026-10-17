@@ -680,6 +680,44 @@ class McpProtocolTests(unittest.TestCase):
         asyncio.run(exercise())
 
 
+class PisteModeSettingsTests(unittest.TestCase):
+    """Mode piste en production : clé de scellement exigée, aucun identifiant du titulaire."""
+
+    BASE = {"MCP_ENV": "production", "MCP_AUTH_MODE": "piste",
+            "MCP_PUBLIC_URL": "https://pandecte.example.org"}
+
+    def settings(self, **extra):
+        env = dict(self.BASE, **extra)
+        return RuntimeSettings.from_env(env), env
+
+    def test_issuer_is_the_server_itself_and_no_shared_mode(self):
+        settings, _ = self.settings()
+        self.assertEqual("https://pandecte.example.org", settings.oauth_issuer)
+        self.assertEqual("https://pandecte.example.org/mcp", settings.resource_url)
+        self.assertFalse(settings.shared_mode)
+        self.assertFalse(settings.account_enabled)
+
+    def test_seal_key_is_required_and_checked(self):
+        from mcp_server.sealed import new_key_text
+
+        settings, env = self.settings()
+        with self.assertRaisesRegex(RuntimeConfigurationError, "PANDECTE_SEAL_KEY"):
+            settings.validate_public(env)
+        settings, env = self.settings(PANDECTE_SEAL_KEY="trop-courte")
+        with self.assertRaisesRegex(RuntimeConfigurationError, "PANDECTE_SEAL_KEY"):
+            settings.validate_public(env)
+        settings, env = self.settings(PANDECTE_SEAL_KEY=new_key_text())
+        settings.validate_public(env)
+
+    def test_owner_credentials_are_refused(self):
+        from mcp_server.sealed import new_key_text
+
+        settings, env = self.settings(PANDECTE_SEAL_KEY=new_key_text(),
+                                      LEGIFRANCE_CLIENT_ID="x", LEGIFRANCE_CLIENT_SECRET="y")
+        with self.assertRaisesRegex(RuntimeConfigurationError, "LEGIFRANCE_CLIENT_ID"):
+            settings.validate_public(env)
+
+
 class TransportSecurityTests(unittest.TestCase):
     """Le nom public du service doit passer la protection DNS rebinding."""
 

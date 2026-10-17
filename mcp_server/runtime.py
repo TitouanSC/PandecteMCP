@@ -27,7 +27,17 @@ WORKOS_CLIENT_ID_RE = re.compile(r"^client_[A-Za-z0-9]{10,64}$")
 LOOPBACK_URL_RE = re.compile(r"^http://(localhost|127\.0\.0\.1)(:[0-9]{1,5})?$")
 
 #: Modes d'authentification acceptés à l'entrée du transport HTTP.
-AUTH_MODES: frozenset[str] = frozenset({"disabled", "oauth"})
+#: Identifiants PISTE du titulaire : jamais lus en mode ``piste``.
+OWNER_CREDENTIAL_VARIABLES = (
+    "LEGIFRANCE_CLIENT_ID",
+    "LEGIFRANCE_CLIENT_SECRET",
+    "JUDILIBRE_KEY_ID",
+    "PISTE_KEY_ID",
+)
+#: ``oauth`` : jetons WorkOS et mode partagé (identifiants du titulaire).
+#: ``piste`` : le serveur est son propre serveur d'autorisation et n'utilise
+#: que les identifiants PISTE de chaque utilisateur (``mcp_server.piste_oauth``).
+AUTH_MODES: frozenset[str] = frozenset({"disabled", "oauth", "piste"})
 
 
 class RuntimeConfigurationError(ValueError):
@@ -171,11 +181,17 @@ class RuntimeSettings:
 
     @property
     def auth_enabled(self) -> bool:
+        return self.auth_mode in ("oauth", "piste")
+
+    @property
+    def shared_mode(self) -> bool:
+        """Mode partagé : le serveur peut consulter PISTE avec les identifiants
+        du titulaire. Jamais en mode ``piste``."""
         return self.auth_mode == "oauth"
 
     @property
     def account_enabled(self) -> bool:
-        return self.auth_enabled and bool(self.workos_client_id)
+        return self.shared_mode and bool(self.workos_client_id)
 
     @property
     def resource_url(self) -> str:
@@ -213,7 +229,7 @@ class RuntimeSettings:
         auth_mode = values.get("MCP_AUTH_MODE", "disabled").strip().lower()
         if auth_mode not in AUTH_MODES:
             raise RuntimeConfigurationError(
-                "MCP_AUTH_MODE doit valoir disabled ou oauth."
+                "MCP_AUTH_MODE doit valoir disabled, oauth ou piste."
             )
 
         public_url = ""
@@ -221,14 +237,20 @@ class RuntimeSettings:
         jwks_url = ""
         audience = ""
         scopes = _split_scopes(values.get("MCP_OAUTH_REQUIRED_SCOPES"), DEFAULT_SCOPES)
-        if auth_mode == "oauth":
+        if auth_mode in ("oauth", "piste"):
             raw_public = values.get("MCP_PUBLIC_URL", "").strip().rstrip("/")
             if environment != "production" and LOOPBACK_URL_RE.match(raw_public):
-                # Développement : http://localhost:PORT, pour tester la page
-                # de compte contre un environnement WorkOS de test.
+                # Développement : http://localhost:PORT, pour tester les pages
+                # de connexion sans certificat.
                 public_url = raw_public
             else:
                 public_url = _https_url(values, "MCP_PUBLIC_URL")
+        if auth_mode == "piste":
+            # Le serveur est son propre émetteur : métadonnées servies par le SDK.
+            issuer = public_url
+            audience = f"{public_url}/mcp"
+            scopes = ()
+        if auth_mode == "oauth":
             issuer = _https_url(
                 values, "MCP_OAUTH_ISSUER", strip_trailing_slash=False
             )
@@ -302,13 +324,19 @@ class RuntimeSettings:
             cache_decision_ttl=_non_negative_int(
                 values, "PANDECTE_CACHE_DECISION_TTL", 24 * 3600
             ),
-            cache_max_mb=_positive_int(values, "PANDECTE_CACHE_MAX_MB", 200),
+            # Mode piste : cache en mémoire vive (aucun disque), plafond plus bas.
+            cache_max_mb=_positive_int(
+                values, "PANDECTE_CACHE_MAX_MB", 50 if auth_mode == "piste" else 200
+            ),
         )
 
     def validate_public(self, env: Mapping[str, str] | None = None) -> None:
         """Refuse un démarrage public mal configuré sans afficher de valeur."""
         values = os.environ if env is None else env
         if self.environment != "production":
+            return
+        if self.auth_mode == "piste":
+            self._validate_piste(values)
             return
 
         missing = [
@@ -344,6 +372,34 @@ class RuntimeSettings:
             raise RuntimeConfigurationError(
                 "PANDECTE_TOKEN_PEPPER doit contenir au moins "
                 f"{MIN_PEPPER_LENGTH} caractères aléatoires en production."
+            )
+
+
+    def _validate_piste(self, values: Mapping[str, str]) -> None:
+        """Mode piste : clé de scellement exigée, aucun identifiant du titulaire."""
+        from mcp_server.sealed import parse_key
+
+        for name in ("PANDECTE_SEAL_KEY", "PANDECTE_SEAL_KEY_PREVIOUS"):
+            raw = values.get(name, "").strip()
+            if name == "PANDECTE_SEAL_KEY" and not raw:
+                raise RuntimeConfigurationError(
+                    "PANDECTE_SEAL_KEY est obligatoire en production (mode piste)."
+                )
+            if raw:
+                try:
+                    parse_key(raw)
+                except ValueError as exc:
+                    raise RuntimeConfigurationError(f"{name} : {exc}") from exc
+        present = [
+            name
+            for name in OWNER_CREDENTIAL_VARIABLES
+            if values.get(name, "").strip()
+        ]
+        if present:
+            # Le mode piste n'utilise que les identifiants des utilisateurs :
+            # ceux du titulaire n'ont rien à faire sur le serveur.
+            raise RuntimeConfigurationError(
+                "Mode piste : retirer de l'environnement " + ", ".join(present) + "."
             )
 
 

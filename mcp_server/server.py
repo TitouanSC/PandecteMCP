@@ -44,6 +44,7 @@ from mcp_server.http_guard import HttpGuard, client_ip
 from mcp_server.quotas import QuotaExceeded, QuotaPolicy
 from mcp_server.store import Store
 from mcp_server.runtime import (
+    OWNER_CREDENTIAL_VARIABLES,
     RequestGovernor,
     RuntimeCapacityError,
     RuntimeConfigurationError,
@@ -52,6 +53,14 @@ from mcp_server.runtime import (
 
 load_dotenv(script_dir=SCRIPTS)
 SETTINGS = RuntimeSettings.from_env()
+#: Mode piste : les identifiants PISTE du titulaire sont retirés du processus
+#: dès le démarrage, pour qu'aucun chemin de code ne puisse s'en servir. Seule
+#: leur présence est retenue, pour que la validation de production la refuse.
+_OWNER_CREDENTIALS_SEEN: dict[str, str] = {}
+if SETTINGS.auth_mode == "piste":
+    for _name in OWNER_CREDENTIAL_VARIABLES:
+        if os.environ.pop(_name, "").strip():
+            _OWNER_CREDENTIALS_SEEN[_name] = "présent"
 logging.basicConfig(
     level=getattr(logging, SETTINGS.log_level),
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
@@ -77,7 +86,13 @@ STORE: Store | None = None
 QUOTAS: QuotaPolicy | None = None
 CACHE: ResponseCache | None = None
 if SETTINGS.auth_enabled:
-    STORE = Store(Path(SETTINGS.data_dir) / "pandecte.sqlite3")
+    # Mode piste : rien à conserver d'un redémarrage à l'autre (ni jeton, ni
+    # quota partagé) ; la base ne sert qu'au cache, en mémoire vive.
+    STORE = Store(
+        ":memory:"
+        if SETTINGS.auth_mode == "piste"
+        else Path(SETTINGS.data_dir) / "pandecte.sqlite3"
+    )
     QUOTAS = QuotaPolicy(
         STORE,
         user_per_minute=SETTINGS.user_calls_per_minute,
@@ -108,6 +123,23 @@ def token_pepper() -> bytes:
 
 
 _EPHEMERAL_PEPPER = secrets.token_bytes(32)
+
+
+def seal_keys() -> tuple[bytes, tuple[bytes, ...]]:
+    """Clé de scellement courante et éventuelle clé précédente (rotation).
+
+    Exigée en production (``validate_public``). Hors production, une clé
+    aléatoire par processus : les connexions ne survivent pas au redémarrage.
+    """
+    from mcp_server.sealed import parse_key
+
+    raw = os.environ.get("PANDECTE_SEAL_KEY", "").strip()
+    current = parse_key(raw) if raw else _EPHEMERAL_SEAL_KEY
+    previous = os.environ.get("PANDECTE_SEAL_KEY_PREVIOUS", "").strip()
+    return current, ((parse_key(previous),) if previous else ())
+
+
+_EPHEMERAL_SEAL_KEY = secrets.token_bytes(32)
 
 SERVER_VERSION = "0.1.0"
 
@@ -140,6 +172,8 @@ def _build_auth_options() -> dict[str, Any]:
     """
     if not SETTINGS.auth_enabled:
         return {}
+    if SETTINGS.auth_mode == "piste":
+        return _build_piste_auth_options()
 
     from mcp.server.auth.settings import AuthSettings
 
@@ -175,6 +209,36 @@ def _build_auth_options() -> dict[str, Any]:
         "token_verifier": verifier,
         "auth": AuthSettings(**auth_settings),
     }
+
+PISTE_PROVIDER = None
+
+
+def _build_piste_auth_options() -> dict[str, Any]:
+    """Serveur d'autorisation intégré : connexion par identifiants PISTE."""
+    global PISTE_PROVIDER
+    from mcp.server.auth.settings import AuthSettings, ClientRegistrationOptions
+
+    from mcp_server.piste_oauth import PisteAuthProvider
+    from mcp_server.sealed import Sealer
+
+    current, previous = seal_keys()
+    PISTE_PROVIDER = PisteAuthProvider(
+        Sealer(current, previous),
+        public_url=SETTINGS.public_url,
+        resource=SETTINGS.resource_url,
+        personal_keys_enabled=SETTINGS.personal_keys_enabled,
+    )
+    return {
+        "auth_server_provider": PISTE_PROVIDER,
+        "auth": AuthSettings(
+            issuer_url=SETTINGS.public_url,
+            resource_server_url=SETTINGS.resource_url,
+            client_registration_options=ClientRegistrationOptions(enabled=True),
+            # Les jetons portent toujours la ressource de ce serveur.
+            validate_token_resource=True,
+        ),
+    }
+
 
 #: Instructions lues par le client à chaque connexion, « alongside tool
 #: metadata » selon OpenAI. C'est le seul canal qui porte de la méthode à un
@@ -408,9 +472,11 @@ if hasattr(server, "custom_route"):
         Certains clients ignorent les métadonnées RFC 9728 et cherchent celles
         du serveur d'autorisation sur l'hôte du serveur MCP ; WorkOS recommande
         de les relayer. Le document est mis en cache une heure ; une panne de
-        l'émetteur rend 502, sans détail.
+        l'émetteur rend 502, sans détail. En mode piste, ce document est
+        celui du serveur lui-même, servi par la route du SDK enregistrée avant
+        celle-ci.
         """
-        if not SETTINGS.auth_enabled:
+        if not SETTINGS.shared_mode:
             return PlainTextResponse("Not configured", status_code=404)
         cached = _AUTH_SERVER_METADATA.get("document")
         if cached is None or time.monotonic() >= _AUTH_SERVER_METADATA["expires_at"]:
@@ -460,6 +526,13 @@ if hasattr(server, "custom_route"):
             pepper=token_pepper,
         )
         ACCOUNT_PAGES.register(server)
+
+    if PISTE_PROVIDER is not None:
+        from mcp_server.connexion import ConnexionPage
+
+        #: Page « Connexion PISTE » du serveur d'autorisation intégré.
+        CONNEXION_PAGE = ConnexionPage(PISTE_PROVIDER, public_url=SETTINGS.public_url)
+        CONNEXION_PAGE.register(server)
 
     @server.custom_route(
         "/.well-known/openai-apps-challenge",
@@ -744,7 +817,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     try:
-        SETTINGS.validate_public()
+        SETTINGS.validate_public({**os.environ, **_OWNER_CREDENTIALS_SEEN})
         suppressed = _load_suppression_list()
     except RuntimeConfigurationError as exc:
         parser.error(str(exc))
