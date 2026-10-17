@@ -10,3 +10,6 @@ mcp==2.3.0
 # Vérification locale des jetons OAuth 2.1 (JWKS de l'émetteur, RS256 exact).
 # Correctif amont du parseur de payload récursif (GHSA-42vr-xj54-vc7v).
 PyJWT[crypto]==2.15.1
+# Enveloppes chiffrées AES-256-GCM de l'état OAuth (mcp_server/sealed.py).
+# Déjà tirée par PyJWT[crypto] ; épinglée car utilisée directement.
+cryptography==50.0.2
