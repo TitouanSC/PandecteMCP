@@ -1,8 +1,7 @@
 # Checklist de confidentialité avant publication
 
-Ce document prépare la future politique publique ; il ne la remplace pas.
-L'identité de l'éditeur, l'hébergeur, les coordonnées de contact et les durées
-de conservation doivent être connus avant de rédiger la version opposable.
+Ce document sert à relire la [politique de confidentialité](privacy-policy.md)
+à chaque évolution du service ; il ne la remplace pas.
 
 ## Données à inventorier
 
@@ -14,13 +13,17 @@ de conservation doivent être connus avant de rédiger la version opposable.
   sujet ; ce pseudonyme reste une donnée personnelle ;
 - si le niveau `INFO` est activé, identifiants de session MCP éphémères et
   métadonnées réseau émis par le SDK et le serveur HTTP ;
-- aucune clé PISTE, aucun jeton OAuth et aucun secret dans les réponses ou logs.
+- identifiants PISTE des utilisateurs : en transit (page de connexion, jetons
+  scellés, clé `pk1`), jamais écrits ni journalisés ;
+- aucune clé PISTE, aucun jeton et aucun secret dans les réponses ou logs.
 
 ## Acteurs à déclarer
 
-- l'éditeur du plugin, responsable de son service MCP ;
-- l'hébergeur et ses régions de traitement ;
-- OpenAI, qui appelle le serveur selon les choix et conditions de l'utilisateur ;
+- l'éditeur, responsable du service MCP hébergé ;
+- l'hébergeur (Render) et ses régions de traitement ;
+- Cloudflare, par lequel l'hébergeur achemine le trafic ;
+- le fournisseur de l'assistant (Anthropic, OpenAI…), qui appelle le serveur et
+  conserve les jetons chiffrés ;
 - PISTE/DILA et la Cour de cassation, sources officielles interrogées.
 
 ## Décisions à prendre avant publication dans l'annuaire
@@ -38,17 +41,15 @@ de conservation doivent être connus avant de rédiger la version opposable.
 ## Conformité CGU et audit sécurité
 
 Cette checklist est complétée par les documents dédiés à dérouler avant toute
-publication dans l'annuaire (le serveur est déjà exposé au réseau avec OAuth) :
+annonce publique de l'instance hébergée :
 
 - le [registre des obligations CGU](obligations-cgu.md) — obligations
-  Légifrance et Judilibre opposables au titulaire des clés, et écarts à traiter
-  (procédure d'incident, signalement des réidentifications, mentions RGPD
-  Judilibre, mentions de source et de date) ;
+  Légifrance et Judilibre, modèle des clés confiées par l'utilisateur et point
+  à arbitrer ;
 - le [plan d'audit sécurité](audit-securite.md) — phases, contrôles mobilisés,
   grille de sévérité et livrables. Les findings critiques et élevés doivent
   être corrigés avant la publication ;
-- la [procédure d'incident](incident-response.md) et la
-  checklist Auth0.
+- la [procédure d'incident](incident-response.md).
 
 ## Test de sortie
 
