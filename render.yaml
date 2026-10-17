@@ -33,9 +33,13 @@ services:
       - key: JUDILIBRE_ENV
         value: prod
       # -- Adresse IP cliente (limite de débit par IP) ------------------------
-      # À vérifier au premier déploiement avec /diagnostic-ip, puis passer
-      # MCP_IP_DIAGNOSTIC à false. Voir docs/deployment.md.
+      # Constaté le 17/10/2026 avec /diagnostic-ip : Render passe par
+      # Cloudflare, qui pose l'IP cliente seule dans cf-connecting-ip ;
+      # X-Forwarded-For vaut « client, Cloudflare, proxy interne », d'où
+      # 3 sauts en repli. Voir docs/deployment.md.
+      - key: MCP_CLIENT_IP_HEADER
+        value: cf-connecting-ip
       - key: MCP_TRUSTED_PROXY_HOPS
-        value: "1"
+        value: "3"
       - key: MCP_IP_DIAGNOSTIC
-        value: "true"
+        value: "false"

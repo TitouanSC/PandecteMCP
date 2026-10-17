@@ -83,6 +83,12 @@ site de Render.
      comptée depuis la **droite** (1 = dernière entrée).
 
    Une fois le réglage confirmé, passez **`MCP_IP_DIAGNOSTIC` à `false`**.
+
+   Constaté sur Render le 17/10/2026, et déjà reporté dans `render.yaml` :
+   l'adresse cliente arrive seule dans `cf-connecting-ip` (Render passe par
+   Cloudflare) et `x-forwarded-for` vaut « client, Cloudflare, proxy
+   interne ». D'où `MCP_CLIENT_IP_HEADER=cf-connecting-ip`, avec
+   `MCP_TRUSTED_PROXY_HOPS=3` en repli.
 4. **claude.ai** : *Paramètres → Connecteurs → Ajouter un connecteur
    personnalisé*, URL `https://<service>.onrender.com/mcp`, puis
    « Se connecter » : la page « Connexion PISTE » demande vos identifiants
@@ -133,8 +139,8 @@ Le démarrage échoue en production :
 | `PANDECTE_CACHE_TEXT_TTL` | `21600` (6 h) | Articles, sections, textes ; `0` désactive |
 | `PANDECTE_CACHE_DECISION_TTL` | `86400` (24 h) | Décisions Judilibre ; `0` désactive |
 | `PANDECTE_CACHE_MAX_MB` | `50` | Plafond du cache en mémoire vive, éviction des plus anciennes entrées |
-| `MCP_TRUSTED_PROXY_HOPS` | `0` (`1` dans `render.yaml`) | Position de l'IP cliente dans X-Forwarded-For, depuis la droite |
-| `MCP_CLIENT_IP_HEADER` | vide | En-tête posé par le proxy portant l'IP cliente (prioritaire) |
+| `MCP_TRUSTED_PROXY_HOPS` | `0` (`3` dans `render.yaml`) | Position de l'IP cliente dans X-Forwarded-For, depuis la droite |
+| `MCP_CLIENT_IP_HEADER` | vide (`cf-connecting-ip` dans `render.yaml`) | En-tête posé par le proxy portant l'IP cliente (prioritaire) |
 | `MCP_IP_DIAGNOSTIC` | `false` | Publie `/diagnostic-ip` le temps du réglage |
 | `MCP_JUDILIBRE_SUPPRESSED_IDS` | vide | Retrait d'urgence de décisions, voir `incident-response.md` |
 | `MCP_LOG_LEVEL` | `WARNING` dans l'image | Niveau des journaux du SDK et du serveur HTTP |
