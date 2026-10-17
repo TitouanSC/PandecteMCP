@@ -16,8 +16,7 @@ services:
     region: frankfurt
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    # Branche de déploiement : à repasser sur main après la fusion.
-    branch: connexion-piste
+    branch: main
     autoDeployTrigger: commit
     healthCheckPath: /health
     envVars:
