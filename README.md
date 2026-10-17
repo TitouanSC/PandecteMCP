@@ -135,9 +135,10 @@ Seuls claude.ai, ChatGPT et Claude Code ont été testés à ce jour.
   ne les confier à personne, hébergez votre propre instance.
 - **Quotas** : vos consultations consomment **votre** quota PISTE. Le serveur
   limite en outre chaque adresse IP à 30 appels d'outil par minute.
-- **Hébergement gratuit** : le serveur s'endort après 15 minutes sans
-  activité ; le premier appel suivant attend son réveil (environ 30 secondes)
-  et peut échouer une fois. Réessayez simplement.
+- **Hébergement gratuit** : le serveur reste éveillé de 7 h à 23 h (heure de
+  Paris). La nuit, il s'endort après 15 minutes sans activité ; le premier
+  appel suivant attend son réveil (environ 30 secondes) et peut échouer une
+  fois. Réessayez simplement.
 - **Données traitées** : voir la [politique de confidentialité](docs/privacy-policy.md).
 
 ---

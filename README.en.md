@@ -131,9 +131,9 @@ Only claude.ai, ChatGPT and Claude Code have been tested so far.
   with no one, host your own instance.
 - **Quotas**: your lookups use **your** PISTE quota. The server also limits
   each IP address to 30 tool calls per minute.
-- **Free hosting**: the server sleeps after 15 minutes without activity; the
-  next call waits for it to wake up (about 30 seconds) and may fail once.
-  Simply try again.
+- **Free hosting**: the server stays awake from 7 am to 11 pm (Paris time).
+  At night it sleeps after 15 minutes without activity; the next call waits
+  for it to wake up (about 30 seconds) and may fail once. Simply try again.
 - **Data processed**: see the [privacy policy](docs/privacy-policy.md).
 
 ---
