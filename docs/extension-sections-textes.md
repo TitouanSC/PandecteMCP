@@ -1,8 +1,9 @@
 # Extension locale : sections CODE et textes consolidés LEGI
 
-Préparée le 4 octobre 2026. **Non déployée, non publiée et non qualifiée en
-lecture métier réelle**. La connexion distante existante expose encore six
-outils : aucun résultat de campagne DPM n'est débloqué par ce correctif local.
+Préparée le 4 octobre 2026 dans le projet d'origine. Depuis le 17 octobre
+2026, le serveur hébergé de PandecteMCP expose les huit outils, dont
+`get_section` et `get_text` ; ces deux lectures n'y ont **pas encore été
+qualifiées en lecture métier réelle**.
 
 ## Contrat vérifié avant implémentation
 
@@ -92,14 +93,9 @@ l'extraction ciblée et les garde-fous du serveur. La sonde de protocole stdio
 contrôle les huit outils réellement enregistrés et leurs annotations.
 
 La sonde métier `tests/check_live_tools.py` est adaptée aux huit outils, avec
-les identifiants du corpus DPM ; elle **n'est pas exécutée contre le service
-distant** dans cette préparation. Le dossier de soumission est synchronisé
-localement, sans nouvelle soumission. Les cinq scénarios positifs historiques
-ne constituent pas une qualification live des deux nouveaux outils.
-
-Avant tout déploiement : revoir le diff, décider de la version publiée,
-qualifier l'image et autoriser explicitement le déploiement. Ensuite seulement :
-découvrir le catalogue distant, sonder réellement les deux nouvelles lectures,
-préparer un nouvel essai de préflight DPM sans écraser les tentatives bloquées.
+les identifiants du corpus DPM. Pour qualifier les deux lectures sur le serveur
+hébergé, la lancer avec une clé `pk1` (voir `exploitation.md` § 1) : elle
+consomme le quota PISTE de cette clé, `get_section` pouvant à elle seule
+enchaîner des dizaines d'appels.
 Les autres sources du corpus (CE, CNIL, préfecture…) restent leurs propres
 portes ; leur accessibilité n'est pas prouvée par cette extension.

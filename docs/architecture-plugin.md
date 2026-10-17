@@ -1,6 +1,11 @@
 # Architecture plugin — audit et trajectoire
 
-Date de l'audit : **29 août 2026**
+Date de l'audit : **29 août 2026** (projet d'origine). Étape 5 ajoutée le
+**18 octobre 2026** pour PandecteMCP.
+
+Les étapes 1 à 4 retracent l'architecture héritée du projet d'origine ; elles
+sont conservées parce que leurs invariants restent en vigueur. L'étape 5 décrit
+le serveur hébergé actuel.
 
 Branches d'implémentation :
 
@@ -47,7 +52,7 @@ La méthode juridique, l'interface du CLI et les variables d'environnement exist
 ## Architecture cible
 
 ```text
-droit-francais-skill/
+PandecteMCP/
 ├── .claude-plugin/
 │   ├── plugin.json                 # manifeste Claude Code (MCP repris du .mcp.json racine)
 │   └── marketplace.json            # le dépôt sert de marketplace Claude Code
@@ -71,7 +76,7 @@ droit-francais-skill/
 │           └── tools.py            # opérations juridiques structurées
 ├── mcp_server/
 │   └── server.py                   # pont MCP vers la bibliothèque
-├── .mcp.json                       # lancement local stdio
+├── .mcp.json                       # connexion au serveur hébergé
 ├── requirements-mcp.txt            # dépendance isolée du serveur
 └── tests/
     ├── check_plugin.py
@@ -132,36 +137,31 @@ JSON indépendantes du rendu terminal et sont testés sans réseau.
 - Laisser les secrets dans l'environnement ou le mécanisme d'authentification de l'hôte ; ne jamais les placer dans le manifeste ou les réponses d'outil.
 
 Critère de sortie atteint hors réseau : les résultats simulés conservent
-l'identifiant et l'URL officiels, et un client MCP réel découvre les six outils
-sur stdio. Le transport Streamable HTTP sert le même serveur sur `/mcp`.
+l'identifiant et l'URL officiels, et un client MCP réel découvre les outils
+sur stdio — six à l'origine, huit depuis l'ajout de `get_section` et
+`get_text` (voir `extension-sections-textes.md`). Le transport Streamable HTTP sert le même serveur sur `/mcp`.
 
 Le déploiement HTTPS et la connexion à un compte ChatGPT restent des opérations
 de distribution de l'étape 4 : aucune URL distante n'est inventée dans le dépôt.
 
-### Étape 4 — distribution (en cours)
+### Étape 4 — distribution (projet d'origine)
 
-- **Implémenté :** endpoint MCP public Render, politiques publiques, métadonnées
-  juridiques du manifeste, fichier de soumission et scénarios de revue.
-- **Implémenté :** service universel sans authentification utilisateur ; les
-  identifiants PISTE restent des secrets côté serveur.
-- **À effectuer dans le compte de l'éditeur :** connexion en mode développeur,
-  vérification du domaine, validation/téléversement du logo et soumission avec
-  l'identité OpenAI vérifiée.
-- Tester ensuite l'installation, la mise à jour et la reprise dans une nouvelle
-  conversation ChatGPT.
+- Endpoint MCP public, politiques publiques et métadonnées du manifeste.
+- Le projet d'origine faisait consulter les API avec les identifiants PISTE de
+  l'exploitant, derrière un fournisseur OAuth externe. PandecteMCP a abandonné
+  ce modèle à l'étape 5.
 
 #### Distribution Claude Code (implémentée, 1ᵉʳ septembre 2026)
 
 - `.claude-plugin/plugin.json` réutilise les mêmes briques que le plugin
   OpenAI — adaptateur `skills/pandecte-recherche/` — sans dupliquer le noyau.
-  Le serveur MCP est désormais déclaré en **connexion distante** (`type:
-  "http"`, `url: https://droit-francais-skill.onrender.com/mcp`) plutôt qu'en
-  lancement local : l'installation ne requiert plus Python ni les dépendances
-  du dépôt côté utilisateur. Depuis la 0.8.3, cette déclaration n'existe plus
+  Le serveur MCP est déclaré en **connexion distante** (`type: "http"`,
+  adresse du serveur hébergé) plutôt qu'en lancement local : l'installation ne
+  requiert ni Python ni les dépendances du dépôt côté utilisateur. Depuis la 0.8.3, cette déclaration n'existe plus
   qu'à un seul endroit : le `.mcp.json` de la racine, que Claude Code reprend
   automatiquement pour un plugin. Le manifeste ne la duplique plus.
 - Le lancement local (`python mcp_server/server.py`) reste disponible pour le
-  développement et l'auto-hébergement, documenté dans `docs/mcp-app.md`.
+  développement et l'auto-hébergement, documenté dans `docs/deployment.md`.
 - `.claude-plugin/marketplace.json` (source `./`) fait du dépôt son propre
   marketplace : l'installation copie le dépôt entier, donc l'adaptateur
   retrouve `skill/SKILL.md`.
@@ -179,6 +179,25 @@ série — `skill-v*` et `plugin-v*`, appliqués pour la première fois le
 Les tags historiques non préfixés (`v2.0.0`, `v2.4.0`, `v3.0.0`) désignent
 des versions du skill et sont conservés tels quels.
 
+### Étape 5 — serveur d'autorisation intégré (PandecteMCP, octobre 2026)
+
+- Le serveur hébergé ne détient **aucune** clé PISTE : chaque utilisateur se
+  connecte avec les siennes, sur la page « Connexion PISTE » (OAuth 2.1, PKCE,
+  enregistrement dynamique), ou les transmet en clé `pk1` dans un en-tête.
+- Le serveur est son propre serveur d'autorisation et ne stocke rien : tout
+  l'état OAuth voyage chez le client sous forme d'enveloppes AES-256-GCM
+  (`mcp_server/sealed.py`, `mcp_server/piste_oauth.py`).
+- Plus de base de données ni de disque : cache des réponses publiques en
+  mémoire vive, limite de débit par IP.
+- Déployé sur Render (offre gratuite) par `render.yaml` ; qualifié le
+  17/10/2026 depuis claude.ai, ChatGPT et Claude Code.
+
+```text
+Assistant → [OAuth : page « Connexion PISTE » | en-tête pk1]
+          → serveur MCP (jeton scellé → identifiants de l'utilisateur)
+          → bibliothèque skill/scripts/pandecte → API Légifrance et Judilibre
+```
+
 ## Invariants de non-régression
 
 1. `skill/SKILL.md` reste installable indépendamment du plugin.
@@ -187,6 +206,8 @@ des versions du skill et sont conservés tels quels.
 4. Aucun identifiant officiel n'est présenté comme vérifié s'il ne provient pas d'une récupération effective.
 5. Le manifeste ne déclare que les composants réellement présents et testés.
 6. Le noyau juridique ne doit exister qu'en un seul exemplaire maintenu.
+7. Le serveur hébergé n'utilise jamais d'autres identifiants PISTE que ceux de
+   l'utilisateur de la requête.
 
 ## Tests actifs
 
@@ -195,6 +216,8 @@ des versions du skill et sont conservés tels quels.
 - contrôle local `tests/check_plugin.py` ;
 - tests unitaires hors réseau `tests/test_tools.py` ;
 - tests du service et du protocole MCP `tests/test_mcp_app.py` ;
+- tests de la connexion PISTE `tests/test_sealed.py`, `tests/test_piste_oauth.py`,
+  `tests/test_connexion.py` et `tests/test_piste_end_to_end.py` ;
 - compilation Python ;
 - contrôle des liens et des commandes documentées ;
 - évaluation hors ligne des 21 sondes existantes.
