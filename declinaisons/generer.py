@@ -15,7 +15,9 @@ Sorties, à ne jamais modifier à la main : ``gemini_skill/``, ``grok_skill/``,
 ``manus_skill/``, ``vibe_skill/``, et, sur demande, un zip par plateforme
 contenant un dossier ``pandecte-recherche/`` prêt à installer, plus le zip du
 skill complet (``skill/``) pour claude.ai et l'application Claude. Le plugin
-Claude ``plugin/`` reçoit aussi sa copie du skill complet et la licence.
+Claude ``plugin/`` reçoit aussi sa copie du skill complet et la licence ;
+``--zip`` en tire deux archives de plugin : claude.ai (« Upload plugin ») et
+soumission OpenAI (manifeste ``.codex-plugin``).
 
     python declinaisons/generer.py            # régénère les dossiers
     python declinaisons/generer.py --check    # échoue si un dossier est périmé
@@ -303,6 +305,38 @@ def ecarts_plugin(fichiers: dict[str, bytes]) -> list[str]:
     return problemes
 
 
+def fichiers_plugin_claude() -> dict[str, bytes]:
+    """Contenu du zip « Upload plugin » de claude.ai : le dossier plugin/ suivi par Git."""
+    fichiers = dict(fichiers_plugin())
+    for nom in (".claude-plugin/plugin.json", ".mcp.json", "README.md"):
+        fichiers[nom] = (PLUGIN / nom).read_bytes()
+    return fichiers
+
+
+def fichiers_plugin_openai() -> dict[str, bytes]:
+    """Contenu du zip de soumission OpenAI : manifeste .codex-plugin et skill complet.
+
+    L'adaptateur ``skills/`` de la racine renvoie à ``../../skill/`` ; le zip
+    reçoit à la place la copie complète, comme le plugin Claude.
+    """
+    fichiers = fichiers_plugin_claude()
+    del fichiers[".claude-plugin/plugin.json"]
+    fichiers[".codex-plugin/plugin.json"] = (ROOT / ".codex-plugin" / "plugin.json").read_bytes()
+    return fichiers
+
+
+def zipper_plugin(fichiers: dict[str, bytes], archive: Path) -> Path:
+    """Zip à plat : le manifeste à la racine de l'archive."""
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
+        for chemin in sorted(fichiers):
+            info = zipfile.ZipInfo(chemin, date_time=ZIP_DATE)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o644 << 16
+            zf.writestr(info, fichiers[chemin])
+    return archive
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true", help="échoue si un dossier généré est périmé")
@@ -334,6 +368,9 @@ def main(argv: list[str] | None = None) -> int:
         print("✅ plugin/ (skill complet et licence du plugin Claude)")
     if args.zip and not args.check:
         print(f"✅ skill complet (claude.ai, application Claude)\n   📦 {zipper_skill_complet(args.zip, numero)}")
+        claude = zipper_plugin(fichiers_plugin_claude(), args.zip / f"pandecte-plugin-claude-{numero}.zip")
+        openai = zipper_plugin(fichiers_plugin_openai(), args.zip / f"pandecte-plugin-openai-{numero}.zip")
+        print(f"✅ plugins (Upload plugin de claude.ai, soumission OpenAI)\n   📦 {claude}\n   📦 {openai}")
     if args.check:
         if problemes:
             print("❌ Déclinaisons périmées — lancer python declinaisons/generer.py :")

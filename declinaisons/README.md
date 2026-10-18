@@ -30,7 +30,15 @@ Chaque zip contient un dossier `pandecte-recherche/` prêt à installer
 des archives identiques. `--zip` écrit en plus
 `pandecte-recherche-claude-<version>.zip`, le **skill complet** (`skill/`,
 fichiers suivis par Git uniquement) à importer dans claude.ai, l'application
-Claude et Claude mobile. La CI exécute `--check` : un noyau modifié sans
+Claude et Claude mobile, et deux **zips de plugin**, manifeste à la racine :
+
+- `pandecte-plugin-claude-<version>.zip` : le dossier `plugin/`, pour
+  *Personnaliser > Plugins > Ajouter > Importer un plugin* dans claude.ai
+  (utile hors marketplace) ;
+- `pandecte-plugin-openai-<version>.zip` : manifeste `.codex-plugin/`,
+  connecteur et skill complet, pour la soumission à l'annuaire ChatGPT.
+
+La CI exécute `--check` : un noyau modifié sans
 régénération fait échouer le build.
 
 ## Ajouter une plateforme

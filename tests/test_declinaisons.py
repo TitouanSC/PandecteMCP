@@ -167,6 +167,26 @@ class ClaudePluginTests(unittest.TestCase):
         sans_code = re.sub(r"```.*?```", "", texte, flags=re.S)
         self.assertGreaterEqual(len(sans_code.split()), 40)
 
+    def test_plugin_zips_hold_one_manifest_at_their_root(self):
+        cas = {
+            "claude": (generer.fichiers_plugin_claude(), ".claude-plugin/plugin.json"),
+            "openai": (generer.fichiers_plugin_openai(), ".codex-plugin/plugin.json"),
+        }
+        for nom, (fichiers, manifeste) in cas.items():
+            with self.subTest(plugin=nom), tempfile.TemporaryDirectory() as tmp:
+                premier = generer.zipper_plugin(fichiers, Path(tmp) / "a.zip")
+                second = generer.zipper_plugin(fichiers, Path(tmp) / "b.zip")
+                self.assertEqual(premier.read_bytes(), second.read_bytes())
+                with zipfile.ZipFile(premier) as zf:
+                    noms = zf.namelist()
+                manifestes = [n for n in noms if n.endswith("plugin.json")]
+                self.assertEqual([manifeste], manifestes)
+                for attendu in (".mcp.json", "README.md", "LICENSE",
+                                "skills/pandecte-recherche/SKILL.md"):
+                    self.assertIn(attendu, noms)
+                for entree in noms:
+                    self.assertNotRegex(entree, r"(^|/)(\.env|profil\.md|\.DS_Store)$|__pycache__|\.\./")
+
     def test_plugin_links_stay_inside_the_plugin(self):
         for fichier in generer.PLUGIN.rglob("*.md"):
             for cible in re.findall(r"(?<!!)\[[^\]]*\]\(([^)#]+)", fichier.read_text(encoding="utf-8")):
