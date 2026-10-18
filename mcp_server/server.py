@@ -115,7 +115,7 @@ def seal_keys() -> tuple[bytes, tuple[bytes, ...]]:
 
 _EPHEMERAL_SEAL_KEY = secrets.token_bytes(32)
 
-SERVER_VERSION = "0.1.1"
+SERVER_VERSION = "0.1.2"
 
 
 def _load_suppression_list() -> int:

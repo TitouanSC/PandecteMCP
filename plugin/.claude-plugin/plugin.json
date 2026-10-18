@@ -1,7 +1,7 @@
 {
   "name": "pandecte",
   "displayName": "PandecteMCP",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Méthodologie de recherche en droit français : sources primaires, contrôle de vigueur et citations traçables. Skill et serveur MCP distant.",
   "author": {
     "name": "TitouanSC",

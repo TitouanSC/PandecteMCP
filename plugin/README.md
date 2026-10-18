@@ -16,10 +16,15 @@ Projet personnel, gratuit et open source ; ni officiel, ni affilié à la DILA,
 
 ## Installation
 
-Dans claude.ai ou l'application Claude : **Personnaliser > Plugins > Ajouter >
-Ajouter une marketplace**, saisir `TitouanSC/PandecteMCP`, puis ajouter le
-plugin **PandecteMCP**. Ouvrir ensuite son onglet **Connecteurs** et connecter
-PandecteMCP. Rien à télécharger ni à installer.
+Dans claude.ai ou l'application Claude, rien à télécharger ni à installer :
+
+1. **Ajouter le plugin** : **Personnaliser > Plugins > Ajouter > Ajouter une
+   marketplace**, saisir `TitouanSC/PandecteMCP`, puis ajouter le plugin
+   **PandecteMCP**.
+2. **Connecter le connecteur (obligatoire)** : onglet **Connecteurs** du
+   plugin > **Connecter**, puis vos identifiants PISTE sur la page
+   « Connexion PISTE ». Sans cette étape, l'assistant n'a pas les outils et se
+   rabat sur le web.
 
 Dans Claude Code :
 

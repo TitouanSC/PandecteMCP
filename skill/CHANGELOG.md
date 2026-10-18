@@ -6,6 +6,23 @@ serveur MCP, les plugins et le skill `pandecte-recherche`.
 
 ---
 
+### [0.1.2] — 2026-10-18
+
+Réglages issus des premiers essais réels dans claude.ai.
+
+#### Modifié
+- Provenance : aucune référence juridique de mémoire, même signalée comme
+  telle (ancienne numérotation, texte modificatif, date) ; ce que les outils
+  peuvent vérifier se vérifie avant d'être écrit (SKILL.md P1 et méthode
+  condensée).
+- Abstention : une limite n'est inscrite qu'après avoir tenté de la lever
+  avec les outils disponibles (droit transitoire, autre code, décision citée
+  par une autre).
+- Plugin sans connecteur connecté : le repli web reste silencieux, mais la
+  réponse indique en une ligne comment connecter PandecteMCP.
+- README et README du plugin : installation en deux étapes, connexion du
+  connecteur marquée obligatoire.
+
 ### [0.1.1] — 2026-10-18
 
 #### Modifié

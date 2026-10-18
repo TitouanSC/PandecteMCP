@@ -3,8 +3,8 @@ name: pandecte-recherche
 description: Méthodologie rigoureuse de recherche en droit français et européen, fondée sur des sources primaires officielles (Légifrance, Judilibre), la vérification de provenance, de vigueur et d'applicabilité à une date donnée, et des citations traçables. Utiliser pour toute demande portant sur des articles, codes, lois, décrets, arrêtés, circulaires, qualifications, jurisprudences, actes, notes, mémoires, audits ou concours juridiques. Ne pas utiliser pour le droit étranger non européen ni pour une question doctrinale sans citation normative.
 license: CC-BY-SA-4.0
 metadata:
-  version: 0.1.1-manus
-  base: pandecte-recherche 0.1.1
+  version: 0.1.2-manus
+  base: pandecte-recherche 0.1.2
   langue: français
   adapted_for: Manus
 ---
@@ -85,11 +85,17 @@ matériel et moral. Ne jamais appliquer une analogie défavorable.
 
 **P7 — Abstention informée.** Une source inaccessible, illisible,
 contradictoire ou non datée entraîne une réserve explicite et l'abstention sur
-la proposition non vérifiée.
+la proposition non vérifiée. Avant d'inscrire un point en limite (droit
+transitoire non examiné, autre code non consulté, décision non lue), tenter de
+le lever avec les outils disponibles s'il relève de la question posée ; ne
+reste en limite que ce qu'un appel n'a pas pu établir.
 
 **Règle de provenance.** Tout identifiant officiel cité provient d'une
 récupération réussie **dans la session courante**, quelle que soit la voie ;
-sinon il est omis ou marqué `⚠️ non vérifié — identifiant non récupéré`.
+sinon il est omis ou marqué `⚠️ non vérifié — identifiant non récupéré`. Une
+référence que les outils peuvent vérifier (ancienne numérotation, texte
+modificatif, date) se vérifie avant d'être écrite : la mention « de mémoire »
+ou « de connaissance générale » ne remplace jamais un appel possible.
 
 ## Procédure obligatoire
 

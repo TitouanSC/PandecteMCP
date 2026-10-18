@@ -4,7 +4,7 @@
 
 **French legal research for AI assistants: an anti-hallucination method and an
 MCP server that queries Légifrance and Judilibre with your own PISTE
-credentials (v0.1.1).**
+credentials (v0.1.2).**
 
 > **Independent project**, not affiliated with the author of the original
 > project, with any public figure or institution, or with the French State.
@@ -88,13 +88,19 @@ The detailed walkthrough and common errors are in
 
 ### claude.ai (web, desktop, mobile)
 
-**Easiest: the plugin**, which brings the full skill and the connector in one
-step, from the browser. **Customize** → **Plugins** → *Add* → *Add
-marketplace*: `TitouanSC/PandecteMCP`, then add the **PandecteMCP** plugin. In
-its **Connectors** tab, connect PandecteMCP and enter your credentials on the
-"Connexion PISTE" page. The plugin follows your account: desktop, mobile,
-Cowork and Claude Code get it too. The *automatic sync* notice can be ignored:
-*Check for updates* is enough.
+**Easiest: the plugin**, which brings the full skill and the connector, from
+the browser. Two steps:
+
+1. **Add the plugin**: **Customize** → **Plugins** → *Add* → *Add
+   marketplace*: `TitouanSC/PandecteMCP`, then add the **PandecteMCP** plugin.
+2. **Connect the connector (required)**: in the plugin's **Connectors** tab,
+   *Connect*, then enter your credentials on the "Connexion PISTE" page.
+   Without this step the skill is there but no tools: the assistant falls
+   back to the web, which Légifrance often blocks.
+
+The plugin follows your account: desktop, mobile, Cowork and Claude Code get
+it too. The *automatic sync* notice can be ignored: *Check for updates* is
+enough.
 
 Connector only: Settings → **Connectors** → *Add custom connector*: name `PandecteMCP`, URL
 `https://pandecte-mcp.onrender.com/mcp`, advanced OAuth fields left empty.

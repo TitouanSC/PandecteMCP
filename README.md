@@ -4,7 +4,7 @@
 
 **Recherche en droit français pour les assistants d'IA : une méthode
 anti-hallucination et un serveur MCP qui interroge Légifrance et Judilibre
-avec vos propres identifiants PISTE (v0.1.1).**
+avec vos propres identifiants PISTE (v0.1.2).**
 
 > **Projet indépendant**, sans lien avec l'auteur du projet d'origine, avec une
 > personnalité ou une institution, ni avec l'État. PandecteMCP **ne remplace pas
@@ -89,14 +89,20 @@ Le pas à pas détaillé et les erreurs fréquentes sont dans
 
 ### claude.ai (web, application, mobile)
 
-**Le plus simple : le plugin**, qui apporte le skill complet et le connecteur
-d'un coup, depuis le navigateur. **Personnaliser** → **Plugins** → *Ajouter* →
-*Ajouter une marketplace* : `TitouanSC/PandecteMCP`, puis ajoutez le plugin
-**PandecteMCP**. Dans son onglet **Connecteurs**, connectez PandecteMCP et
-renseignez vos identifiants sur la page « Connexion PISTE ». Le plugin suit
-votre compte : application de bureau, mobile, Cowork et Claude Code le
-reçoivent aussi. Le message sur la *synchronisation automatique* peut être
-ignoré : *Vérifier les mises à jour* suffit.
+**Le plus simple : le plugin**, qui apporte le skill complet et le connecteur,
+depuis le navigateur. Deux étapes :
+
+1. **Ajouter le plugin** : **Personnaliser** → **Plugins** → *Ajouter* →
+   *Ajouter une marketplace* : `TitouanSC/PandecteMCP`, puis ajoutez le plugin
+   **PandecteMCP**.
+2. **Connecter le connecteur (obligatoire)** : dans l'onglet **Connecteurs**
+   du plugin, *Connecter*, puis renseignez vos identifiants sur la page
+   « Connexion PISTE ». Sans cette étape, le skill est là mais aucun outil :
+   l'assistant se rabat sur le web, que Légifrance bloque souvent.
+
+Le plugin suit votre compte : application de bureau, mobile, Cowork et Claude
+Code le reçoivent aussi. Le message sur la *synchronisation automatique* peut
+être ignoré : *Vérifier les mises à jour* suffit.
 
 Connecteur seul : Paramètres → **Connecteurs** → *Ajouter un connecteur personnalisé* : nom
 `PandecteMCP`, URL `https://pandecte-mcp.onrender.com/mcp`, champs OAuth
