@@ -89,7 +89,16 @@ Le pas à pas détaillé et les erreurs fréquentes sont dans
 
 ### claude.ai (web, application, mobile)
 
-Paramètres → **Connecteurs** → *Ajouter un connecteur personnalisé* : nom
+**Le plus simple : le plugin**, qui apporte le skill complet et le connecteur
+d'un coup, depuis le navigateur. **Personnaliser** → **Plugins** → *Ajouter* →
+*Ajouter une marketplace* : `TitouanSC/PandecteMCP`, puis ajoutez le plugin
+**PandecteMCP**. Dans son onglet **Connecteurs**, connectez PandecteMCP et
+renseignez vos identifiants sur la page « Connexion PISTE ». Le plugin suit
+votre compte : application de bureau, mobile, Cowork et Claude Code le
+reçoivent aussi. Le message sur la *synchronisation automatique* peut être
+ignoré : *Vérifier les mises à jour* suffit.
+
+Connecteur seul : Paramètres → **Connecteurs** → *Ajouter un connecteur personnalisé* : nom
 `PandecteMCP`, URL `https://pandecte-mcp.onrender.com/mcp`, champs OAuth
 avancés laissés vides. Cliquez sur **Se connecter**, puis renseignez vos
 identifiants sur la page « Connexion PISTE ».
@@ -331,7 +340,7 @@ python mcp_server/server.py
 
 ```
 PandecteMCP/
-├── .claude-plugin/                 ← plugin et marketplace Claude Code
+├── .claude-plugin/                 ← marketplace Claude (pointe vers plugin/)
 ├── .codex-plugin/                  ← plugin OpenAI
 ├── .mcp.json                       ← connexion au serveur hébergé
 ├── mcp_server/
@@ -341,7 +350,8 @@ PandecteMCP/
 │   ├── connexion.py                ← page « Connexion PISTE »
 │   ├── cle.py                      ← page « Clé personnelle »
 │   └── catalog.py                  ← liste des outils publiés
-├── skills/pandecte-recherche/      ← adaptateur plugin vers le noyau
+├── plugin/                         ← plugin Claude (claude.ai, Claude Code)
+├── skills/pandecte-recherche/      ← adaptateur du plugin OpenAI vers le noyau
 ├── skill/                          ← skill autonome, source de vérité
 │   ├── SKILL.md                    ← noyau méthodologique
 │   ├── CHANGELOG.md                ← historique des versions

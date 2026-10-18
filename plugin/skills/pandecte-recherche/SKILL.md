@@ -1,0 +1,1008 @@
+---
+name: pandecte-recherche
+description: Méthodologie rigoureuse de recherche en droit français (sources
+  primaires Légifrance, vérification de vigueur, citation traçable). Active ce
+  skill dès que l'utilisateur cite ou demande un article de loi, code, décret,
+  arrêté ou circulaire ; demande une qualification pénale, administrative ou
+  civile ; demande une jurisprudence (Cass., CE, CC, CJUE, CEDH) ; demande de
+  vérifier si un texte est en vigueur, abrogé ou modifié ; rédige un acte, une
+  note, un mémoire, des conclusions ou une réponse institutionnelle ; audite
+  ou corrige juridiquement un document ou un corpus de documents ; prépare
+  un écrit ou oral de concours avec références juridiques. Ne pas activer pour
+  le droit étranger non européen ni les questions doctrinales sans citation.
+metadata:
+  version: 0.1.0
+  date_derniere_revue_methodologique: 2026-09-14
+  date_derniere_verification_sources: 2026-09-04
+  langue: français
+---
+# Skill : pandecte-recherche (v0.1.0)
+
+> **Objet** : encoder la méthodologie rigoureuse de recherche en droit
+> français applicable à tout usage professionnel — avocat, juriste,
+> agent des forces de l'ordre, cadre territorial, candidat aux concours.
+> Conçu contre **dix-huit modes d'erreur** identifiés du LLM en droit,
+> autour de **sept principes**, d'une **procédure en neuf étapes**
+> (étapes **0** et **0 bis** de cadrage, étapes **1 à 7** opératoires),
+> d'un **double mode opératoire A/B**, de **six modules activables** et
+> de **quatre techniques** de raisonnement juridique.
+>
+> **Public** : praticiens du droit français. Le métier de l'utilisateur
+> (contexte territorial, domaines prioritaires, 3ᵉ regard d'auto-critique)
+> se configure via un **profil** — voir `profil.md` et le dossier
+> [`profils/`](profils/) (§0, *Chargement du profil*). Tout livrable peut finir dans un acte
+> officiel — la rigueur prime sur la fluidité, et l'abstention informée
+> prime sur la complétion spéculative.
+
+---
+
+## Déclenchement
+
+Activer ce skill dès que l'utilisateur :
+- cite ou demande un article de loi, de code, un décret, un arrêté, une circulaire,
+- demande une qualification juridique (pénale, administrative, civile),
+- demande de vérifier si un texte est en vigueur, abrogé ou modifié,
+- demande une jurisprudence (Cass., CE, CC, CJUE, CEDH),
+- rédige un acte, une note, un mémoire, des conclusions ou une réponse
+  institutionnelle,
+- audite, relit ou corrige juridiquement un document existant ou un corpus,
+- prépare un oral ou écrit de concours impliquant des références juridiques.
+
+**Ne pas activer** pour des questions purement doctrinales sans besoin
+de citation vérifiable, ni pour du droit étranger non européen.
+
+---
+
+## Mise à jour — contrôle par session, automatique sur option
+
+Au premier déclenchement du skill dans une session, si le mode automatique
+n'est pas activé, vérifier discrètement si une mise à jour est disponible avec
+`npx skills check`, **uniquement** si `npx` est accessible. Ne pas relancer ce
+contrôle dans la même session et jamais avant une réponse urgente ou une simple
+clarification.
+
+- Si `pandecte-recherche` est signalé comme périmé, l'indiquer en une phrase,
+  puis poursuivre immédiatement le travail :
+  « Une mise à jour de pandecte-recherche est disponible ; vous pourrez
+  l'installer après cette réponse avec `npx skills update pandecte-recherche`. »
+- Ne pas proposer de mise à jour si le contrôle ne signale rien, si le skill
+  n'est pas suivi par le CLI `skills`, ou si le contrôle échoue (réseau, Node,
+  droits). Ces situations ne sont pas un problème juridique et ne doivent pas
+  alourdir la réponse.
+- L'agent ne lance jamais `npx skills update` de sa propre initiative, sauf
+  si l'utilisateur a activé le mode automatique ci-dessous.
+
+Cette fonction concerne les installations réalisées avec le CLI `skills`.
+Pour une installation gérée par un hôte ou un marketplace, suivre son mécanisme
+de mise à jour ; ne pas présenter la commande `npx` comme un correctif universel.
+
+### Mode automatique explicite
+
+Ce mode est réservé à une installation **globale suivie par le CLI `skills`**.
+L'utilisateur l'active en créant, à la racine du skill, le fichier local non
+versionné `.pandecte-recherche-update.json` :
+
+```json
+{ "automatic": true }
+```
+
+Au premier usage après un délai de 24 heures, exécuter à la place du contrôle
+manuel `npx skills check` :
+`scripts/update_skill.py`. Le script détermine le périmètre global, lance
+`npx skills update pandecte-recherche -y -g`, conserve `profil.md` et
+`scripts/.env`, puis affiche seulement `UPDATE_APPLIED` quand la version a
+changé. Une panne réseau, l'absence de `npx`, une installation locale ou un
+emplacement ambigu ne bloque jamais le travail juridique et n'entraîne aucune
+mise à jour. Le fichier garde la date de la dernière tentative pour éviter les
+relances répétées.
+
+Pour désactiver le mode, remplacer son contenu par `{ "automatic": false }`
+ou supprimer ce fichier.
+
+---
+
+## 0. Architecture générale : double mode opératoire
+
+### Chargement du profil (`profil.md`) — avant toute analyse
+
+Le **noyau méthodologique est universel** ; le **métier de l'utilisateur
+est un paramètre**. Au déclenchement, si un fichier **`profil.md`** existe
+à la racine du skill, le lire : il fixe des **défauts** — contexte
+territorial (question 4 de l'étape 0), domaines prioritaires (veille §10),
+et **3ᵉ regard d'auto-critique** (rôle (c) de l'étape 7). Profils fournis
+dans [`profils/`](profils/) (police-gendarmerie, avocat, juriste-entreprise,
+collectivités, étudiant-concours) ; gabarit vierge `profils/_modele.md`.
+
+**Deux règles impératives :**
+1. **Un profil ne fournit que des défauts, jamais des certitudes.** Toute
+   valeur (ressort, TA compétent, domaine) est **surchargée sans friction**
+   par une requête qui vise autre chose, et **rouverte par l'étape 0 bis**
+   dès qu'elle devient décisionnelle. Le profil ne dispense d'aucune
+   vérification (P1) ni d'aucune question obligatoire (étape 0 bis).
+2. **Sans `profil.md` → profil neutre.** Aucune hypothèse territoriale ou
+   métier n'est présumée. Si une information de ce type est décisionnelle,
+   l'étape 0 bis la **pose en question** (filet de sécurité), au lieu de
+   deviner un contexte.
+
+### Double mode opératoire
+
+Le skill fonctionne selon deux modes **mutuellement exclusifs**.
+
+### Mode A — Noyau + modules activables (par défaut)
+
+Mode opératoire normal. Le **noyau invariant** (7 principes, 7 étapes,
+4 techniques) s'applique à toutes les requêtes. Des **modules
+supplémentaires** se déclenchent automatiquement selon des critères
+détectables dans la requête (voir §6).
+
+### Mode B — Exhaustif (dérogatoire)
+
+Mode qui exécute la **totalité des modules** sur toute requête, y
+compris ceux qui s'avèrent sans objet (qui répondent alors
+explicitement « **sans objet à cette espèce** » avec justification
+d'une ligne).
+
+Le mode B n'est pas un mode « plus sûr » que le mode A : il est un
+mode plus **traçable**, utile quand la traçabilité institutionnelle
+du raisonnement importe autant que sa conclusion (note au Maire
+engageant la commune, réponse à signalement, dossier au contrôle de
+légalité, exercice de préparation au concours).
+
+### Balises de bascule
+
+| Balise | Effet |
+|--------|-------|
+| `[complet]` | Force le mode B (tous modules activés). |
+| `[express]` | Mode A allégé : supprime l'activation automatique des modules même si leurs déclencheurs sont réunis. **Exceptions : PÉNAL reste actif** en matière répressive (P6) et **DOC-AUDIT reste actif** pour tout audit ou correction de documents. |
+| `[syllogisme]` | Active le sous-gabarit « note de concours » (structure majeure / mineure / conclusion). Surcouche du gabarit B. |
+| `[opérationnel]` | Active la section « Implications opérationnelles » du gabarit B et le rôle facultatif *responsable opérationnel* à l'étape 7. |
+| `[lookup]` | **Voie rapide** : référence ponctuelle non controversée. Dispense de l'en-tête standardisé et de l'encart récapitulatif ; sortie minimale (voir ci-dessous). **N'allège aucune exigence de fond** : P1, règle de provenance et étape 0 bis restent dues. Refusée — bascule en mode A standard — dès qu'une interprétation, une qualification pénale ou un acte est en jeu. |
+
+En l'absence de balise → **mode A standard** avec déclencheurs
+automatiques de modules.
+
+### Voie rapide `[lookup]` — sortie minimale
+
+Pour la simple lecture-référence d'un texte non controversé (« quel
+article réprime X ? », « L. 2212-2 CGCT est-il en vigueur ? »),
+l'appareil complet (en-tête + 9 étapes visibles + encart) est
+disproportionné. La balise `[lookup]` produit alors :
+
+```
+[Citation normalisée avec identifiant récupéré] — fonction juridique : […]
+[Réponse en 1–3 phrases] [confiance : élevée | modérée | faible — 1 ligne]
+```
+
+**Garde-fous (non négociables)** : la citation suppose une
+récupération réelle en source primaire (P1) et un identifiant de
+provenance vérifiée (règle de provenance) ; si la récupération échoue,
+la voie rapide bascule en **abstention motivée** (§7). En cas de doute
+sur le caractère « non controversé », `[lookup]` est **ignorée** et le
+mode A standard s'applique.
+
+**Aucune balise ne dispense de l'étape 0 bis** (arbitrage des
+informations manquantes) : ni `[express]`, ni `[complet]`. Le mode B
+notamment ne « compense » pas une information décisionnelle manquante
+par l'exhaustivité — il produirait alors une analyse complète sur une
+fondation non vérifiée (voir étape 0 bis).
+
+### Traçabilité proportionnée
+
+Les contrôles sont obligatoires ; leur affichage dépend du livrable. Une
+réponse courte expose les sources, la date applicable, les réserves utiles et
+la confiance sans réciter la procédure. Une note de fond, un audit ou une
+demande `[complet]` ajoute l'encart récapitulatif : mode, modules activés,
+confiance globale, sources informelles et limites. `[lookup]` conserve sa
+sortie minimale. La provenance des identifiants reste obligatoire dans tous
+les cas.
+
+---
+
+## 1. Diagnostic préalable — les 18 modes d'erreur à empêcher
+
+Cette méthodologie est construite contre **dix-huit modes d'erreur** du
+LLM en droit. Les nommer permet de les bloquer ; chaque principe et
+chaque étape indiquent les modes qu'ils neutralisent (« → Bloque modes… »).
+
+| # | Mode | # | Mode |
+|---|------|---|------|
+| 1 | Hallucination de référence | 10 | Oubli du champ territorial |
+| 2 | Effet de cutoff | 11 | Oubli des dispositions transitoires |
+| 3 | Confusion de versions | 12 | Oubli des renvois normatifs |
+| 4 | Confusion d'articles voisins | 13 | Inversion cumulatif / alternatif |
+| 5 | Analogie non vérifiée | 14 | Faux positif textuel |
+| 6 | Confusion doctrine / texte | 15 | Validation héritée d'un audit antérieur |
+| 7 | Confusion de juridictions | 16 | Citation exacte, conséquence fausse |
+| 8 | Oubli de la hiérarchie des normes | 17 | Mauvais acteur–lieu–propriétaire–pouvoir |
+| 9 | Oubli du décret d'application | 18 | Incohérence de corpus |
+
+**Détail et exemples de chaque mode → [`references/modes-erreur.md`](references/modes-erreur.md).**
+
+**Note.** L'étape 0 bis (v2.1.0) n'est pas un mode supplémentaire : garde procédurale
+en amont, elle empêche de déclencher les modes 10 et 14 (mauvais régime /
+mauvais champ sur une hypothèse décisionnelle non levée). Elle prolonge P2
+et P7 au stade de l'entrée.
+
+---
+
+## 2. Les 7 principes structurants (noyau invariant)
+
+### P1 — Primarité
+Aucune affirmation juridique ne peut s'appuyer sur la mémoire
+d'entraînement seule. Toute citation suppose l'accès au texte intégral
+officiel (ou à l'extrait officiel contenant l'intégralité du passage
+cité) **et** la vérification explicite de sa version applicable à la
+date de référence.
+
+La consultation effective n'est pas le survol d'un résultat de
+recherche : c'est la **lecture documentée** de la source officielle
+(Légifrance — dont sa rubrique Circulaires, le sous-domaine
+`circulaires.legifrance.gouv.fr` redirigeant vers le site principal depuis
+la refonte d'avril 2026 —, courdecassation.fr, conseil-etat.fr,
+conseil-constitutionnel.fr, JORF).
+
+**Règle de provenance (impérative, v2.3.0).** Tout **identifiant
+officiel** figurant dans une sortie — `LEGIARTI…`, `JORFTEXT…`,
+`NOR`, n° de pourvoi, n° de requête, n° de décision — doit provenir
+d'un **appel d'outil effectué dans la session courante** (récupération
+en source primaire : `scripts/legifrance.py` **en premier**, à défaut
+`web_fetch`/`web_search` sur un domaine officiel — ordre normé à
+l'**étape 2**, *échelle de récupération*). Un identifiant qui n'a pas
+été récupéré ne peut **jamais** être reconstitué de mémoire : il est
+soit omis, soit marqué `⚠️ non vérifié — identifiant non récupéré`. La
+conformité apparente de la procédure (afficher les étapes 0 à 7,
+l'en-tête, l'encart) ne dispense **pas** de cette provenance : produire
+le cérémonial sans la récupération est une **simulation de procédure**,
+traitée comme un défaut bloquant à l'étape 6. Un identifiant non
+récupéré interdit la voie **gabarit C** (citation pour acte).
+
+La règle est **indifférente à la voie** : un identifiant récupéré par
+`web_fetch` sur Légifrance vaut exactement un identifiant récupéré par
+l'API ; un identifiant non récupéré ne vaut rien dans les deux cas.
+L'absence de clé PISTE n'abaisse donc jamais le niveau de preuve — elle
+change seulement le moyen d'atteindre la source.
+
+→ Bloque modes 1, 2, 3.
+
+### P2 — Date de référence
+Toute analyse identifie d'abord la date à laquelle le droit s'applique :
+- date des **faits** pour une qualification rétrospective,
+- date du **jour** pour une analyse prospective,
+- date **d'effet d'un acte** en préparation.
+
+Plusieurs temporalités peuvent **coexister** dans une même question :
+- droit substantiel à la date des faits,
+- droit procédural d'application immédiate,
+- sanction soumise à la rétroactivité in mitius (P6),
+- légalité d'un acte appréciée à sa date d'édiction.
+
+Quand une question le justifie, le skill **explicite la temporalité
+applicable à chaque volet**.
+
+→ Bloque modes 2, 3, 11.
+
+### P3 — Autorité, authenticité et articulation des sources
+
+Ne pas confondre trois questions : la source est-elle authentique, quel est le
+rang de la norme, et quel effet une décision produit-elle sur son application ?
+
+Ordre de recherche :
+1. **Textes officiels publiés** (Légifrance / JORF).
+2. **Décisions juridictionnelles officielles** (Cass., CE, CC, CJUE, CEDH),
+   qui peuvent interpréter, écarter ou neutraliser l'application d'un texte
+   selon leur compétence et leur autorité.
+3. **Circulaires et instructions officielles**.
+4. **Doctrine institutionnelle**.
+
+Cet ordre organise la recherche ; il ne constitue pas une hiérarchie abstraite
+où un texte primerait toujours sur une décision qui en contrôle l'application.
+
+La **doctrine privée** (Dalloz, JCP, blogs spécialisés) ne peut fonder
+seule une affirmation normative, mais peut servir comme outil
+d'identification, de contextualisation ou de signalement d'une
+controverse doctrinale. Elle apparaît alors **explicitement** comme
+telle, jamais comme source citable en propre.
+
+Détail → [`references/sources-autorisees.md`](references/sources-autorisees.md).
+
+→ Bloque modes 6, 7, 8.
+
+### P4 — Citation traçable et fonction juridique
+
+**Format imposé — article :**
+```
+Art. [référence], [code], version en vigueur depuis le JJ/MM/AAAA,
+identifiant Légifrance LEGIARTI…, consulté le JJ/MM/AAAA
+```
+
+**Format imposé — jurisprudence judiciaire :**
+```
+Cass. [chambre], JJ mois AAAA, n° XX-XX.XXX, Bull. (ou : inédit)
+```
+
+**Format imposé — jurisprudence administrative :**
+```
+CE, [formation], JJ mois AAAA, n° XXXXXX, Lebon (ou : Tables / inédit)
+```
+
+Pour chaque décision citée, distinguer explicitement :
+- **ratio decidendi** : motif décisoire, qui fait précédent ;
+- **obiter dictum** : commentaire accessoire, mentionnable comme
+  indice mais jamais comme source principale d'autorité.
+
+**Chaque texte cité est explicitement relié à sa fonction juridique** :
+compétence, procédure, sanction, définition, exception, renvoi,
+habilitation, contrôle. Un texte de compétence ne peut être cité comme
+texte de sanction et inversement.
+
+Détail → [`references/format-citation.md`](references/format-citation.md).
+
+→ Bloque modes 1, 4, 6, 7, 14.
+
+### P5 — Séparation des registres
+Dans toute réponse, distinguer **explicitement** quatre registres :
+
+| Registre | Préfixe / format |
+|----------|------------------|
+| (a) Texte | citation ou paraphrase fidèle, accompagnée du format normalisé |
+| (b) Jurisprudence | citation d'arrêt, format normalisé, ratio/obiter signalé |
+| (c) Déduction | introduite par **« J'en déduis que… »** ou **« Par voie de conséquence… »** |
+| (d) Incertitude | introduite par **« Reste à vérifier… »** ou bloc `⚠️ À VÉRIFIER` |
+
+Le mélange de ces registres est la première source d'erreur de
+raisonnement.
+
+→ Bloque modes 5, 6, 14.
+
+### P6 — Légalité criminelle et application de la loi pénale dans le temps
+
+Toute qualification d'infraction s'effectue sous la contrainte des
+articles **111-3** et **111-4 du Code pénal** :
+- loi pénale d'**interprétation stricte**,
+- aucune extension par analogie,
+- aucune qualification sans tous les éléments constitutifs (légal,
+  matériel, moral) prévus par un texte en vigueur à la date des faits.
+
+S'applique également aux **sanctions administratives à caractère
+punitif** (jurisprudence CC et CEDH, *Engel* notamment).
+
+**Application de la loi pénale dans le temps** :
+- **Non-rétroactivité de la loi plus sévère** : la version applicable
+  est celle en vigueur à la date des faits.
+- **Rétroactivité in mitius de la loi plus douce** (art. 112-1 al. 3 CP) :
+  si une version postérieure aux faits, antérieure au jugement, est plus
+  favorable, elle s'applique.
+
+Cette comparaison est explicite quand plusieurs versions existent
+entre la date des faits et la date d'analyse.
+
+**Conséquence procédurale** : en cas de doute sérieux non résolu sur
+un élément constitutif, **aucune qualification affirmative n'est
+présentée comme certaine**. Le skill expose alors les qualifications
+soutenables avec leurs zones d'incertitude.
+
+**Le skill ne pratique pas le biais sous-qualifiant par défaut** : sa
+fonction est d'identifier les qualifications juridiquement plausibles
+et de documenter leurs incertitudes, non de choisir la plus favorable
+au mis en cause.
+
+→ Bloque modes 2, 3, 5, 11, 14.
+
+### P7 — Abstention informée et sortie dégradée balisée
+
+Si une vérification en source primaire est impossible, ou si une
+condition d'abstention prévue par la procédure est réunie, le skill
+le signale et **s'arrête sur le point concerné**. Pas de complétion
+par spéculation déguisée en certitude.
+
+L'abstention porte sur **le point précis** où la vérification échoue,
+pas nécessairement sur l'intégralité de la réponse. Les éléments
+vérifiés restent livrables avec leur niveau de confiance ; les
+éléments non vérifiés sont explicitement marqués comme tels.
+
+Une **sortie dégradée balisée** (« texte trouvé, version non
+confirmée », « point litigieux à vérifier », « jurisprudence non
+localisée ») est généralement plus utile qu'une abstention totale.
+
+**Corollaire d'entrée (v2.1.0).** L'abstention informée a un pendant
+au stade de l'entrée : quand l'information manquante est **décisionnelle
+et détenue par le seul utilisateur**, le skill ne spécule pas et ne
+« déclare » pas une hypothèse pour avancer — il **pose la question**
+(voir étape 0 bis). P7 régit la sortie ; l'étape 0 bis régit l'entrée.
+
+→ Bloque modes 1, 2, 3, 5, 6.
+
+---
+
+## 2 bis. Route obligatoire — audit ou correction de documents existants
+
+Toute demande d'**audit**, de **relecture juridique** ou de **correction
+directe** d'un ou plusieurs fichiers active le module **DOC-AUDIT**, y
+compris sous balise `[express]`. Lire et exécuter intégralement
+[`references/audit-documentaire.md`](references/audit-documentaire.md).
+
+Cette route ajoute huit portes de contrôle au noyau : qualifier les
+livrables et leurs dates de droit ; inventorier le corpus ; constituer un
+registre des affirmations ; vérifier à 100 % le risque juridique élevé ;
+construire la matrice **acteur–lieu–propriétaire–pouvoir** ; tester
+séparément la source et la conséquence ; réconcilier les fichiers ; puis
+rechercher les résidus après correction.
+
+**Indépendance de second regard.** Un audit antérieur, même réalisé avec
+ce skill, est une information de contexte et non une preuve de conformité.
+Les affirmations à risque élevé sont reprises depuis les sources primaires.
+
+**Porte bloquante.** L'audit ne peut être déclaré terminé tant qu'une
+affirmation à risque élevé n'est pas soit vérifiée et corrigée, soit
+signalée comme non vérifiable avec abstention ciblée.
+
+→ Bloque modes 2, 3, 14 à 18.
+
+---
+
+## 3. La procédure en 9 étapes — 0, 0 bis, 1 à 7 (avec critères de sortie)
+
+Chaque étape a un **critère de sortie**. S'il n'est pas rempli, je recule ou je
+m'abstiens. Les étapes sont exécutées en interne. L'étape 0 bis devient visible
+lorsqu'une question bloque réellement l'analyse. Les étapes 0 et 7 sont
+synthétisées dans les notes de fond, audits, sorties `[complet]`, ou lorsque
+leur résultat révèle une limite utile à l'utilisateur.
+
+### Étape 0 — Qualification de la demande et désambiguïsation factuelle
+
+Avant toute recherche, répondre par écrit à **six questions** :
+
+1. **Nature exacte** : qualification d'un fait / recherche d'un texte /
+   vérification d'une jurisprudence / analyse d'articulation /
+   rédaction d'acte / audit de document ou corpus / préparation argumentaire.
+2. **Date(s) pertinente(s)** — distinguer droit substantiel, droit
+   procédural, sanction, acte. Inclure systématiquement **date des
+   faits** et **date d'action ou d'analyse** (contrôles de délais et
+   prescription).
+3. **Domaine(s) et code(s) en jeu**.
+4. **Champ territorial** : national / IDF / Seine-Saint-Denis /
+   commune / Outre-mer / Alsace-Moselle…
+5. **Niveau d'exigence** : note express / note de fond / citation pour acte.
+6. **Test de régime applicable** : police générale ou spéciale ?
+   matière répressive ou non ? acte individuel ou réglementaire ?
+   compétence liée ou pouvoir discrétionnaire ? plein contentieux ou
+   recours pour excès de pouvoir ?
+
+**Désambiguïsation des faits.** Avant toute qualification, formaliser
+explicitement : **qui** agit, **quand**, **où**, sous **quelle
+qualité** (agent public, particulier…), en vertu de **quel pouvoir**,
+**à l'égard de qui**. Une qualification correcte appliquée à des
+faits mal formalisés produit une analyse erronée.
+
+**Critère de sortie** : les six questions ont une réponse explicite
+**et** la désambiguïsation factuelle est faite. Si l'une reste
+ambiguë ou si une information nécessaire manque → **passer à l'étape
+0 bis** (arbitrage) **avant** de chercher.
+
+→ Bloque modes 4, 7, 10, 14.
+
+### Étape 0 bis — Arbitrage des informations manquantes (VISIBLE)
+
+Ajoutée en v2.1.0. Après la désambiguïsation de l'étape 0 et **avant
+toute recherche**, recenser explicitement toute information nécessaire
+qui manque, puis appliquer à chacune le **test décisionnel**.
+
+**Test décisionnel** — la réponse juridique change-t-elle selon la
+valeur de l'information manquante ?
+- Si la **conclusion**, le **régime applicable**, la **qualification**
+  ou la **procédure** bascule selon l'interprétation → l'information
+  est **décisionnelle**.
+- Si la valeur ne modifie pas la conclusion → l'information est
+  **non décisionnelle**.
+
+**Conduite à tenir :**
+
+| Type | Conduite |
+|------|----------|
+| Décisionnelle | **Question obligatoire** à l'utilisateur. La recherche de fond est suspendue jusqu'à la réponse. |
+| Non décisionnelle | **Hypothèse déclarée** explicite, puis poursuite. |
+
+**Clause anti-échappatoire (impérative).** La déclaration d'hypothèse
+n'est **jamais** un substitut autorisé à la question sur une information
+décisionnelle. Déclarer ouvertement « je suppose X » sur un point dont
+on a soi-même reconnu qu'il « commande la réponse » constitue la même
+faute que de le supposer en silence — aggravée par la conscience du
+problème. **Signal d'alarme** : si le skill se surprend à écrire qu'un
+point est « déterminant », « central », « commande toute la réponse »,
+« point pivot » ou équivalent, c'est le marqueur d'une **question
+obligatoire**, pas d'une hypothèse à déclarer.
+
+**Économie du questionnement** (pour éviter la question rituelle, qui
+est elle-même un défaut — complétion spéculative en mode interrogatif) :
+- **Pas de question si l'étape 0 est complète** et qu'aucune information
+  décisionnelle ne manque. Procéder directement.
+- **Une seule question par défaut**, portant sur le point **le plus
+  décisionnel**. Si plusieurs points décisionnels coexistent, les
+  hiérarchiser ; plafond indicatif : **trois**, jamais davantage.
+- **Question fermée ou à choix** chaque fois que possible, pour
+  minimiser la charge de l'utilisateur.
+- **Réservée à ce que seul l'utilisateur détient.** Si l'information
+  est vérifiable en source primaire (Légifrance, etc.), la **chercher**
+  au lieu de la demander. La question ne sert pas à se décharger de la
+  recherche autonome.
+
+**Esquisse conditionnelle bornée.** Tant qu'une information décisionnelle
+reste sans réponse, **aucune analyse de fond complète n'est produite**.
+Au plus, une esquisse strictement bornée de la forme « si (a) … / si
+(b) … » en quelques lignes, pour montrer l'enjeu de la clarification —
+jamais un gabarit B déployé sur une seule branche présumée.
+
+**Critère de sortie** : toute information manquante est classée
+(décisionnelle / non décisionnelle) ; chaque information décisionnelle
+a fait l'objet d'une question **ou** la recherche de fond est suspendue
+dans l'attente de la réponse ; chaque hypothèse déclarée porte
+exclusivement sur un point non décisionnel ; aucune analyse complète
+n'a été déployée sur une branche décisionnelle non confirmée.
+
+→ Renforce P2 (régime/date applicables) et P7 (abstention informée
+portée à l'entrée) ; bloque en amont les modes 10 et 14 (analyse du
+mauvais régime ou du mauvais champ par hypothèse décisionnelle non
+levée).
+
+### Étape 1 — Cartographie des sources nécessaires
+
+Lister explicitement, avant toute requête, les sources à consulter :
+quel(s) article(s) de quel code, quelle juridiction pour la
+jurisprudence, quelle circulaire éventuelle, quel décret de renvoi
+attendu.
+
+**Critère de sortie** : liste écrite, hiérarchisée selon P3.
+
+### Étape 2 — Récupération en source primaire avec suivi des renvois
+
+Pour chaque source listée :
+- lecture documentée (article visé **plus** chapitre/section qui le
+  chapeaute, pour contextualiser sans saturer),
+- capture de l'**identifiant officiel** et de la **date d'entrée en
+  vigueur**,
+- **suivi systématique des renvois normatifs** présents dans le texte
+  (« dans les conditions prévues par décret », « tel que défini à
+  l'article… », « selon les modalités fixées par arrêté ») **jusqu'à
+  leur source ultime**. Une analyse qui s'arrête à l'article principal
+  sans avoir vérifié les renvois est incomplète et signalée comme telle.
+
+**Test cumulatif / alternatif** : les conditions d'application
+sont-elles liées par « et » (cumulatives) ou par « ou » (alternatives) ?
+Existe-t-il des exceptions, des exemptions, des seuils ? Identification
+**explicite** dans la réponse.
+
+#### Échelle de récupération — capacités disponibles, détection silencieuse
+
+La voie de récupération n'est pas un choix soumis à l'utilisateur : elle se
+**constate**, par le code de sortie de l'outil.
+
+1. **Outil officiel disponible dans l'environnement** — utiliser en priorité
+   le connecteur MCP **PandecteMCP** s'il est exposé (outils `search`,
+   `fetch`, `search_articles`, `get_article`, `search_case_law`,
+   `get_decision`, `get_section`, `get_text`, et `get_method`, qui sert une
+   version condensée de cette méthode aux assistants sans skill) : il interroge Légifrance et
+   Judilibre avec les identifiants PISTE que l'utilisateur a lui-même confiés
+   au connecteur. Sinon utiliser
+   [`scripts/legifrance.py`](scripts/legifrance.py) : `article` / `search`
+   (textes), `ceta` / `constit` (Conseil d'État, Conseil constitutionnel),
+   `juri` puis `decision` (jurisprudence judiciaire). Un résultat de recherche
+   identifie une ressource ; la lecture de cette ressource confirme son contenu.
+2. **Voie de repli web** — outil indisponible, identifiants PISTE absents, ou
+   connecteur qui refuse l'accès (connexion à refaire, identifiants refusés) :
+   basculer sur les gabarits `web_search` / `web_fetch`, domaines officiels
+   exclusivement, **sans l'annoncer et sans poser de question**. Demander à
+   l'utilisateur s'il dispose d'une clé API est une **question rituelle
+   prohibée** (étape 0 bis, économie du questionnement) : l'information est
+   constatable par l'outil, donc elle se constate. La clé est un confort,
+   jamais une condition d'exercice. Seulement si l'utilisateur demande
+   comment fiabiliser la récupération, indiquer le connecteur PandecteMCP
+   (`https://pandecte-mcp.onrender.com/mcp`, connexion avec ses propres
+   identifiants PISTE, gratuits).
+3. **Abstention** — les voies disponibles échouent (notamment sorties **3**,
+   **4** ou **5** du script et source inaccessible côté web) : aucune
+   citation, déclencheur d'abstention §7.
+
+**Invariant de provenance.** La voie empruntée ne modifie **en rien**
+l'exigence P1 : sur la voie de repli comme sur la voie outillée, tout
+identifiant cité provient d'une récupération réussie **dans la session
+courante**. Le repli dégrade le confort et le déterminisme, **jamais** le
+niveau de preuve exigé.
+
+Gabarits de requêtes → [`references/gabarits-requetes.md`](references/gabarits-requetes.md).
+
+**Critère de sortie** : pour chaque source, identifiant et date sont
+notés ; chaque renvoi normatif est résolu ou explicitement marqué
+non résolu. Si identifiant manquant → retour étape 1 ou abstention.
+
+→ Bloque modes 1, 12, 13.
+
+### Étape 3 — Vérification de fraîcheur et de droit transitoire
+
+Pour chaque texte, vérifier :
+- mention « **Modifié par** … du JJ/MM/AAAA » ?
+- mention « **Abrogé par** … » ?
+- champ « **Version en vigueur depuis le** JJ/MM/AAAA » ?
+- existence d'une version postérieure non encore entrée en vigueur
+  (vacatio legis) ?
+- **dispositions transitoires** de la loi ou du décret modificateur
+  (« applicable aux procédures ouvertes à compter du… », « les
+  dispositions antérieures demeurent applicables aux situations en
+  cours… ») : un texte peut être formellement en vigueur sans être
+  **applicable** à la situation analysée si une disposition
+  transitoire maintient l'ancien régime.
+- **décisions QPC** ayant abrogé ou réservé l'interprétation de la
+  disposition (lorsque mentionnées sur Légifrance).
+
+Checklist détaillée → [`references/checklist-vigueur.md`](references/checklist-vigueur.md).
+
+**Critère de sortie** : pour chaque texte cité, l'état d'application
+à la date de référence est confirmé, dispositions transitoires
+incluses. Sinon → abstention motivée (P7) ou sortie dégradée balisée.
+
+→ Bloque modes 2, 3, 11.
+
+### Étape 4 — Croisement jurisprudentiel et triangulation
+
+Si la question dépend de l'interprétation d'un texte :
+- identifier l'arrêt ou les arrêts de principe,
+- vérifier l'absence de revirement postérieur,
+- qualifier la décision : Cass. Bulletin / inédit ; CE Lebon / Tables /
+  inédit ; ratio decidendi vs obiter dictum (P4).
+
+**Règle de triangulation — règle unifiée**
+
+Obligatoire dans les cas suivants :
+- qualification pénale destinée à motiver un acte ou un PV (cf.
+  module PÉNAL §6 ci-dessous) **lorsqu'une interprétation est en jeu**
+  (élément constitutif discutable, qualification concurrente plausible,
+  application analogique apparente, jurisprudence connue de divergence
+  ou de revirement),
+- motivation d'un acte administratif faisant grief lorsqu'une interprétation,
+  une articulation de compétences ou une mesure de proportionnalité est en jeu,
+- citation destinée à un acte officiel lorsqu'elle porte une interprétation
+  discutable plutôt que la reproduction d'une règle claire.
+
+**Non requise** pour la simple constatation matérielle d'une infraction
+dont le texte d'incrimination s'applique sans ambiguïté aux faits
+constatés (constatation contraventionnelle de routine, infraction
+flagrante au Code de la route, infraction au stationnement, etc.),
+ainsi que pour la lecture-référence d'un article non controversé
+(« quel article réprime X ? »).
+
+**Règle conservatrice** : en cas de doute sur le caractère
+interprétatif ou non de la qualification, la triangulation s'applique.
+
+**Exigence en triangulation obligatoire** : vérifier la source primaire par
+deux chemins indépendants lorsque c'est possible et rechercher la jurisprudence
+qui confirme ou contredit l'interprétation. Une décision juridictionnelle est
+requise pour présenter comme établie une interprétation contentieuse. L'absence
+de jurisprudence localisable est signalée ; elle ne rend pas, à elle seule, un
+texte clair juridiquement incertain.
+
+**Critère de sortie** : chaque interprétation contentieuse présentée comme
+établie s'appuie sur une décision identifiée et non infirmée ; quand la
+triangulation est obligatoire, elle est documentée. Échec de triangulation →
+bascule en abstention informée sur le point concerné, avec sortie dégradée
+balisée (P7).
+
+→ Bloque modes 3, 5, 6, 7, 14.
+
+### Étape 5 — Vérification d'articulation, de compétence, d'opposabilité, de délais
+
+**Sept contrôles systématiques** :
+
+1. **Décret(s) d'application** existant(s) et publié(s) au JORF.
+2. **Conformité aux textes supérieurs** : Constitution, conventions
+   internationales (CEDH notamment), droit de l'UE.
+3. **Articulation lex generalis / lex specialis** : existe-t-il un
+   régime spécial dérogeant explicitement ou implicitement au régime
+   général ? (Police générale du maire L2212-2 CGCT vs polices
+   spéciales ; CGCT vs CSI ; etc.)
+4. **Champ territorial et personnel** d'application.
+5. **Compétence de l'auteur de l'acte** (si acte administratif en jeu) :
+   autorité compétente ? Délégation régulière ? Compétence territoriale ?
+   Compétence temporelle ?
+6. **Opposabilité de l'acte ou de la norme** : publication régulière
+   (JORF, RAA, registre des arrêtés municipaux) ? Affichage ou
+   notification effectués ? Signalisation réglementaire en place pour
+   les arrêtés de circulation ? **Un texte en vigueur peut être
+   inopposable** faute de publicité régulière.
+7. **Délais et prescriptions** : prescription de l'action publique,
+   prescription contraventionnelle, forclusion administrative, délais
+   de recours contentieux. Comparer date des faits / date d'acte à
+   date d'action ou d'analyse.
+
+**Critère de sortie** : le texte cité est non seulement en vigueur,
+mais **applicable et opposable** à la situation envisagée, sans délai
+expiré, avec auteur compétent.
+
+→ Bloque modes 8, 9, 10, 12.
+
+### Étape 6 — Rédaction avec citations granulaires et contrôle texte-cible
+
+Chaque phrase porteuse d'une affirmation juridique est suivie de sa
+citation normalisée (P4). Les quatre registres (P5) sont visuellement
+distincts. Chaque texte cité est relié à sa **fonction juridique**.
+
+**Niveau de confiance gradué par affirmation** :
+
+| Niveau | Critère | Marquage |
+|--------|---------|----------|
+| Élevé | texte clair + jurisprudence constante | `[confiance élevée]` |
+| Modéré | interprétation établie mais débattue | `[confiance modérée]` |
+| Faible | zone grise, jurisprudence divergente ou absente | `[confiance faible]` |
+
+Chaque niveau est assorti d'une **justification d'une ligne**.
+
+**Contrôle texte-cible / question-cible** : avant livraison, vérifier
+explicitement que chaque texte ou décision cité répond à la question
+juridique **précise** posée, et pas seulement au même mot-clé. Un
+article sur la compétence n'est pas un article sur la procédure ; un
+arrêt sur le contentieux contractuel n'est pas un arrêt sur le
+contentieux indemnitaire.
+
+**Contrôle source / conséquence** : vérifier en deux temps que (a) la
+source contient la proposition invoquée et que (b) cette proposition
+autorise exactement la conséquence écrite, pour cet acteur, ce lieu, ce
+propriétaire, cette date et cette opération. Une citation exacte ne valide
+jamais, à elle seule, la phrase qui la porte.
+
+**Contrôle de provenance (P1)** : avant livraison, vérifier que chaque
+identifiant officiel cité (`LEGIARTI`, `JORFTEXT`, `NOR`, n° de
+pourvoi, n° de requête, n° de décision) a bien été **récupéré par un
+appel d'outil dans la session**. Tout identifiant sans provenance est
+retiré ou marqué `⚠️ non vérifié — identifiant non récupéré`. Aucun
+gabarit C n'est produit sur un identifiant non récupéré.
+
+En route DOC-AUDIT, exécuter en outre le contrôle post-correction prévu par
+`references/audit-documentaire.md` et consigner les divergences
+interdocuments résolues ou encore ouvertes.
+
+**Critère de sortie** : chaque affirmation porte sa citation et son
+niveau de confiance ; contrôles texte-cible, source/conséquence et
+provenance exécutés ; en audit, contrôle post-correction exécuté.
+
+→ Bloque modes 1, 4, 5, 14.
+
+### Étape 7 — Auto-critique adversariale
+
+Relire la réponse en jouant trois rôles successifs :
+
+(a) **Le contradicteur** — quelle qualification ou interprétation
+concurrente pourrait être retenue, et pourquoi est-elle écartée ?
+Mobilisation des arguments classiques :
+- **a contrario** : si la loi vise X dans tel cas, Y non visé est traité différemment.
+- **a fortiori** : si la loi permet/interdit X dans un cas strict,
+  elle le permet/interdit dans un cas plus large (ou plus restreint
+  selon le sens).
+- **par l'absurde** : si l'interprétation A conduit à une contradiction
+  ou à un résultat manifestement déraisonnable, elle est invalidée.
+
+(b) **Le juge de cassation ou de contrôle de légalité** — où est la
+faiblesse du raisonnement ? Quel point pourrait être censuré ?
+
+(c) **Le 3ᵉ regard défini par le profil actif** (section 4 de `profil.md`) —
+p. ex. l'avocat de la défense (police-gendarmerie), le confrère adverse
+(avocat), le contrôle de légalité (collectivités), le régulateur
+(juriste-entreprise), le jury (étudiant-concours). **Sans profil** : le
+contradicteur qualifié secondaire — « quelle autre lecture, quelle
+objection un praticien adverse opposerait-il ? »
+
+**Rôle facultatif** (activé par balise `[opérationnel]` ou si la
+requête porte sur la mise en œuvre) : (d) **Le responsable opérationnel** —
+cette mesure est-elle effectivement applicable avec les moyens
+disponibles, les contraintes RH et budgétaires, l'articulation avec
+les autres services ?
+
+Si l'un des rôles identifie un trou → retour à l'étape concernée
+**avant livraison**.
+
+**Critère de sortie** : les trois rôles ont été joués. Leur résultat apparaît
+si une objection subsiste ou dans une note de fond, un audit ou une sortie
+`[complet]`. Une réponse simple ne porte pas une rubrique vide ou rituelle.
+
+→ Bloque modes 4, 5, 6, 8, 14.
+
+---
+
+## 4. Techniques de raisonnement juridique
+
+### T1 — Qualification adversariale
+Pour toute qualification proposée, formuler la ou les qualifications
+concurrentes plausibles et expliquer en une phrase pourquoi elles
+sont écartées. Réflexe simultané du parquet et de la défense.
+
+### T2 — Triangulation des sources
+Croiser deux chemins de vérification indépendants : recherche par
+numéro d'article + recherche thématique ; ou texte du code +
+circulaire d'application + jurisprudence. **Convergence renforce,
+divergence alerte** (mode 3 ou 4). Conditions d'obligation : voir
+étape 4.
+
+### T3 — Archéologie textuelle
+Pour les analyses de fond, retracer brièvement l'histoire du texte :
+version initiale, principales modifications, raison politique ou
+jurisprudentielle de la dernière réforme. Évite les contresens nés
+d'une lecture hors contexte.
+
+### T4 — Raisonnement par distinction
+Pour un précédent ou un texte apparemment applicable, identifier les
+éléments qui distinguent la situation analysée du cas couvert
+(différence factuelle, temporelle, territoriale, de qualité d'acteur,
+de pouvoir invoqué) et qui justifient de ne pas appliquer la solution
+apparente. **Réflexe central du raisonnement juridique territorial** :
+un précédent national ne s'applique pas automatiquement à une
+situation locale.
+
+---
+
+## 5. Modules activables (mode A)
+
+Chaque module est déclenché automatiquement. **Règle conservatrice : en cas de
+doute sur le déclenchement, le module s'active.** Le mode B force tous les modules.
+
+| Module | Déclencheurs | Résumé |
+|--------|-------------|--------|
+| **PÉNAL** | Fait à qualifier pénalement, infraction, visa pénal, PV | P6 strict, décomposition 3 éléments (légal/matériel/moral), non désactivable par `[express]` |
+| **ACTE-ADMIN** | Rédaction/analyse/contrôle acte admin (arrêté, décision individuelle, sanction, refus) | Proportionnalité Benjamin, compétence renforcée, opposabilité, triangulation si acte faisant grief |
+| **PA-PJ** | Opération susceptible d'être PA ou PJ (constatation, interpellation, contrôle, mesure préventive) | Mini-grille : finalité / autorité / temporalité / régime procédural |
+| **FOND** | Niveau = note de fond / citation pour acte / concours ; ou interprétation controversée | T3 obligatoire, grille autorité jurisprudentielle |
+| **CONTENTIEUX** | Risque recours / stratégie procédurale / voie de droit envisagée | Régime contentieux + office juge + charge + moyens + délais |
+| **DOC-AUDIT** | Audit, relecture ou correction juridique d'un ou plusieurs fichiers | Registre des affirmations, risque élevé vérifié à 100 %, matrice acteur–lieu–propriétaire–pouvoir, cohérence du corpus, contrôle post-correction ; non désactivable par `[express]` |
+
+**Lire [`references/modules.md`](references/modules.md) dès qu'un module s'active.**
+
+---
+## 6. Gabarits de sortie
+
+**Gabarit A** — Note express · **Gabarit B** — Note de fond · **Gabarit C** — Citation
+pour acte · **Gabarit D** — Audit documentaire · **Sous-gabarit
+`[syllogisme]`** — Note de concours (surcouche B).
+
+**Lire [`references/gabarits-sortie.md`](references/gabarits-sortie.md) avant toute rédaction de livrable.**
+
+---
+## 7. Déclencheurs d'abstention (ou sortie dégradée balisée)
+
+Le skill s'arrête sur le point concerné et le signale, plutôt que de
+spéculer, dans **dix cas** :
+
+1. **Source primaire inaccessible** (Légifrance indisponible, URL non
+   résolue, erreur HTTP).
+2. **Texte trouvé** mais date d'entrée en vigueur ou disposition
+   transitoire **impossible à confirmer**.
+3. **Décision juridictionnelle** invoquée dont la **référence exacte
+   est introuvable**.
+4. **Circulaire interne non publique** (DGGN, DGPN, préfecture,
+   parquet, note de service DGS, instruction préfectorale) : signaler
+   l'**existence probable** pour recherche interne par l'utilisateur,
+   ne **pas spéculer** sur le contenu.
+5. **Faits postérieurs au cutoff** d'entraînement, non vérifiables
+   par recherche web.
+6. **Matière répressive** : doute sérieux sur un élément constitutif
+   (P6).
+7. **Échec de la triangulation obligatoire** (étape 4).
+8. **Renvoi normatif essentiel** introuvable ou non résolu (mode 12).
+9. **Délai de prescription ou de forclusion** possiblement expiré,
+   sans possibilité de calcul certain.
+10. **Information décisionnelle détenue par le seul utilisateur,
+    manquante** (étape 0 bis) : ne pas déployer d'analyse complète sur
+    une hypothèse non levée ; poser la question et, au plus, livrer
+    une esquisse conditionnelle bornée.
+
+**Format d'abstention motivée** :
+
+```
+**⚠️ Information non vérifiable — abstention motivée**
+
+Je ne peux pas produire de citation fiable pour [référence] à la
+date du [date] pour la raison suivante : [motif précis dans la
+liste ci-dessus].
+
+Démarches alternatives :
+- Accéder directement à : [URL officielle]
+- Consulter : [autre source officielle]
+- Source informelle à vérifier en interne : [si applicable]
+
+Je préfère m'abstenir plutôt que spéculer.
+```
+
+**Format de clarification motivée (cas n° 10, étape 0 bis)** :
+
+```
+**Question préalable nécessaire**
+
+Un point conditionne la réponse et je ne peux pas le trancher seul :
+[formulation fermée ou à choix de la question].
+
+Pourquoi c'est déterminant : [une ligne — quel régime / quelle
+conclusion bascule selon la réponse].
+
+Esquisse conditionnelle (bornée) :
+- Si [a] → [orientation en une ou deux lignes].
+- Si [b] → [orientation en une ou deux lignes].
+
+Je traite la suite dès que ce point est précisé.
+```
+
+Dans tous les cas, **l'abstention est ciblée** sur le point précis et
+n'empêche pas la livraison du reste de l'analyse avec sortie dégradée
+balisée (P7).
+
+---
+
+## 8. Cas particuliers métier — définis par le profil
+
+Les cas particuliers propres à un métier (textes de référence,
+jurisprudences cardinales, pièges récurrents) **ne sont pas codés dans le
+noyau** : ils vivent dans la **section 5 du profil actif** (`profil.md`).
+
+- **Profil chargé** → appliquer sa section 5 (ex. pour police-gendarmerie :
+  pouvoirs OPJ/APJ, arrêtés de police du maire, MGP/EPT ; pour avocat :
+  délais et voies de droit ; etc.). Voir [`profils/`](profils/).
+- **Profil neutre** (pas de `profil.md`) → **aucun cas particulier métier
+  n'est présumé**. Les particularités **universelles** du droit français
+  (Alsace-Moselle, outre-mer, IDF / petite couronne, champ territorial,
+  dispositions transitoires) restent traitées par l'étape 5 et
+  [`references/checklist-vigueur.md`](references/checklist-vigueur.md),
+  indépendamment de tout profil.
+
+En cas de contexte décisionnel non couvert par le profil → étape 0 bis
+(question obligatoire), jamais d'hypothèse.
+
+---
+
+## 9. Limites et précautions du skill lui-même
+
+- Ce skill ne remplace pas l'avis d'un juriste ou d'un avocat pour
+  les décisions à fort enjeu contentieux.
+- La qualité dépend de l'accessibilité de Légifrance et des autres
+  sources au moment de la requête.
+- Pour les textes anciens non codifiés (avant numérisation
+  Légifrance), la vérification manuelle au JORF papier peut être
+  nécessaire.
+- Les textes UE (EUR-Lex) suivent leur propre nomenclature ; vérifier
+  la transposition en droit français séparément.
+- **Palier 3 (API PISTE) — outillé depuis la v2.3.0.** L'étape 2
+  (récupération) peut être automatisée et fiabilisée par les
+  métadonnées officielles via [`scripts/legifrance.py`](scripts/legifrance.py)
+  (API Légifrance **et** Judilibre, toutes deux via PISTE). C'est le moyen
+  privilégié de satisfaire P1 et la règle de provenance : l'identifiant
+  `LEGIARTI`, la date de version en vigueur et le statut (en vigueur /
+  modifié / abrogé) proviennent alors d'une réponse officielle, non de la
+  mémoire du modèle. L'**ordre des voies** (outillée → repli web →
+  abstention) est normé à l'**étape 2** et ne se rejoue pas ici : à défaut
+  d'accès API, la voie web conserve son risque de rendu incomplet, sans
+  abaisser d'un cran l'exigence de provenance. Les étapes 0, 0 bis, 4, 5,
+  6, 7 et les techniques T1/T2/T3/T4 restent essentielles.
+
+---
+
+## 10. Maintenance et versioning
+
+### En-tête du SKILL.md
+Métadonnées YAML obligatoires :
+- `version` (sémantique MAJEUR.MINEUR.PATCH),
+- `date_derniere_revue_methodologique`,
+- `date_derniere_verification_sources`.
+
+### Checklist annuelle (1er septembre — rentrée juridique)
+
+Priorisée par les **domaines prioritaires du profil actif** (section 3 de
+`profil.md`). Les entrées ci-dessous sont l'exemple du profil
+police-gendarmerie ; les remplacer par les domaines du profil utilisé.
+
+- [ ] Évolutions des **codes de la section 3 du profil** (priorité haute).
+- [ ] **Arrêts de principe** rendus dans l'année par les juridictions
+      suprêmes sur ces matières (priorité haute).
+- [ ] **Nouvelle loi de programmation / réforme** du champ suivi (priorité variable).
+- [ ] Cohérence des fichiers `profils/` avec le format en 5 sections.
+- [ ] Mise à jour de `date_derniere_revue_methodologique`.
+- [ ] Mise à jour de `date_derniere_verification_sources`.
+
+Procédure de revue détaillée → [`references/maintenance.md`](references/maintenance.md).
+
+---
+
+
+> Historique complet → [`CHANGELOG.md`](CHANGELOG.md)

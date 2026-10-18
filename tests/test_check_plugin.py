@@ -34,7 +34,7 @@ def manifeste(**surcharges) -> dict:
 def marketplace(**surcharges) -> dict:
     entree = {
         "name": "pandecte",
-        "source": "./",
+        "source": "./plugin",
         "version": VERSION,
     }
     entree.update(surcharges.pop("entree", {}))
@@ -80,11 +80,11 @@ class SocleClaudeTests(unittest.TestCase):
         )
         self.assertTrue(any("ne reference pas" in p for p in problemes), problemes)
 
-    def test_source_autre_que_la_racine(self):
+    def test_source_autre_que_le_dossier_plugin(self):
         problemes = self.controler(
-            manifeste(), marketplace(entree={"source": "./plugins/x"})
+            manifeste(), marketplace(entree={"source": "./"})
         )
-        self.assertTrue(any("source './'" in p for p in problemes), problemes)
+        self.assertTrue(any("source './plugin'" in p for p in problemes), problemes)
 
     def test_version_marketplace_desynchronisee(self):
         problemes = self.controler(manifeste(), marketplace(entree={"version": "0.0.1"}))

@@ -25,7 +25,10 @@ SERVER = ROOT / "mcp_server" / "server.py"
 #: Socle du plugin Claude Code. Il n'etait couvert par aucun controle : sa
 #: version pouvait diverger de SERVER_VERSION en silence, alors meme que
 #: `.github/auto-review.md` affirmait que ce fichier le verifiait.
-MANIFEST_CLAUDE = ROOT / ".claude-plugin" / "plugin.json"
+#: Le plugin Claude vit dans son propre dossier : claude.ai ne lui donne que
+#: ce dossier, d'où la copie générée du skill complet.
+PLUGIN_CLAUDE = ROOT / "plugin"
+MANIFEST_CLAUDE = PLUGIN_CLAUDE / ".claude-plugin" / "plugin.json"
 MARKETPLACE_CLAUDE = ROOT / ".claude-plugin" / "marketplace.json"
 
 # Limites publiees par OpenAI pour la soumission au repertoire d'applications.
@@ -139,12 +142,12 @@ def controler_socle_claude(
         fail(f"le marketplace ne reference pas le plugin {nom!r}", problems)
         return
 
-    # Le plugin est le depot lui-meme : toute autre source ferait installer
-    # autre chose que ce qui est versionne ici.
-    if entree.get("source") != "./":
+    # Le plugin est le dossier plugin/ du depot : toute autre source ferait
+    # installer autre chose que ce qui est versionne et controle ici.
+    if entree.get("source") != "./plugin":
         fail(
-            "l'entree marketplace doit porter source './' "
-            "(le plugin est la racine du depot)",
+            "l'entree marketplace doit porter source './plugin' "
+            "(le dossier du plugin Claude)",
             problems,
         )
     if version is not None and entree.get("version") != version:
@@ -326,6 +329,18 @@ def main() -> int:
 
     if not legacy.is_file():
         fail("point d'entrée historique supprimé : skill/SKILL.md", problems)
+
+    # Plugin Claude : skill copié (pas d'adaptateur, rien hors du dossier) et
+    # même connecteur que le dépôt.
+    skill_plugin = PLUGIN_CLAUDE / "skills" / "pandecte-recherche" / "SKILL.md"
+    if not skill_plugin.is_file():
+        fail("skill absent du plugin : plugin/skills/pandecte-recherche/SKILL.md", problems)
+    elif legacy.is_file() and skill_plugin.read_bytes() != legacy.read_bytes():
+        fail("skill du plugin périmé : lancer python declinaisons/generer.py", problems)
+    mcp_plugin = charger_json(PLUGIN_CLAUDE / ".mcp.json", problems)
+    mcp_racine = charger_json(ROOT / ".mcp.json", problems)
+    if mcp_plugin is not None and mcp_racine is not None and mcp_plugin != mcp_racine:
+        fail("plugin/.mcp.json diffère de .mcp.json : un seul connecteur", problems)
 
     for policy in ("docs/privacy-policy.md", "docs/terms-of-use.md"):
         if not (ROOT / policy).is_file():

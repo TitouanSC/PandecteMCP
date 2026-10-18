@@ -1,0 +1,231 @@
+# Maintenance du skill `pandecte-recherche`
+
+Procédure de revue annuelle obligatoire à exécuter **chaque 1er septembre**
+(rentrée juridique), priorisée par les **domaines prioritaires du profil
+actif** (section 3 de `profil.md`).
+
+> Les sections 1 et 2 ci-dessous détaillent la veille pour le profil
+> **police-gendarmerie**, à titre d'exemple concret. Pour un autre profil,
+> remplacer les codes et matières suivis par ceux de sa section 3
+> (ex. avocat → procédure + spécialité ; collectivités → CGCT + commande
+> publique + FPT ; juriste-entreprise → C. com. + C. travail + conformité).
+
+---
+
+## 0. Préparation
+
+1. Ouvrir le SKILL.md courant et vérifier l'en-tête YAML : `version`,
+   `date_derniere_revue_methodologique`, `date_derniere_verification_sources`.
+2. L'historique Git et la note de version du vault
+   (`vault/pandecte-recherche vX.Y.Z.md`) tiennent lieu d'archive : le
+   dépôt ne conserve pas de copie datée du SKILL.md.
+3. Préparer un brouillon d'entrée CHANGELOG datée du jour.
+
+---
+
+## 1. Veille législative et réglementaire (priorité haute) — exemple profil police-gendarmerie
+
+### 1.1 CGCT, partie police municipale
+- Vérifier les modifications du livre II, titre Ier, chapitre II
+  (art. **L. 2212-1 à L. 2212-5** et suivants).
+- Vérifier les polices spéciales (art. **L. 2213-1 à L. 2213-32**).
+- Source : fiche Légifrance du CGCT, onglet « Historique des versions »
+  filtré sur l'année écoulée.
+
+### 1.2 Code de procédure pénale, cadres d'enquête
+- Cadres d'enquête (préliminaire, flagrance, instruction), pouvoirs
+  d'OPJ / APJ / APJA, compétence territoriale, garde à vue, mesures
+  alternatives aux poursuites.
+- Source : fiche Légifrance du CPP, onglet historique.
+
+### 1.3 Code de la route, compétence police municipale
+- Articles d'incrimination contraventionnelle relevant de la compétence
+  PM (L. 130-4 et suivants, R. 130-x, R. 411-x, R. 412-x, R. 417-x).
+- Évolutions des forfaits, des classes contraventionnelles, des
+  pouvoirs de constatation.
+
+### 1.4 CSI (Code de la sécurité intérieure) — priorité moyenne
+- Livre V (police municipale), livre VI (activités privées de
+  sécurité), livre VII (gardes champêtres et agents).
+- Évolutions des compétences, des armements (notamment décret 2016-1616
+  modifié), de la vidéoprotection (art. L. 251-1 et suivants).
+
+### 1.5 Loi de programmation Intérieur / Justice (priorité variable)
+- Identifier toute LOPSI / LOPJ / loi d'orientation publiée dans
+  l'année et inventorier ses dispositions impactant la PM ou les
+  cadres procéduraux.
+
+---
+
+## 2. Veille jurisprudentielle (priorité haute)
+
+### 2.1 Cour de cassation, chambre criminelle
+- Recenser les arrêts de l'année publiés au **Bulletin** portant sur :
+  qualifications pénales d'usage courant en PM, procédure pénale
+  (cadres d'enquête, preuve), responsabilité pénale des décideurs
+  publics, nullités.
+- Source : courdecassation.fr (filtre Bulletin + chambre criminelle +
+  période 12 mois).
+
+### 2.2 Conseil d'État
+- Recenser les arrêts publiés au **Lebon** ou mentionnés aux **Tables**
+  portant sur : pouvoirs de police du maire, proportionnalité des
+  mesures de police, motivation des actes, responsabilité administrative
+  des communes, contentieux fonctionnaires territoriaux.
+- Source : conseil-etat.fr (filtre formation + période).
+
+### 2.3 Conseil constitutionnel
+- Recenser les **QPC** abrogatives ou réservatives intervenues dans
+  l'année sur les codes suivis (CGCT, CP, CPP, CSI, CdR).
+- Source : conseil-constitutionnel.fr (rubrique QPC + période).
+
+### 2.4 CJUE et CEDH (si pertinent)
+- Arrêts impactant le droit français en matière de libertés publiques,
+  contrôle d'identité, données personnelles, vidéoprotection.
+
+---
+
+## 3. Mise à jour des annexes du skill
+
+- `gabarits-requetes.md` : vérifier que les identifiants `LEGITEXT`
+  des codes suivis n'ont pas changé.
+- `scripts/legifrance.py` : exécuter `python scripts/legifrance.py ping`
+  pour vérifier que l'authentification PISTE et les endpoints répondent
+  toujours ; aligner la colonne `LEGITEXT` de la table `CODES` sur
+  `gabarits-requetes.md`. Vérifier **aussi la colonne libellé** : c'est elle,
+  et non le `LEGITEXT`, qu'attend la facette `NOM_CODE` de `/search`, et un
+  libellé périmé n'y produit **aucune erreur** — seulement zéro résultat.
+  Contrôle : `search "2212-2" --code CGCT` doit renvoyer
+  `LEGIARTI000029946370` (art. L. 2212-2 CGCT), confirmable par
+  `article LEGIARTI000029946370`. Les **deux API se vérifient séparément** —
+  les abonnements PISTE sont distincts et les régressions indépendantes :
+  - **Légifrance**, fonds jurisprudence : `ceta "440258"` doit renvoyer
+    `CETATEXT000042687547`, `constit "2021-940 QPC"` doit renvoyer
+    `CONSTEXT000044239159` (schémas de recherche susceptibles d'évoluer) ;
+  - **Judilibre** : `juri` sur une requête plein texte, puis `decision` sur un
+    identifiant renvoyé.
+- **Arbitrage des voies** : vérifier qu'un **seul** endroit décide de l'ordre
+  des voies de récupération — l'**étape 2** du SKILL.md (*échelle de
+  récupération*). P1, le §9 et `gabarits-requetes.md` doivent y **renvoyer**,
+  jamais rejouer l'arbitrage. C'est cette contradiction, apparue en v3.0.0,
+  qu'a corrigée la v3.1.0 ; aucun test ne peut la détecter.
+- `references/modes-erreur.md` : garder synchronisé avec la table du §1
+  (mêmes 18 intitulés, même numérotation).
+- **CI** : vérifier que `.github/workflows/ci.yml` passe au vert
+  (`py_compile`, `python -m unittest discover -s tests`, `check_plugin.py`,
+  `check_links.py`, `check_vault.py`, `check_affirmations.py`,
+  `check_commands.py`, `run_eval.py` hors-ligne).
+- `checklist-vigueur.md` : aligner si des points de vigilance nouveaux
+  ont émergé (ex. nouvelle disposition transitoire récurrente, nouveau
+  type de renvoi normatif).
+- `references/sources-autorisees.md` : ajouter toute source institutionnelle
+  nouvelle (ex. autorité de régulation créée dans l'année).
+- `references/format-citation.md` : ajouter tout format de citation nouveau
+  si nécessaire (ex. nouvelle juridiction spécialisée).
+
+---
+
+## 4. Contrôle de cohérence interne du SKILL.md
+
+- [ ] Les fichiers `profils/*.md` respectent le format en 5 sections du
+      `profils/_modele.md` (identité, territorial, domaines, rôle (c),
+      cas particuliers) ; aucun contexte personnel codé en dur dans le noyau.
+- [ ] Numérotation continue des 18 modes d'erreur.
+- [ ] Numérotation continue des 7 principes (P1 à P7).
+- [ ] Numérotation continue des 9 étapes (0, 0 bis, puis 1 à 7).
+- [ ] Numérotation continue des 4 techniques (T1 à T4).
+- [ ] Les 6 modules ont chacun leurs déclencheurs et leur contenu.
+- [ ] DOC-AUDIT reste actif sous `[express]` et pointe vers
+      `audit-documentaire.md`.
+- [ ] Le protocole documentaire impose le registre des affirmations, le
+      contrôle à 100 % du risque élevé, la matrice acteur–lieu–propriétaire–
+      pouvoir, la cohérence du corpus et le contrôle post-correction.
+- [ ] Chaque étape a un critère de sortie explicite.
+- [ ] Chaque étape référence le ou les modes d'erreur qu'elle bloque.
+- [ ] Les balises `[complet]`, `[express]`, `[syllogisme]`,
+      `[opérationnel]`, `[lookup]` sont mentionnées de manière
+      cohérente partout.
+- [ ] La règle de triangulation pénale unifiée apparaît **au seul
+      endroit prévu** (étape 4) et est référencée depuis le module
+      PÉNAL.
+- [ ] La **règle de provenance** (P1) est référencée à l'étape 6
+      (contrôle de provenance) et dans `format-citation.md`.
+- [ ] Les gabarits A, B, C, D et le sous-gabarit syllogisme intègrent
+      l'en-tête standardisé ; l'encart final récapitulatif et la
+      synthèse des étapes 0 et 7 accompagnent la note de fond, l'audit
+      et `[complet]` (« Traçabilité proportionnée », §3) ; la voie rapide
+      `[lookup]` est exempte des deux par construction.
+      `references/gabarits-sortie.md` et `vault/procedure-compacte.md`
+      disent la même chose que le noyau.
+- [ ] Les 10 déclencheurs d'abstention sont listés et un format de
+      réponse en cas d'abstention est fourni.
+
+---
+
+## 5. Mise à jour des métadonnées
+
+- Mettre à jour `version` selon le caractère des changements :
+  - **MAJEUR** : refonte structurelle (ex. v1 → v2.0.0).
+  - **MINEUR** : ajout d'un module, d'une technique, d'un déclencheur,
+    sans remise en cause de l'architecture.
+  - **PATCH** : correction de coquille, ajustement de référence,
+    clarification rédactionnelle.
+- Mettre à jour `date_derniere_revue_methodologique` à la date du jour
+  (1er septembre AAAA).
+- Mettre à jour `date_derniere_verification_sources` à la date du jour.
+
+---
+
+## 6. Entrée CHANGELOG
+
+Format Keep a Changelog 1.1.0. Sections : *Ajouté*, *Modifié*,
+*Déprécié*, *Retiré*, *Corrigé*, *Sécurité*. Référencer le commit
+si la revue donne lieu à un commit.
+
+---
+
+## 7. Test fonctionnel de fin de revue
+
+Faire tourner le skill, après mise à jour, sur **quatre requêtes témoins**
+représentatives :
+
+1. **Mode A standard, aucun module** — requête simple de référence
+   d'article (ex. « quel article du CGCT définit les pouvoirs généraux
+   du maire ? »). Vérifier l'identifiant récupéré en source primaire et
+   la version applicable, l'absence de module activé et l'affichage
+   proportionné (`SKILL.md`, « Traçabilité proportionnée » et §3) :
+   sources, date applicable, réserves utiles et confiance, sans
+   récitation des étapes 0, 0 bis et 7 ni encart récapitulatif.
+
+2. **Mode A + PÉNAL + ACTE-ADMIN** — requête de qualification + acte
+   (ex. « qualification de dépôt sauvage et possibilité d'arrêté de
+   mise en demeure »). Vérifier la décomposition élémentaire de
+   l'infraction, le contrôle de proportionnalité Benjamin, la
+   triangulation appliquée à juste mesure.
+
+3. **Mode B `[complet]`** — requête institutionnelle exigeante
+   (ex. « `[complet]` note sur l'articulation police générale du maire
+   et police spéciale environnementale »). Vérifier que tous les
+   modules sont activés, certains marqués « sans objet à cette
+   espèce » avec justification, et que la synthèse des étapes 0 et 7
+   et l'encart récapitulatif sont présents.
+
+4. **DOC-AUDIT** — corpus de deux documents contenant un article exact mais
+   une conséquence opérationnelle excessive, un montant périmé et une
+   divergence d'acteur ou d'indicateur. Vérifier le registre complet, le
+   contrôle à 100 % du risque élevé, la matrice
+   acteur–lieu–propriétaire–pouvoir, le test séparé de l'exécution forcée
+   d'office et la distinction maximum légal / classe / amende forfaitaire
+   (`audit-documentaire.md` §8), la recherche post-correction, l'encart
+   récapitulatif, et l'absence de toute formule « conforme » tant que le
+   critère de clôture (§10) n'est pas rempli.
+
+Si l'un des tests révèle un défaut de cohérence ou d'application →
+correction immédiate avant clôture de la revue.
+
+---
+
+## 8. Clôture
+
+- Commit avec message format : `chore(skill): revue annuelle AAAA-MM-JJ`.
+- Mettre à jour les métadonnées de suivi dans votre projet (version et date).

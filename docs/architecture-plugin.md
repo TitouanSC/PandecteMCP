@@ -54,8 +54,13 @@ La méthode juridique, l'interface du CLI et les variables d'environnement exist
 ```text
 PandecteMCP/
 ├── .claude-plugin/
-│   ├── plugin.json                 # manifeste Claude Code (MCP repris du .mcp.json racine)
-│   └── marketplace.json            # le dépôt sert de marketplace Claude Code
+│   └── marketplace.json            # le dépôt sert de marketplace Claude (source ./plugin)
+├── plugin/                         # plugin Claude autonome (étape 5)
+│   ├── .claude-plugin/plugin.json
+│   ├── .mcp.json                   # identique au .mcp.json racine
+│   ├── README.md
+│   ├── LICENSE                     # copie générée
+│   └── skills/pandecte-recherche/  # copie générée du skill complet
 ├── .codex-plugin/
 │   └── plugin.json                 # identité et capacités réellement livrées
 ├── skills/
@@ -163,9 +168,10 @@ de distribution de l'étape 4 : aucune URL distante n'est inventée dans le dép
   automatiquement pour un plugin. Le manifeste ne la duplique plus.
 - Le lancement local (`python mcp_server/server.py`) reste disponible pour le
   développement et l'auto-hébergement, documenté dans `docs/deployment.md`.
-- `.claude-plugin/marketplace.json` (source `./`) fait du dépôt son propre
-  marketplace : l'installation copie le dépôt entier, donc l'adaptateur
-  retrouve `skill/SKILL.md`.
+- `.claude-plugin/marketplace.json` (source `./`) faisait du dépôt son propre
+  marketplace : l'installation copiait le dépôt entier, donc l'adaptateur
+  retrouvait `skill/SKILL.md`. Remplacé à l'étape 5 par le dossier `plugin/`
+  (voir plus bas).
 - Validé par `claude plugin validate --strict` et un cycle complet
   installation/désinstallation ; les secrets restent hors du paquet publié
   (`.env` ignoré par Git, identifiants PISTE fournis par l'environnement ou
@@ -199,6 +205,20 @@ Assistant → [OAuth : page « Connexion PISTE » | en-tête pk1]
           → bibliothèque skill/scripts/pandecte → API Légifrance et Judilibre
 ```
 
+#### Plugin Claude autonome (`plugin/`, 18 octobre 2026)
+
+- claude.ai (chat, application, mobile, Cowork) installe un plugin depuis
+  une marketplace GitHub, sans téléchargement, mais ne lui donne que **son
+  dossier** : un renvoi `../../skill/SKILL.md` y serait introuvable, et
+  l'annuaire d'Anthropic refuse liens symboliques et chemins sortants.
+- Le plugin Claude vit donc dans `plugin/` : manifeste, `.mcp.json` (identique
+  à celui de la racine) et README écrits à la main ; skill complet et licence
+  copiés par `declinaisons/generer.py`, que `--check` et
+  `tests/test_declinaisons.py` gardent à jour. La copie est générée : le noyau
+  reste maintenu en un seul exemplaire (invariant 6).
+- `.claude-plugin/marketplace.json` pointe vers `./plugin`. Le plugin OpenAI
+  (`.codex-plugin/`, adaptateur `skills/`) est inchangé.
+
 ## Invariants de non-régression
 
 1. `skill/SKILL.md` reste installable indépendamment du plugin.
@@ -214,6 +234,8 @@ Assistant → [OAuth : page « Connexion PISTE » | en-tête pk1]
 
 - validation officielle de `.codex-plugin/plugin.json` ;
 - validation du frontmatter de `skills/pandecte-recherche/SKILL.md` ;
+- `claude plugin validate ./plugin` et règles de fichiers de l'annuaire
+  (`tests/test_declinaisons.py`) ;
 - contrôle local `tests/check_plugin.py` ;
 - tests unitaires hors réseau `tests/test_tools.py` ;
 - tests du service et du protocole MCP `tests/test_mcp_app.py` ;

@@ -141,5 +141,41 @@ class FullSkillZipTests(unittest.TestCase):
             self.assertNotRegex(nom, r"(^|/)(\.env|profil\.md)$|__pycache__")
 
 
+class ClaudePluginTests(unittest.TestCase):
+    """Le dossier plugin/ est tout ce que claude.ai reçoit du dépôt."""
+
+    def test_plugin_copy_is_up_to_date(self):
+        self.assertEqual(
+            [], generer.ecarts_plugin(generer.fichiers_plugin()),
+            "lancer python declinaisons/generer.py",
+        )
+
+    def test_plugin_meets_the_directory_file_rules(self):
+        fichiers = [p for p in generer.PLUGIN.rglob("*") if p.is_file()]
+        self.assertLessEqual(len(fichiers), 512)
+        for fichier in fichiers:
+            relatif = fichier.relative_to(generer.PLUGIN).as_posix()
+            with self.subTest(fichier=relatif):
+                self.assertFalse(fichier.is_symlink())
+                self.assertLess(fichier.stat().st_size, 256 * 1024)
+                self.assertNotRegex(
+                    relatif, r"(^|/)(\.DS_Store|Thumbs\.db|\.env|profil\.md)$|__pycache__"
+                )
+
+    def test_plugin_readme_is_long_enough_for_the_directory(self):
+        texte = (generer.PLUGIN / "README.md").read_text(encoding="utf-8")
+        sans_code = re.sub(r"```.*?```", "", texte, flags=re.S)
+        self.assertGreaterEqual(len(sans_code.split()), 40)
+
+    def test_plugin_links_stay_inside_the_plugin(self):
+        for fichier in generer.PLUGIN.rglob("*.md"):
+            for cible in re.findall(r"(?<!!)\[[^\]]*\]\(([^)#]+)", fichier.read_text(encoding="utf-8")):
+                if "://" in cible or cible.startswith("mailto:"):
+                    continue
+                resolu = (fichier.parent / cible).resolve()
+                with self.subTest(fichier=fichier.name, cible=cible):
+                    self.assertIn(generer.PLUGIN.resolve(), resolu.parents)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -27,7 +27,7 @@ administrative et constitutionnelle.
 > **Sans rien installer.** Le connecteur hébergé PandecteMCP
 > (`https://pandecte-mcp.onrender.com/mcp`) applique le même modèle : chacun
 > s'y connecte avec **ses** identifiants PISTE, que le serveur ne stocke pas.
-> Voir le [README du dépôt](../../README.md).
+> Voir le [README du dépôt](https://github.com/TitouanSC/PandecteMCP#readme).
 
 > **La clé est optionnelle.** Sans identifiants PISTE, le skill reste
 > pleinement opérationnel : il bascule sur la **voie de repli web**

@@ -14,7 +14,8 @@ Sources, seules à modifier à la main :
 Sorties, à ne jamais modifier à la main : ``gemini_skill/``, ``grok_skill/``,
 ``manus_skill/``, ``vibe_skill/``, et, sur demande, un zip par plateforme
 contenant un dossier ``pandecte-recherche/`` prêt à installer, plus le zip du
-skill complet (``skill/``) pour claude.ai et l'application Claude.
+skill complet (``skill/``) pour claude.ai et l'application Claude. Le plugin
+Claude ``plugin/`` reçoit aussi sa copie du skill complet et la licence.
 
     python declinaisons/generer.py            # régénère les dossiers
     python declinaisons/generer.py --check    # échoue si un dossier est périmé
@@ -45,6 +46,9 @@ README_MODELE = HERE / "README-modele.md"
 PLATEFORMES = HERE / "plateformes"
 REFERENCES = ("audit-documentaire.md", "modules.md", "sources-autorisees.md")
 NOM_SKILL = "pandecte-recherche"
+#: Plugin Claude (claude.ai, application, Cowork, Claude Code).
+PLUGIN = ROOT / "plugin"
+PLUGIN_SKILL = f"skills/{NOM_SKILL}"
 DESCRIPTION = (
     "Méthodologie rigoureuse de recherche en droit français et européen, fondée "
     "sur des sources primaires officielles (Légifrance, Judilibre), la "
@@ -261,6 +265,44 @@ def zipper_skill_complet(dossier: Path, numero: str) -> Path:
     return archive
 
 
+def fichiers_plugin() -> dict[str, bytes]:
+    """Part générée du plugin : skill complet et licence.
+
+    Le manifeste, ``.mcp.json`` et le README de ``plugin/`` s'écrivent à la
+    main ; le reste est copié ici, car un plugin ne charge rien hors de son
+    dossier (ni lien symbolique, ni chemin ``../``).
+    """
+    fichiers = {"LICENSE": (ROOT / "LICENSE").read_bytes()}
+    for chemin, octets in fichiers_skill_complet().items():
+        fichiers[f"{PLUGIN_SKILL}/{chemin}"] = octets
+    return fichiers
+
+
+def ecrire_plugin(fichiers: dict[str, bytes]) -> None:
+    cible_skill = PLUGIN / PLUGIN_SKILL
+    if cible_skill.exists():
+        shutil.rmtree(cible_skill)
+    for chemin, octets in fichiers.items():
+        cible = PLUGIN / chemin
+        cible.parent.mkdir(parents=True, exist_ok=True)
+        cible.write_bytes(octets)
+
+
+def ecarts_plugin(fichiers: dict[str, bytes]) -> list[str]:
+    dossier = PLUGIN / PLUGIN_SKILL
+    presents = {
+        f"{PLUGIN_SKILL}/{p.relative_to(dossier)}" for p in dossier.rglob("*") if p.is_file()
+    } if dossier.is_dir() else set()
+    problemes = [f"plugin/{c} : en trop" for c in sorted(presents - fichiers.keys())]
+    for chemin, octets in fichiers.items():
+        cible = PLUGIN / chemin
+        if not cible.is_file():
+            problemes.append(f"plugin/{chemin} : absent")
+        elif cible.read_bytes() != octets:
+            problemes.append(f"plugin/{chemin} : périmé")
+    return problemes
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true", help="échoue si un dossier généré est périmé")
@@ -284,6 +326,12 @@ def main(argv: list[str] | None = None) -> int:
     else:
         METHODE_SERVEUR.write_text(methode, encoding="utf-8")
         print("✅ mcp_server/methode.md (outil get_method)")
+    plugin = fichiers_plugin()
+    if args.check:
+        problemes += ecarts_plugin(plugin)
+    else:
+        ecrire_plugin(plugin)
+        print("✅ plugin/ (skill complet et licence du plugin Claude)")
     if args.zip and not args.check:
         print(f"✅ skill complet (claude.ai, application Claude)\n   📦 {zipper_skill_complet(args.zip, numero)}")
     if args.check:

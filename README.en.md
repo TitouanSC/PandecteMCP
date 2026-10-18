@@ -88,7 +88,15 @@ The detailed walkthrough and common errors are in
 
 ### claude.ai (web, desktop, mobile)
 
-Settings → **Connectors** → *Add custom connector*: name `PandecteMCP`, URL
+**Easiest: the plugin**, which brings the full skill and the connector in one
+step, from the browser. **Customize** → **Plugins** → *Add* → *Add
+marketplace*: `TitouanSC/PandecteMCP`, then add the **PandecteMCP** plugin. In
+its **Connectors** tab, connect PandecteMCP and enter your credentials on the
+"Connexion PISTE" page. The plugin follows your account: desktop, mobile,
+Cowork and Claude Code get it too. The *automatic sync* notice can be ignored:
+*Check for updates* is enough.
+
+Connector only: Settings → **Connectors** → *Add custom connector*: name `PandecteMCP`, URL
 `https://pandecte-mcp.onrender.com/mcp`, advanced OAuth fields left empty.
 Click **Connect**, then enter your credentials on the "Connexion PISTE" page.
 
@@ -322,7 +330,7 @@ python mcp_server/server.py
 
 ```
 PandecteMCP/
-├── .claude-plugin/                 ← Claude Code plugin and marketplace
+├── .claude-plugin/                 ← Claude marketplace (points to plugin/)
 ├── .codex-plugin/                  ← OpenAI plugin
 ├── .mcp.json                       ← connection to the hosted server
 ├── mcp_server/
@@ -332,7 +340,8 @@ PandecteMCP/
 │   ├── connexion.py                ← "Connexion PISTE" page
 │   ├── cle.py                      ← "Clé personnelle" page
 │   └── catalog.py                  ← list of published tools
-├── skills/pandecte-recherche/      ← plugin adapter to the core
+├── plugin/                         ← Claude plugin (claude.ai, Claude Code)
+├── skills/pandecte-recherche/      ← OpenAI plugin adapter to the core
 ├── skill/                          ← standalone skill, source of truth
 │   ├── SKILL.md                    ← methodological core
 │   ├── CHANGELOG.md                ← version history

@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "pandecte",
-      "source": "./",
+      "source": "./plugin",
       "displayName": "PandecteMCP",
       "description": "Méthodologie de recherche en droit français : sources primaires, contrôle de vigueur et citations traçables. Skill et serveur MCP distant.",
       "version": "0.1.0",
