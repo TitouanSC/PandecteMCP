@@ -41,6 +41,10 @@ form.inline{display:inline-block;margin:0 .5rem .5rem 0}
 pre{background:#f5f5f7;padding:.8rem;border-radius:6px;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
 footer{margin-top:3rem;padding-top:1rem;border-top:1px solid #eee;color:#666;font-size:.85rem}
 nav a{margin-right:1rem}
+details{border:1px solid #ddd;border-radius:8px;padding:.6rem 1rem;margin:.6rem 0}
+summary{cursor:pointer;font-weight:600}details[open] summary{margin-bottom:.4rem}
+.tag{font-size:.75rem;font-weight:400;border:1px solid #bbb;border-radius:999px;
+padding:.05rem .5rem;margin-left:.4rem;color:#555}.tag.ok{border-color:#2e7d32;color:#2e7d32}
 """
 
 FOOTER = f"""<footer>

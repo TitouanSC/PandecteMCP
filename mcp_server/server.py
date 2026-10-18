@@ -414,6 +414,14 @@ if hasattr(server, "custom_route"):
             }
         )
 
+    from mcp_server.accueil import HomePage
+
+    #: Page d'accueil « / » : le lien unique à partager, une marche à suivre par IA.
+    HomePage(
+        mcp_url=SETTINGS.resource_url,
+        personal_keys_enabled=PISTE_PROVIDER is not None and SETTINGS.personal_keys_enabled,
+    ).register(server)
+
     if PISTE_PROVIDER is not None:
         from mcp_server.cle import PersonalKeyPage
         from mcp_server.connexion import ConnexionPage

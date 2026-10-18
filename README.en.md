@@ -64,6 +64,11 @@ which tool produced those references.
 
 Server address: **`https://pandecte-mcp.onrender.com/mcp`**
 
+**The link to share: [pandecte-mcp.onrender.com](https://pandecte-mcp.onrender.com/)**,
+a page with the steps for each AI (Claude, ChatGPT, Le Chat, Claude Code,
+Cursor, VS Code, Gemini CLI…), with direct install links for Cursor and
+VS Code.
+
 On first connection, your assistant opens the server's **"Connexion PISTE"**
 page: you enter your PISTE Client ID and Client Secret there, once. After that,
 every lookup uses these credentials without asking again.
@@ -344,6 +349,7 @@ PandecteMCP/
 │   ├── piste_oauth.py              ← storage-free authorization server
 │   ├── sealed.py                   ← encrypted envelopes (AES-256-GCM)
 │   ├── connexion.py                ← "Connexion PISTE" page
+│   ├── accueil.py                  ← home page, steps for each AI
 │   ├── cle.py                      ← "Clé personnelle" page
 │   └── catalog.py                  ← list of published tools
 ├── plugin/                         ← Claude plugin (claude.ai, Claude Code)

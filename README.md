@@ -64,6 +64,11 @@ démontre pas quel outil aurait produit ces références.
 
 Adresse du serveur : **`https://pandecte-mcp.onrender.com/mcp`**
 
+**Le lien à partager : [pandecte-mcp.onrender.com](https://pandecte-mcp.onrender.com/)**,
+une page qui donne la marche à suivre pour chaque IA (Claude, ChatGPT, Le Chat,
+Claude Code, Cursor, VS Code, Gemini CLI…), avec des liens d'installation
+directe pour Cursor et VS Code.
+
 À la première connexion, votre assistant ouvre la page **« Connexion PISTE »**
 du serveur : vous y saisissez votre Client ID et votre Client Secret PISTE, une
 seule fois. Ensuite, chaque consultation se fait avec ces identifiants, sans
@@ -354,6 +359,7 @@ PandecteMCP/
 │   ├── piste_oauth.py              ← serveur d'autorisation sans stockage
 │   ├── sealed.py                   ← enveloppes chiffrées (AES-256-GCM)
 │   ├── connexion.py                ← page « Connexion PISTE »
+│   ├── accueil.py                  ← page d'accueil, marche à suivre par IA
 │   ├── cle.py                      ← page « Clé personnelle »
 │   └── catalog.py                  ← liste des outils publiés
 ├── plugin/                         ← plugin Claude (claude.ai, Claude Code)

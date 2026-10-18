@@ -67,11 +67,13 @@ jobs:
           python -m py_compile mcp_server/pages.py
           python -m py_compile mcp_server/connexion.py
           python -m py_compile mcp_server/cle.py
+          python -m py_compile mcp_server/accueil.py
           python -m py_compile tests/test_sealed.py
           python -m py_compile tests/test_piste_oauth.py
           python -m py_compile tests/test_connexion.py
           python -m py_compile tests/test_piste_end_to_end.py
           python -m py_compile tests/test_cle.py
+          python -m py_compile tests/test_accueil.py
           python -m py_compile declinaisons/generer.py
           python -m py_compile tests/test_declinaisons.py
           python -m py_compile mcp_server/methode.py
