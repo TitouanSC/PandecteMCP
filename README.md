@@ -4,7 +4,7 @@
 
 **Recherche en droit français pour les assistants d'IA : une méthode
 anti-hallucination et un serveur MCP qui interroge Légifrance et Judilibre
-avec vos propres identifiants PISTE (v0.1.0).**
+avec vos propres identifiants PISTE (v0.1.1).**
 
 > **Projet indépendant**, sans lien avec l'auteur du projet d'origine, avec une
 > personnalité ou une institution, ni avec l'État. PandecteMCP **ne remplace pas

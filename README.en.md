@@ -4,7 +4,7 @@
 
 **French legal research for AI assistants: an anti-hallucination method and an
 MCP server that queries Légifrance and Judilibre with your own PISTE
-credentials (v0.1.0).**
+credentials (v0.1.1).**
 
 > **Independent project**, not affiliated with the author of the original
 > project, with any public figure or institution, or with the French State.

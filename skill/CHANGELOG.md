@@ -6,7 +6,15 @@ serveur MCP, les plugins et le skill `pandecte-recherche`.
 
 ---
 
-### [0.1.0] — non publié
+### [0.1.1] — 2026-10-18
+
+#### Modifié
+- Plugin Claude déplacé dans `plugin/`, avec une copie générée du skill
+  complet : claude.ai ne donne au plugin que son dossier, où le renvoi
+  `../../skill/SKILL.md` de l'adaptateur était introuvable. La marketplace
+  pointe vers `./plugin`.
+
+### [0.1.0] — 18 octobre 2026
 
 Première version de PandecteMCP, projet dérivé de
 [droit-francais-skill](https://github.com/brissonjo-sudo/droit-francais-skill)

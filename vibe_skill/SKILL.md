@@ -9,8 +9,8 @@ allowed-tools:
   - read_file
   - ask_user_question
 metadata:
-  version: 0.1.0-vibe
-  base: pandecte-recherche 0.1.0
+  version: 0.1.1-vibe
+  base: pandecte-recherche 0.1.1
   langue: français
   adapted_for: Vibe
 ---

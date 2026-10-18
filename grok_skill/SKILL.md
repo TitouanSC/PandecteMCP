@@ -3,8 +3,8 @@ name: pandecte-recherche
 description: Méthodologie rigoureuse de recherche en droit français et européen, fondée sur des sources primaires officielles (Légifrance, Judilibre), la vérification de provenance, de vigueur et d'applicabilité à une date donnée, et des citations traçables. Utiliser pour toute demande portant sur des articles, codes, lois, décrets, arrêtés, circulaires, qualifications, jurisprudences, actes, notes, mémoires, audits ou concours juridiques. Ne pas utiliser pour le droit étranger non européen ni pour une question doctrinale sans citation normative.
 license: CC-BY-SA-4.0
 metadata:
-  version: 0.1.0-grok
-  base: pandecte-recherche 0.1.0
+  version: 0.1.1-grok
+  base: pandecte-recherche 0.1.1
   langue: français
   adapted_for: Grok
 ---
