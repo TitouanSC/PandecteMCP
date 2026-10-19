@@ -121,7 +121,7 @@ class ConnexionPage:
             "Relancez la connexion depuis votre assistant (bouton « Se connecter » "
             "du connecteur PandecteMCP).</p></div>"
         )
-        return render_page("Connexion", body, status=status)
+        return render_page("Connexion", body, status=status, narrow=True)
 
     def _form(
         self, sealed: str, request_data: dict[str, Any], *, error: str = "", status: int = 200
@@ -141,7 +141,7 @@ class ConnexionPage:
 (<code>{escape(host)}</code>) à consulter Légifrance et Judilibre
 avec <strong>vos propres</strong> identifiants PISTE.</p>
 {warning}{error_box}
-<form method="post" action="{LOGIN_PATH}" autocomplete="off">
+<form class="card" method="post" action="{LOGIN_PATH}" autocomplete="off">
 <input type="hidden" name="demande" value="{escape(sealed)}">
 <label for="cid">Client ID</label>
 <input type="text" id="cid" name="client_id" required spellcheck="false" autocapitalize="off">
@@ -165,7 +165,9 @@ Ils sont vérifiés auprès de PISTE, puis chiffrés dans le jeton que garde vot
 Le serveur PandecteMCP ne les enregistre nulle part et ne les journalise jamais ; seul
 lui sait déchiffrer ce jeton, le temps de chaque consultation. Pour retirer l'accès :
 déconnectez le connecteur, ou régénérez votre Client Secret sur PISTE.</p></div>"""
-        return render_page("Connexion PISTE", body, status=status, form_targets=(form_target,))
+        return render_page(
+            "Connexion PISTE", body, status=status, form_targets=(form_target,), narrow=True
+        )
 
     # -- Envoi ---------------------------------------------------------------
 
@@ -180,6 +182,7 @@ déconnectez le connecteur, ou régénérez votre Client Secret sur PISTE.</p></
                 '<h1>Connexion PISTE</h1><div class="box err"><p>Requête refusée '
                 "(origine inattendue).</p></div>",
                 status=403,
+                narrow=True,
             )
         body = await request.body()
         if len(body) > MAX_FORM_BYTES:

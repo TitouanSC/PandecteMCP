@@ -68,6 +68,7 @@ jobs:
           python -m py_compile mcp_server/connexion.py
           python -m py_compile mcp_server/cle.py
           python -m py_compile mcp_server/accueil.py
+          python -m py_compile mcp_server/statique.py
           python -m py_compile tests/test_sealed.py
           python -m py_compile tests/test_piste_oauth.py
           python -m py_compile tests/test_connexion.py

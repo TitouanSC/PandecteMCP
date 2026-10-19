@@ -53,6 +53,7 @@ ou utilisez le mode local : voir le <a href="{REPOSITORY_URL}">dépôt du projet
 <p>La clé est assemblée <strong>dans votre navigateur</strong> : cette page n'envoie rien au
 serveur (sa politique de sécurité interdit toute connexion sortante). Vos identifiants se
 trouvent sur <a href="{PISTE_URL}">piste.gouv.fr</a>, rubrique Applications.</p>
+<div class="card">
 <label for="client-id">Client ID</label>
 <input type="text" id="client-id" autocomplete="off" spellcheck="false">
 <label for="client-secret">Client secret</label>
@@ -62,7 +63,8 @@ trouvent sur <a href="{PISTE_URL}">piste.gouv.fr</a>, rubrique Applications.</p>
 <label class="check"><input type="checkbox" id="accept">
 <span>J'ai lu l'avertissement ci-dessus et j'accepte que mes identifiants soient transmis à ce
 serveur, à chaque requête, pour être utilisés en mon nom.</span></label>
-<p><button type="button" id="assemble">Assembler ma clé</button></p>
+<div class="actions"><button type="button" id="assemble">Assembler ma clé</button></div>
+</div>
 <div id="message" role="status"></div>
 <div id="result" hidden>
 <div class="box ok">

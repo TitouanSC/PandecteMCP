@@ -415,6 +415,10 @@ if hasattr(server, "custom_route"):
         )
 
     from mcp_server.accueil import HomePage
+    from mcp_server.statique import StaticFiles
+
+    #: Logo, icône et polices des pages, servis sans ressource externe.
+    StaticFiles().register(server)
 
     #: Page d'accueil « / » : le lien unique à partager, une marche à suivre par IA.
     HomePage(

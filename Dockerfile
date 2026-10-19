@@ -32,6 +32,8 @@ RUN python -m pip install --no-cache-dir --requirement requirements-mcp.txt \
     && python -m pip uninstall --yes pip setuptools
 
 COPY mcp_server/ ./mcp_server/
+# Logo et icône des pages (route /static).
+COPY assets/ ./assets/
 # skill/ entier : scripts (accès PISTE), références et profils (outil get_method).
 COPY skill/ ./skill/
 

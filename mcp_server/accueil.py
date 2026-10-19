@@ -56,7 +56,10 @@ class HomePage:
             '<span class="tag ok">testé</span>' if key in TESTED
             else '<span class="tag">non testé</span>'
         )
-        return f'<details id="{key}"><summary>{title} {tag}</summary>{body}</details>'
+        return (
+            f'<details id="{key}"><summary><span class="titre">{title}</span> {tag}</summary>'
+            f"{body}</details>"
+        )
 
     def _body(self) -> str:
         url = escape(self._mcp_url)
@@ -122,12 +125,12 @@ démarrage du serveur. À défaut : palette de commandes → <em>MCP: Add Server
 « Connexion PISTE ».</p>"""),
             self._section("autres", "Autres assistants compatibles MCP", autres),
         ))
-        return f"""<h1>PandecteMCP</h1>
-<p class="sub">Recherche en droit français fondée sur les sources officielles — textes de
+        return f"""<h1>La recherche en droit français, sourcée, dans votre IA.</h1>
+<p class="sub">Recherche fondée sur les sources officielles — textes de
 Légifrance, décisions de la Cour de cassation — pour votre assistant d'IA, sans rien
 installer.</p>
 
-<h2>1. Vos identifiants PISTE (gratuits)</h2>
+<h2><span class="num">1</span>Vos identifiants PISTE (gratuits)</h2>
 <p>Chacun se connecte avec <strong>ses propres</strong> identifiants. Créez un compte sur
 <a href="{PISTE_URL}">piste.gouv.fr</a>, acceptez les CGU des API Légifrance et JUDILIBRE en
 production, créez une application qui les coche, puis relevez son <strong>Client ID</strong>
@@ -136,14 +139,16 @@ détaillé</a>.</p>
 <p class="hint">Le serveur ne stocke pas vos identifiants : ils voyagent chiffrés dans le
 jeton que garde votre assistant (<a href="{PRIVACY_URL}">confidentialité</a>).</p>
 
-<h2>2. L'adresse du connecteur</h2>
-<div class="box"><code id="mcp-url">{url}</code>
-<p class="actions"><button type="button" id="copy" class="secondary">Copier l'adresse</button>
-<span id="copied" role="status" class="hint"></span></p></div>
+<h2><span class="num">2</span>L'adresse du connecteur</h2>
+<div class="card"><div class="url"><code id="mcp-url">{url}</code>
+<button type="button" id="copy" class="secondary">Copier</button></div>
+<p id="copied" role="status" class="hint"></p></div>
 
-<h2>3. Votre assistant</h2>
+<h2><span class="num">3</span>Votre assistant</h2>
 <p>Choisissez le vôtre ; chaque marche à suivre tient en quelques clics.</p>
+<div class="assistants">
 {sections}
+</div>
 
 <h2>Ensuite</h2>
 <p>Posez votre question juridique. L'assistant lit d'abord la méthode de recherche, puis

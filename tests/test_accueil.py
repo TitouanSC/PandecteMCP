@@ -21,6 +21,7 @@ from mcp_server.accueil import (  # noqa: E402
     cursor_install_link,
     vscode_install_link,
 )
+from mcp_server.statique import ICON_URL, StaticFiles  # noqa: E402
 
 MCP_URL = "https://pandecte.example.org/mcp"
 
@@ -67,6 +68,36 @@ class HomePageTests(unittest.TestCase):
         self.assertTrue(lien.startswith("vscode:mcp/install?"))
         config = json.loads(unquote(lien.split("?", 1)[1]))
         self.assertEqual({"name": "pandecte", "type": "http", "url": MCP_URL}, config)
+
+
+class StaticFilesTests(unittest.TestCase):
+    """Logo et polices viennent du serveur lui-même, jamais d'un autre site."""
+
+    def get(self, nom):
+        from types import SimpleNamespace
+
+        return asyncio.run(StaticFiles().handle(SimpleNamespace(path_params={"nom": nom})))
+
+    def test_icon_is_served_and_sandboxed(self):
+        reponse = self.get("icone.svg")
+        self.assertEqual(200, reponse.status_code)
+        self.assertEqual("image/svg+xml", reponse.media_type)
+        self.assertIn(b"<svg", reponse.body)
+        self.assertIn("sandbox", reponse.headers["content-security-policy"])
+
+    def test_unknown_or_traversing_names_are_refused(self):
+        for nom in ("absent.svg", "../server.py", "..%2Fserver.py", ""):
+            with self.subTest(nom=nom):
+                self.assertEqual(404, self.get(nom).status_code)
+
+    def test_pages_only_load_local_images_and_fonts(self):
+        page = asyncio.run(HomePage(mcp_url=MCP_URL).handle(None))
+        csp = page.headers["content-security-policy"]
+        self.assertIn("img-src 'self'", csp)
+        self.assertIn("font-src 'self'", csp)
+        texte = page.body.decode()
+        self.assertIn(f'src="{ICON_URL}"', texte)
+        self.assertNotRegex(texte, r'(src|href)="https?://[^"]*\.(svg|png|woff2?|css)"')
 
 
 if __name__ == "__main__":
