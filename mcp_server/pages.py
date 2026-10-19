@@ -181,7 +181,7 @@ def render_page(
 <link rel="icon" type="image/svg+xml" href="{ICON_URL}">
 <style nonce="{nonce}">{FONT_FACES}{STYLE}</style></head>
 <body><div class="page{' narrow' if narrow else ''}">
-<header class="site"><a class="brand" href="/">{image_theme("embleme", "", 32)}PandecteMCP</a>{nav}</header>
+<header class="site"><a class="brand" href="/">{image_theme("logo", "", 32)}PandecteMCP</a>{nav}</header>
 <main>
 {body}
 </main>

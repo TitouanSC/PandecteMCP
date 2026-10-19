@@ -22,7 +22,7 @@ FONTS = Path(__file__).resolve().parent / "static" / "fonts"
 FILES: dict[str, tuple[Path, str]] = {
     nom: (ROOT / "assets" / nom, "image/svg+xml")
     for nom in (
-        "icone.svg", "embleme.svg", "embleme-sombre.svg", "logo.svg", "logo-sombre.svg",
+        "icone.svg", "logo.svg", "logo-sombre.svg",
     )
 }
 FILES.update({

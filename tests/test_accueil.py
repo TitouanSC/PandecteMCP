@@ -81,7 +81,7 @@ class StaticFilesTests(unittest.TestCase):
     def test_every_image_of_the_pages_is_served(self):
         page = asyncio.run(HomePage(mcp_url=MCP_URL).handle(None)).body.decode()
         noms = set(re.findall(r'(?:src|srcset)="/static/([\w.-]+)"', page))
-        self.assertTrue({"embleme.svg", "embleme-sombre.svg", "logo.svg", "logo-sombre.svg"} <= noms)
+        self.assertTrue({"logo.svg", "logo-sombre.svg"} <= noms)
         for nom in noms:
             with self.subTest(image=nom):
                 self.assertEqual(200, self.get(nom).status_code)

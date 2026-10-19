@@ -126,7 +126,7 @@ démarrage du serveur. À défaut : palette de commandes → <em>MCP: Add Server
 « Connexion PISTE ».</p>"""),
             self._section("autres", "Autres assistants compatibles MCP", autres),
         ))
-        logo = image_theme("logo", "La Justice, glaive et balance", 152, "hero-logo")
+        logo = image_theme("logo", "La Justice aux yeux bandés", 152, "hero-logo")
         return f"""<div class="hero"><div>
 <h1>La recherche en droit français, sourcée, dans votre IA.</h1>
 <p class="sub">Recherche fondée sur les sources officielles — textes de

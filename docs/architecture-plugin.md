@@ -63,7 +63,7 @@ PandecteMCP/
 │   └── skills/pandecte-recherche/  # copie générée du skill complet
 ├── .codex-plugin/
 │   └── plugin.json                 # identité et capacités réellement livrées
-├── assets/                         # logo, emblème (tête), icône — variantes sombres (SVG carrés)
+├── assets/                         # logo, logo sombre, icône (SVG carrés)
 ├── skills/
 │   └── pandecte-recherche/
 │       └── SKILL.md                # adaptateur vers le noyau historique
