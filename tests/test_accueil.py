@@ -80,7 +80,7 @@ class StaticFilesTests(unittest.TestCase):
 
     def test_every_image_of_the_pages_is_served(self):
         page = asyncio.run(HomePage(mcp_url=MCP_URL).handle(None)).body.decode()
-        noms = set(re.findall(r'(?:src|srcset)="/static/([\w.-]+)"', page))
+        noms = set(re.findall(r'(?:src|srcset)="/static/([\w.-]+)\?v=[0-9a-f]{12}"', page))
         self.assertTrue({"logo.svg", "logo-sombre.svg"} <= noms)
         for nom in noms:
             with self.subTest(image=nom):
@@ -98,7 +98,7 @@ class StaticFilesTests(unittest.TestCase):
 
         from mcp_server.statique import FONT_FACES, FONTS
 
-        fichiers = _re.findall(r"/static/([\w.-]+\.woff2)", FONT_FACES)
+        fichiers = _re.findall(r"/static/([\w.-]+\.woff2)\?v=[0-9a-f]{12}", FONT_FACES)
         self.assertEqual(2, len(fichiers))
         for nom in fichiers:
             with self.subTest(police=nom):
@@ -107,6 +107,20 @@ class StaticFilesTests(unittest.TestCase):
                 self.assertEqual("font/woff2", reponse.media_type)
                 self.assertEqual(b"wOF2", reponse.body[:4])
         self.assertIn("SIL Open Font License", (FONTS / "OFL.txt").read_text(encoding="utf-8"))
+
+    def test_image_address_changes_with_its_content(self):
+        import tempfile
+        from unittest import mock
+
+        from mcp_server import statique
+
+        with tempfile.TemporaryDirectory() as tmp:
+            chemin = Path(tmp) / "logo.svg"
+            chemin.write_bytes(b"<svg>v1</svg>")
+            with mock.patch.dict(statique.FILES, {"logo.svg": (chemin, "image/svg+xml")}):
+                avant = statique.url("logo.svg")
+                chemin.write_bytes(b"<svg>v2</svg>")
+                self.assertNotEqual(avant, statique.url("logo.svg"))
 
     def test_unknown_or_traversing_names_are_refused(self):
         for nom in ("absent.svg", "../server.py", "..%2Fserver.py", ""):

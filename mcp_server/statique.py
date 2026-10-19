@@ -7,6 +7,7 @@ chemin venu de la requête n'atteint le disque.
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -29,23 +30,35 @@ FILES.update({
     police.name: (police, "font/woff2") for police in sorted(FONTS.glob("*.woff2"))
 })
 
-ICON_URL = f"{PREFIX}/icone.svg"
+
+
+def url(nom: str) -> str:
+    """Adresse d'un fichier, suffixée de l'empreinte de son contenu.
+
+    Les fichiers sont gardés un an en cache : quand un logo change, son
+    adresse change avec lui, et le navigateur recharge la nouvelle version.
+    """
+    contenu = FILES[nom][0].read_bytes()
+    return f"{PREFIX}/{nom}?v={hashlib.sha256(contenu).hexdigest()[:12]}"
+
+
+ICON_URL = url("icone.svg")
 
 
 def image_theme(nom: str, alt: str, cote: int, classe: str = "") -> str:
     """``<picture>`` qui passe à la variante ``-sombre`` en thème sombre."""
     attribut = f' class="{classe}"' if classe else ""
     return (
-        f'<picture{attribut}><source srcset="{PREFIX}/{nom}-sombre.svg" '
+        f'<picture{attribut}><source srcset="{url(f"{nom}-sombre.svg")}" '
         'media="(prefers-color-scheme: dark)">'
-        f'<img src="{PREFIX}/{nom}.svg" alt="{alt}" width="{cote}" height="{cote}"></picture>'
+        f'<img src="{url(f"{nom}.svg")}" alt="{alt}" width="{cote}" height="{cote}"></picture>'
     )
 
 #: Polices de la charte (Figma « PandecteMCP ») : Stack Sans Notch pour les
 #: titres, Stack Sans Text pour le texte. Licence SIL OFL 1.1 (static/fonts/OFL.txt),
 #: sous-ensemble « latin » de Google Fonts, qui couvre le français (œ, €, «»).
 FONT_FACES = "".join(
-    f"@font-face{{font-family:'{famille}';src:url({PREFIX}/{fichier}) format('woff2');"
+    f"@font-face{{font-family:'{famille}';src:url({url(fichier)}) format('woff2');"
     "font-weight:200 700;font-style:normal;font-display:swap}"
     for famille, fichier in (
         ("Stack Sans Notch", "stack-sans-notch.woff2"),
@@ -66,7 +79,7 @@ class StaticFiles:
             return PlainTextResponse("Not found", status_code=404)
         chemin, media_type = entree
         response = Response(chemin.read_bytes(), media_type=media_type)
-        response.headers["Cache-Control"] = "public, max-age=86400"
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         response.headers["X-Content-Type-Options"] = "nosniff"
         # Un SVG ouvert directement reste un document : il n'exécute rien.
         response.headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; sandbox"
