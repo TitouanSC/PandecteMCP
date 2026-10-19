@@ -74,10 +74,93 @@ PUBLIC_URL_FIELDS = (
     "privacyPolicyURL",
     "termsOfServiceURL",
 )
+#: Logo et icône sont obligatoires a la soumission (erreurs
+#: plugin_logo_path_missing et plugin_composer_icon_path_missing).
 LOCAL_ASSET_FIELDS = (
     "composerIcon",
     "logo",
 )
+#: Formats acceptes pour les visuels du paquet, et leurs bornes.
+FORMATS_IMAGE = frozenset({".png", ".jpg", ".jpeg", ".webp", ".svg"})
+MAX_OCTETS_IMAGE = 5 * 1024 * 1024
+MIN_COTE_IMAGE = 48
+MAX_COTE_IMAGE = 4096
+#: brandColor : hexadecimal a six chiffres, contraste d'au moins 2:1 sur blanc.
+COULEUR_HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
+CONTRASTE_MIN = 2.0
+
+
+def luminance(couleur: str) -> float:
+    """Luminance relative WCAG d'une couleur #RRGGBB."""
+    canaux = []
+    for i in (1, 3, 5):
+        c = int(couleur[i:i + 2], 16) / 255
+        canaux.append(c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4)
+    r, g, b = canaux
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def contraste(a: str, b: str) -> float:
+    claire, sombre = sorted((luminance(a), luminance(b)), reverse=True)
+    return (claire + 0.05) / (sombre + 0.05)
+
+
+def cotes_svg(texte: str) -> tuple[float, float] | None:
+    """Côtés d'un SVG : viewBox numérique, sinon width/height sans unité."""
+    racine = re.search(r"<svg\b[^>]*>", texte)
+    if racine is None:
+        return None
+    balise = racine.group(0)
+    vue = re.search(r'viewBox="([^"]+)"', balise)
+    if vue:
+        try:
+            nombres = [float(x) for x in vue.group(1).replace(",", " ").split()]
+        except ValueError:
+            return None
+        return (nombres[2], nombres[3]) if len(nombres) == 4 else None
+    largeur = re.search(r'\bwidth="([0-9.]+)"', balise)
+    hauteur = re.search(r'\bheight="([0-9.]+)"', balise)
+    if largeur and hauteur:
+        return float(largeur.group(1)), float(hauteur.group(1))
+    return None
+
+
+def cotes_png(octets: bytes) -> tuple[int, int] | None:
+    if octets[:8] != b"\x89PNG\r\n\x1a\n" or octets[12:16] != b"IHDR":
+        return None
+    return int.from_bytes(octets[16:20], "big"), int.from_bytes(octets[20:24], "big")
+
+
+def defaut_image(chemin: Path) -> str | None:
+    """Ce qui empêcherait OpenAI d'accepter ce logo ou cette icône, sinon None."""
+    suffixe = chemin.suffix.lower()
+    if suffixe not in FORMATS_IMAGE:
+        return f"format refusé ({suffixe or 'sans extension'})"
+    octets = chemin.read_bytes()
+    if len(octets) > MAX_OCTETS_IMAGE:
+        return "dépasse 5 Mio"
+    if suffixe == ".svg":
+        try:
+            cotes = cotes_svg(octets.decode("utf-8"))
+        except UnicodeDecodeError:
+            return "SVG non UTF-8"
+        if cotes is None:
+            return "SVG sans viewBox ni width/height numériques"
+    elif suffixe == ".png":
+        cotes = cotes_png(octets)
+        if cotes is None:
+            return "PNG illisible"
+    else:
+        # JPEG et WebP : format accepté, dimensions non lues ici.
+        return None
+    largeur, hauteur = cotes
+    if largeur != hauteur:
+        return f"image non carrée ({largeur:g}×{hauteur:g})"
+    if largeur < MIN_COTE_IMAGE:
+        return f"image trop petite ({largeur:g} px, minimum {MIN_COTE_IMAGE})"
+    if suffixe == ".png" and largeur > MAX_COTE_IMAGE:
+        return f"image trop grande ({largeur:g} px, maximum {MAX_COTE_IMAGE})"
+    return None
 
 
 def fail(message: str, problems: list[str]) -> None:
@@ -209,16 +292,13 @@ def main() -> int:
                 fail(f"interface.{field} doit être une URL HTTPS publique", problems)
         for field in LOCAL_ASSET_FIELDS:
             value = interface.get(field)
-            if value is None:
-                # Visuel facultatif tant que le projet n'a pas de logo.
-                continue
             if not isinstance(value, str) or not value.strip():
                 fail(f"interface.{field} doit être un chemin relatif", problems)
                 continue
             if not value.startswith("./") or not value[2:].strip():
                 fail(
                     f"interface.{field} doit être un chemin relatif au dépôt "
-                    f"de la forme ./chemin/fichier.png",
+                    f"de la forme ./chemin/fichier.svg",
                     problems,
                 )
                 continue
@@ -227,8 +307,19 @@ def main() -> int:
                 fail(f"interface.{field} sort du dépôt : {value}", problems)
             elif not asset.is_file():
                 fail(f"interface.{field} pointe vers un fichier absent : {value}", problems)
-            elif asset.suffix.lower() != ".png":
-                fail(f"interface.{field} doit être une image PNG : {value}", problems)
+            elif (defaut := defaut_image(asset)) is not None:
+                fail(f"interface.{field} : {defaut} ({value})", problems)
+
+        couleur = interface.get("brandColor")
+        if couleur is not None:
+            if not isinstance(couleur, str) or COULEUR_HEX.fullmatch(couleur) is None:
+                fail("interface.brandColor doit être de la forme #RRGGBB", problems)
+            elif contraste(couleur, "#FFFFFF") < CONTRASTE_MIN:
+                fail(
+                    f"interface.brandColor {couleur} contraste trop peu sur blanc "
+                    f"(minimum {CONTRASTE_MIN:g}:1)",
+                    problems,
+                )
 
         for champ, limite in LIMITES_TEXTE.items():
             valeur = interface.get(champ)

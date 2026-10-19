@@ -184,6 +184,10 @@ class ClaudePluginTests(unittest.TestCase):
                 for attendu in (".mcp.json", "README.md", "LICENSE",
                                 "skills/pandecte-recherche/SKILL.md"):
                     self.assertIn(attendu, noms)
+                if nom == "openai":
+                    # Le manifeste OpenAI désigne ces fichiers : ils doivent suivre.
+                    for visuel in ("assets/logo.svg", "assets/icone.svg"):
+                        self.assertIn(visuel, noms)
                 for entree in noms:
                     self.assertNotRegex(entree, r"(^|/)(\.env|profil\.md|\.DS_Store)$|__pycache__|\.\./")
 

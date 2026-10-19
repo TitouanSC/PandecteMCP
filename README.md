@@ -354,6 +354,7 @@ PandecteMCP/
 ├── .claude-plugin/                 ← marketplace Claude (pointe vers plugin/)
 ├── .codex-plugin/                  ← plugin OpenAI
 ├── .mcp.json                       ← connexion au serveur hébergé
+├── assets/                         ← logo et icône (SVG)
 ├── mcp_server/
 │   ├── server.py                   ← outils MCP (stdio ou HTTP /mcp)
 │   ├── piste_oauth.py              ← serveur d'autorisation sans stockage

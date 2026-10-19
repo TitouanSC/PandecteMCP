@@ -314,7 +314,7 @@ def fichiers_plugin_claude() -> dict[str, bytes]:
 
 
 def fichiers_plugin_openai() -> dict[str, bytes]:
-    """Contenu du zip de soumission OpenAI : manifeste .codex-plugin et skill complet.
+    """Contenu du zip de soumission OpenAI : manifeste .codex-plugin, visuels et skill complet.
 
     L'adaptateur ``skills/`` de la racine renvoie à ``../../skill/`` ; le zip
     reçoit à la place la copie complète, comme le plugin Claude.
@@ -322,6 +322,8 @@ def fichiers_plugin_openai() -> dict[str, bytes]:
     fichiers = fichiers_plugin_claude()
     del fichiers[".claude-plugin/plugin.json"]
     fichiers[".codex-plugin/plugin.json"] = (ROOT / ".codex-plugin" / "plugin.json").read_bytes()
+    for visuel in sorted((ROOT / "assets").glob("*.svg")):
+        fichiers[f"assets/{visuel.name}"] = visuel.read_bytes()
     return fichiers
 
 

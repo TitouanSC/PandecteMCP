@@ -142,5 +142,44 @@ class CiEnvironmentTests(unittest.TestCase):
         self.assertEqual(0, code, sortie.getvalue())
 
 
+class VisuelsTests(unittest.TestCase):
+    """Logo, icône et couleur suivent les règles de soumission d'OpenAI."""
+
+    def defaut(self, nom: str, contenu: bytes):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            chemin = Path(tmp) / nom
+            chemin.write_bytes(contenu)
+            return check_plugin.defaut_image(chemin)
+
+    def test_svg_carre_accepte(self):
+        svg = b'<svg width="54" height="54" viewBox="0 0 54 54"></svg>'
+        self.assertIsNone(self.defaut("icone.svg", svg))
+
+    def test_svg_non_carre_refuse(self):
+        svg = b'<svg viewBox="0 0 100 60"></svg>'
+        self.assertIn("non carrée", self.defaut("logo.svg", svg))
+
+    def test_svg_trop_petit_refuse(self):
+        svg = b'<svg viewBox="0 0 32 32"></svg>'
+        self.assertIn("trop petite", self.defaut("icone.svg", svg))
+
+    def test_svg_sans_dimensions_refuse(self):
+        self.assertIn("viewBox", self.defaut("logo.svg", b'<svg width="100%"></svg>'))
+
+    def test_format_inconnu_refuse(self):
+        self.assertIn("format", self.defaut("logo.gif", b"GIF89a"))
+
+    def test_couleur_de_marque_contraste_sur_blanc(self):
+        self.assertGreaterEqual(check_plugin.contraste("#DD3B18", "#FFFFFF"), 2)
+        self.assertLess(check_plugin.contraste("#FFEEDD", "#FFFFFF"), 2)
+
+    def test_visuels_du_depot_sont_conformes(self):
+        for nom in ("logo.svg", "logo-sombre.svg", "icone.svg"):
+            with self.subTest(visuel=nom):
+                self.assertIsNone(check_plugin.defaut_image(ROOT / "assets" / nom))
+
+
 if __name__ == "__main__":
     unittest.main()

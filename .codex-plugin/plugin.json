@@ -35,6 +35,9 @@
       "Recherche cet article dans Légifrance.",
       "Trouve et lis cette décision judiciaire.",
       "Vérifie la vigueur de cette règle de droit."
-    ]
+    ],
+    "brandColor": "#DD3B18",
+    "composerIcon": "./assets/icone.svg",
+    "logo": "./assets/logo.svg"
   }
 }

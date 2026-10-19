@@ -36,7 +36,8 @@ Claude et Claude mobile, et deux **zips de plugin**, manifeste à la racine :
   *Personnaliser > Plugins > Ajouter > Importer un plugin* dans claude.ai
   (utile hors marketplace) ;
 - `pandecte-plugin-openai-<version>.zip` : manifeste `.codex-plugin/`,
-  connecteur et skill complet, pour la soumission à l'annuaire ChatGPT.
+  visuels de `assets/`, connecteur et skill complet, pour la soumission à
+  l'annuaire ChatGPT.
 
 La CI exécute `--check` : un noyau modifié sans
 régénération fait échouer le build.
