@@ -3,7 +3,8 @@
 Le connecteur MCP est le dénominateur commun : chaque assistant l'ajoute à sa
 façon. La page donne, pour chacun, les clics à faire et, quand l'assistant en
 propose, un lien d'installation directe (Cursor, VS Code). Elle ne contient
-aucun formulaire ; son seul script copie l'adresse du connecteur.
+aucun formulaire ; son seul script copie l'adresse du connecteur. Quand le
+site vitrine est en ligne (``MCP_SITE_URL``), « / » renvoie vers lui.
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from typing import Any
 from urllib.parse import quote
 
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import RedirectResponse, Response
 
 from mcp_server.pages import PISTE_URL, PRIVACY_URL, REPOSITORY_URL, render_page
 from mcp_server.statique import image_theme
@@ -42,14 +43,20 @@ def vscode_install_link(mcp_url: str) -> str:
 
 
 class HomePage:
-    def __init__(self, *, mcp_url: str, personal_keys_enabled: bool = True) -> None:
+    def __init__(
+        self, *, mcp_url: str, personal_keys_enabled: bool = True, site_url: str = ""
+    ) -> None:
         self._mcp_url = mcp_url
         self._personal_keys = personal_keys_enabled
+        self._site_url = site_url
 
     def register(self, server: Any) -> None:
         server.custom_route(PATH, methods=["GET"], include_in_schema=False)(self.handle)
 
     async def handle(self, _request: Request) -> Response:
+        if self._site_url:
+            # Temporaire (302) : retirer MCP_SITE_URL rend la page d'origine.
+            return RedirectResponse(self._site_url, status_code=302)
         return render_page("Recherche en droit français", self._body(), script=COPY_JS)
 
     def _section(self, key: str, title: str, body: str) -> str:

@@ -120,6 +120,8 @@ class RuntimeSettings:
     cache_text_ttl: int = 6 * 3600
     cache_decision_ttl: int = 24 * 3600
     cache_max_mb: int = 50
+    #: Site vitrine : « / » y renvoie quand il est défini (https).
+    site_url: str = ""
 
     @property
     def auth_enabled(self) -> bool:
@@ -168,6 +170,10 @@ class RuntimeSettings:
             else:
                 public_url = _https_url(values, "MCP_PUBLIC_URL")
 
+        site_url = ""
+        if values.get("MCP_SITE_URL", "").strip():
+            site_url = _https_url(values, "MCP_SITE_URL")
+
         client_ip_header = values.get("MCP_CLIENT_IP_HEADER", "").strip().lower()
         if client_ip_header and not re.match(r"^[a-z0-9-]{1,64}$", client_ip_header):
             raise RuntimeConfigurationError("MCP_CLIENT_IP_HEADER est un nom d'en-tête invalide.")
@@ -197,6 +203,7 @@ class RuntimeSettings:
             personal_keys_enabled=_boolean(values, "MCP_PERSONAL_KEYS_ENABLED", True),
             trusted_proxy_hops=_non_negative_int(values, "MCP_TRUSTED_PROXY_HOPS", 0),
             client_ip_header=client_ip_header,
+            site_url=site_url,
             ip_diagnostic=_boolean(values, "MCP_IP_DIAGNOSTIC", False),
             cache_text_ttl=_non_negative_int(values, "PANDECTE_CACHE_TEXT_TTL", 6 * 3600),
             cache_decision_ttl=_non_negative_int(

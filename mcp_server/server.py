@@ -424,6 +424,7 @@ if hasattr(server, "custom_route"):
     HomePage(
         mcp_url=SETTINGS.resource_url,
         personal_keys_enabled=PISTE_PROVIDER is not None and SETTINGS.personal_keys_enabled,
+        site_url=SETTINGS.site_url,
     ).register(server)
 
     if PISTE_PROVIDER is not None:

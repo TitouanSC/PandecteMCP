@@ -56,6 +56,22 @@ class HomePageTests(unittest.TestCase):
         self.assertIn('href="/cle"', self.page().body.decode())
         self.assertNotIn('href="/cle"', self.page(personal_keys_enabled=False).body.decode())
 
+    def test_root_redirects_to_the_showcase_site_when_set(self):
+        page = self.page(site_url="https://pandecte.example.org")
+        self.assertEqual(302, page.status_code)
+        self.assertEqual("https://pandecte.example.org", page.headers["location"])
+
+    def test_site_url_must_be_https(self):
+        from mcp_server.runtime import RuntimeConfigurationError, RuntimeSettings
+
+        self.assertEqual("", RuntimeSettings.from_env({}).site_url)
+        self.assertEqual(
+            "https://pandecte.example.org",
+            RuntimeSettings.from_env({"MCP_SITE_URL": "https://pandecte.example.org/"}).site_url,
+        )
+        with self.assertRaises(RuntimeConfigurationError):
+            RuntimeSettings.from_env({"MCP_SITE_URL": "http://pandecte.example.org"})
+
     def test_cursor_link_carries_the_connector_url(self):
         lien = urlsplit(cursor_install_link(MCP_URL))
         self.assertEqual("cursor", lien.scheme)

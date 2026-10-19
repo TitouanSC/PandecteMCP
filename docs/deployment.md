@@ -128,6 +128,7 @@ Le démarrage échoue en production :
 |---|---:|---|
 | `PANDECTE_SEAL_KEY_PREVIOUS` | vide | Ancienne clé de scellement, acceptée en lecture le temps d'une rotation |
 | `MCP_PERSONAL_KEYS_ENABLED` | `true` | Accepte les clés personnelles `pk1.…` et publie `/cle` |
+| `MCP_SITE_URL` | vide | Site vitrine (https) : `/` y renvoie ; vide, `/` affiche la marche à suivre |
 | `MCP_CALLS_PER_MINUTE_PER_IP` | `30` | Appels d'outils par minute et par adresse IP |
 | `MCP_TOOL_CALLS_PER_MINUTE` | `120` | Plafond de l'instance |
 | `MCP_MAX_CONCURRENT_REQUESTS` | `8` | Appels d'outils simultanés |
