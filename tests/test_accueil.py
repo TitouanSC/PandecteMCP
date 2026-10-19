@@ -78,6 +78,14 @@ class StaticFilesTests(unittest.TestCase):
 
         return asyncio.run(StaticFiles().handle(SimpleNamespace(path_params={"nom": nom})))
 
+    def test_every_image_of_the_pages_is_served(self):
+        page = asyncio.run(HomePage(mcp_url=MCP_URL).handle(None)).body.decode()
+        noms = set(re.findall(r'(?:src|srcset)="/static/([\w.-]+)"', page))
+        self.assertTrue({"embleme.svg", "embleme-sombre.svg", "logo.svg", "logo-sombre.svg"} <= noms)
+        for nom in noms:
+            with self.subTest(image=nom):
+                self.assertEqual(200, self.get(nom).status_code)
+
     def test_icon_is_served_and_sandboxed(self):
         reponse = self.get("icone.svg")
         self.assertEqual(200, reponse.status_code)
@@ -111,7 +119,7 @@ class StaticFilesTests(unittest.TestCase):
         self.assertIn("img-src 'self'", csp)
         self.assertIn("font-src 'self'", csp)
         texte = page.body.decode()
-        self.assertIn(f'src="{ICON_URL}"', texte)
+        self.assertIn(f'href="{ICON_URL}"', texte)
         self.assertNotRegex(texte, r'(src|href)="https?://[^"]*\.(svg|png|woff2?|css)"')
 
 

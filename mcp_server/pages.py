@@ -14,7 +14,7 @@ from html import escape
 
 from starlette.responses import HTMLResponse
 
-from mcp_server.statique import FONT_FACES, ICON_URL
+from mcp_server.statique import FONT_FACES, ICON_URL, image_theme
 
 REPOSITORY_URL = "https://github.com/TitouanSC/PandecteMCP"
 TERMS_URL = f"{REPOSITORY_URL}/blob/main/docs/terms-of-use.md"
@@ -58,7 +58,10 @@ padding:1.25rem 0;margin-bottom:2rem;border-bottom:1px solid var(--border)}
 .brand{display:inline-flex;align-items:center;gap:.6rem;color:var(--foreground);
 text-decoration:none;font-family:var(--font-heading);font-weight:700;
 letter-spacing:-.02em;font-size:1.25rem}
-.brand img{width:2rem;height:2rem;display:block}
+.brand picture,.brand img{width:2rem;height:2rem;display:block}
+.hero{display:flex;align-items:center;gap:2.5rem}.hero > div{flex:1}
+.hero-logo,.hero-logo img{width:9.5rem;height:9.5rem;display:block;flex:none}
+@media (max-width:40rem){.hero-logo{display:none}}
 header.site nav{display:flex;gap:1.25rem}
 header.site nav a{color:var(--muted-foreground);text-decoration:none;font-size:.7rem;
 font-weight:600;letter-spacing:.1em;text-transform:uppercase}
@@ -178,8 +181,7 @@ def render_page(
 <link rel="icon" type="image/svg+xml" href="{ICON_URL}">
 <style nonce="{nonce}">{FONT_FACES}{STYLE}</style></head>
 <body><div class="page{' narrow' if narrow else ''}">
-<header class="site"><a class="brand" href="/"><img src="{ICON_URL}" alt="" width="32"
-height="32">PandecteMCP</a>{nav}</header>
+<header class="site"><a class="brand" href="/">{image_theme("embleme", "", 32)}PandecteMCP</a>{nav}</header>
 <main>
 {body}
 </main>

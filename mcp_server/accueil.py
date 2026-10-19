@@ -18,6 +18,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from mcp_server.pages import PISTE_URL, PRIVACY_URL, REPOSITORY_URL, render_page
+from mcp_server.statique import image_theme
 
 PATH = "/"
 SERVER_NAME = "pandecte"
@@ -125,10 +126,13 @@ démarrage du serveur. À défaut : palette de commandes → <em>MCP: Add Server
 « Connexion PISTE ».</p>"""),
             self._section("autres", "Autres assistants compatibles MCP", autres),
         ))
-        return f"""<h1>La recherche en droit français, sourcée, dans votre IA.</h1>
+        logo = image_theme("logo", "La Justice, glaive et balance", 152, "hero-logo")
+        return f"""<div class="hero"><div>
+<h1>La recherche en droit français, sourcée, dans votre IA.</h1>
 <p class="sub">Recherche fondée sur les sources officielles — textes de
 Légifrance, décisions de la Cour de cassation — pour votre assistant d'IA, sans rien
-installer.</p>
+installer.</p></div>
+{logo}</div>
 
 <h2><span class="num">1</span>Vos identifiants PISTE (gratuits)</h2>
 <p>Chacun se connecte avec <strong>ses propres</strong> identifiants. Créez un compte sur

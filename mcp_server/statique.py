@@ -20,14 +20,26 @@ FONTS = Path(__file__).resolve().parent / "static" / "fonts"
 #: Nom public → (fichier, type MIME). Le logo vient de ``assets/``, source
 #: unique des visuels du projet (plugin OpenAI compris).
 FILES: dict[str, tuple[Path, str]] = {
-    "icone.svg": (ROOT / "assets" / "icone.svg", "image/svg+xml"),
-    "logo.svg": (ROOT / "assets" / "logo.svg", "image/svg+xml"),
+    nom: (ROOT / "assets" / nom, "image/svg+xml")
+    for nom in (
+        "icone.svg", "embleme.svg", "embleme-sombre.svg", "logo.svg", "logo-sombre.svg",
+    )
 }
 FILES.update({
     police.name: (police, "font/woff2") for police in sorted(FONTS.glob("*.woff2"))
 })
 
 ICON_URL = f"{PREFIX}/icone.svg"
+
+
+def image_theme(nom: str, alt: str, cote: int, classe: str = "") -> str:
+    """``<picture>`` qui passe à la variante ``-sombre`` en thème sombre."""
+    attribut = f' class="{classe}"' if classe else ""
+    return (
+        f'<picture{attribut}><source srcset="{PREFIX}/{nom}-sombre.svg" '
+        'media="(prefers-color-scheme: dark)">'
+        f'<img src="{PREFIX}/{nom}.svg" alt="{alt}" width="{cote}" height="{cote}"></picture>'
+    )
 
 #: Polices de la charte (Figma « PandecteMCP ») : Stack Sans Notch pour les
 #: titres, Stack Sans Text pour le texte. Licence SIL OFL 1.1 (static/fonts/OFL.txt),
