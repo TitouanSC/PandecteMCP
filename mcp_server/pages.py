@@ -23,8 +23,8 @@ PISTE_URL = "https://piste.gouv.fr"
 
 STYLE = """
 :root{color-scheme:light dark;
---font-sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
---font-heading:var(--font-sans);
+--font-sans:"Stack Sans Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+--font-heading:"Stack Sans Notch","Stack Sans Text",system-ui,sans-serif;
 --font-mono:ui-monospace,Menlo,Consolas,monospace;
 --brand:#DD3B18;
 --background:oklch(1 0 0);--foreground:oklch(0.147 0.004 49.3);
@@ -37,11 +37,11 @@ STYLE = """
 --border:oklch(0.922 0.005 34.3);--input:oklch(0.82 0.008 34.3);
 --ring:oklch(0.714 0.014 41.2)}
 @media (prefers-color-scheme:dark){:root{
---background:oklch(0.147 0.004 49.3);--foreground:oklch(0.986 0.002 67.8);
---card:oklch(0.214 0.009 43.1);--card-foreground:oklch(0.986 0.002 67.8);
+--background:#0C0200;--foreground:oklch(0.986 0.002 67.8);
+--card:#1A110E;--card-foreground:oklch(0.986 0.002 67.8);
 --link:#F28B6A;
 --secondary:oklch(0.268 0.011 36.5);--secondary-foreground:oklch(0.986 0.002 67.8);
---muted:oklch(0.268 0.011 36.5);--muted-foreground:oklch(0.714 0.014 41.2);
+--muted:#231815;--muted-foreground:#C2C2C2;
 --destructive:oklch(0.704 0.191 22.216);--warning:oklch(0.828 0.189 84.429);
 --success:oklch(0.723 0.219 149.579);
 --border:oklch(1 0 0 / 10%);--input:oklch(1 0 0 / 25%);
@@ -56,16 +56,16 @@ font-family:var(--font-sans);font-size:1rem;line-height:1.6;
 header.site{display:flex;align-items:center;justify-content:space-between;gap:1rem;
 padding:1.25rem 0;margin-bottom:2rem;border-bottom:1px solid var(--border)}
 .brand{display:inline-flex;align-items:center;gap:.6rem;color:var(--foreground);
-text-decoration:none;font-family:var(--font-heading);font-weight:600;
-letter-spacing:.1em;text-transform:uppercase;font-size:.8rem}
+text-decoration:none;font-family:var(--font-heading);font-weight:700;
+letter-spacing:-.02em;font-size:1.25rem}
 .brand img{width:2rem;height:2rem;display:block}
 header.site nav{display:flex;gap:1.25rem}
 header.site nav a{color:var(--muted-foreground);text-decoration:none;font-size:.7rem;
 font-weight:600;letter-spacing:.1em;text-transform:uppercase}
 header.site nav a:hover{color:var(--foreground)}
 h1,h2,h3{font-family:var(--font-heading);line-height:1.2;margin:0}
-h1{font-size:2rem;font-weight:600;letter-spacing:-.01em;margin-bottom:.75rem}
-h2{font-size:.8rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+h1{font-size:2.25rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.75rem}
+h2{font-family:var(--font-sans);font-size:.8rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
 margin:2.75rem 0 1rem;display:flex;align-items:center;gap:.75rem}
 h2 .num{display:inline-flex;align-items:center;justify-content:center;width:1.75rem;
 height:1.75rem;background:var(--brand);color:#fff;font-size:.75rem;letter-spacing:0}

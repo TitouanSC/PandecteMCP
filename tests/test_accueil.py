@@ -85,6 +85,21 @@ class StaticFilesTests(unittest.TestCase):
         self.assertIn(b"<svg", reponse.body)
         self.assertIn("sandbox", reponse.headers["content-security-policy"])
 
+    def test_declared_fonts_are_served_with_their_licence(self):
+        import re as _re
+
+        from mcp_server.statique import FONT_FACES, FONTS
+
+        fichiers = _re.findall(r"/static/([\w.-]+\.woff2)", FONT_FACES)
+        self.assertEqual(2, len(fichiers))
+        for nom in fichiers:
+            with self.subTest(police=nom):
+                reponse = self.get(nom)
+                self.assertEqual(200, reponse.status_code)
+                self.assertEqual("font/woff2", reponse.media_type)
+                self.assertEqual(b"wOF2", reponse.body[:4])
+        self.assertIn("SIL Open Font License", (FONTS / "OFL.txt").read_text(encoding="utf-8"))
+
     def test_unknown_or_traversing_names_are_refused(self):
         for nom in ("absent.svg", "../server.py", "..%2Fserver.py", ""):
             with self.subTest(nom=nom):

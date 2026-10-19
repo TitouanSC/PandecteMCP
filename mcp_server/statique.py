@@ -29,8 +29,17 @@ FILES.update({
 
 ICON_URL = f"{PREFIX}/icone.svg"
 
-#: Déclarations @font-face des polices embarquées ; vide tant qu'il n'y en a pas.
-FONT_FACES = ""
+#: Polices de la charte (Figma « PandecteMCP ») : Stack Sans Notch pour les
+#: titres, Stack Sans Text pour le texte. Licence SIL OFL 1.1 (static/fonts/OFL.txt),
+#: sous-ensemble « latin » de Google Fonts, qui couvre le français (œ, €, «»).
+FONT_FACES = "".join(
+    f"@font-face{{font-family:'{famille}';src:url({PREFIX}/{fichier}) format('woff2');"
+    "font-weight:200 700;font-style:normal;font-display:swap}"
+    for famille, fichier in (
+        ("Stack Sans Notch", "stack-sans-notch.woff2"),
+        ("Stack Sans Text", "stack-sans-text.woff2"),
+    )
+)
 
 
 class StaticFiles:
