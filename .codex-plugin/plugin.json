@@ -39,5 +39,59 @@
     "brandColor": "#DD3B18",
     "composerIcon": "./assets/icone.svg",
     "logo": "./assets/logo.svg"
+  },
+  "extensions": {
+    "com.openai": {
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Read a French code article currently in force, with its official source. Requires the reviewer's PISTE credentials (entered in the review details).",
+              "prompt": "Que dit l'article 1240 du Code civil ? Cite le texte exact et sa source.",
+              "tools_triggered": "get_method, search_articles, get_article",
+              "expected_behavior": "Reads the method, finds article 1240 of the Code civil on Légifrance and quotes its official text (liability for fault: whoever causes damage to another by their fault must repair it), with the LEGIARTI identifier, the version in force and a Légifrance link. No reference is given without having been retrieved."
+            },
+            {
+              "description": "Check whether a well-known article is still in force (renumbered article).",
+              "prompt": "L'article 1382 du Code civil est-il toujours en vigueur ? Vérifie sur Légifrance.",
+              "tools_triggered": "get_method, search_articles, get_article",
+              "expected_behavior": "Retrieves article 1382 of the Code civil and reports its validity status from Légifrance: the fault-liability rule formerly in article 1382 has been in article 1240 since 1 October 2016 (ordonnance n° 2016-131 of 10 February 2016). The answer states the dates of the versions consulted and links to the source."
+            },
+            {
+              "description": "Search official case law of the Cour de cassation and read one decision.",
+              "prompt": "Trouve des arrêts de la Cour de cassation sur le préjudice d'anxiété et résume le plus récent.",
+              "tools_triggered": "get_method, search_case_law, get_decision",
+              "expected_behavior": "Searches Judilibre, lists several decisions with court, chamber, date, appeal number and link, then reads the full text of the most recent one and summarises it, quoting only passages taken from the retrieved text."
+            },
+            {
+              "description": "Read a whole section of a code (several articles at once).",
+              "prompt": "Liste les articles du Code du travail sur la période d'essai du contrat à durée indéterminée, avec leur contenu.",
+              "tools_triggered": "get_method, search_articles, get_section",
+              "expected_behavior": "Locates the section of the Code du travail on the trial period (articles L1221-19 and following), reads it with get_section and lists each article with its number and a faithful summary of its official text, with Légifrance links."
+            },
+            {
+              "description": "Answer a legal question using the standard search and fetch tools, with a sourced answer.",
+              "prompt": "Quel est le délai de prescription de droit commun en matière civile en France ? Donne la source officielle.",
+              "tools_triggered": "get_method, search, fetch",
+              "expected_behavior": "Searches the official sources, fetches article 2224 of the Code civil and answers that personal and movable actions are time-barred after five years from the day the right holder knew or should have known the facts allowing them to act, quoting the article with its identifier and Légifrance link."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Foreign law: the plugin only covers French law (Légifrance and Judilibre). It should not be called; the model answers without it or says it cannot verify foreign law with this plugin.",
+              "prompt": "Quelle est la durée légale du travail en Allemagne ?"
+            },
+            {
+              "description": "Finding a lawyer: the plugin searches legal texts and case law, not professional directories. It should not be called; the model suggests the bar association or the national lawyers' directory.",
+              "prompt": "Trouve-moi un avocat spécialisé en droit du travail à Lyon."
+            },
+            {
+              "description": "Writing task with no legal source to look up. It should not be called; the model writes the letter directly.",
+              "prompt": "Rédige une lettre de motivation pour un poste de juriste en entreprise."
+            }
+          ]
+        }
+      }
+    }
   }
 }
