@@ -11,12 +11,12 @@ description: Méthodologie rigoureuse de recherche en droit français (sources
   un écrit ou oral de concours avec références juridiques. Ne pas activer pour
   le droit étranger non européen ni les questions doctrinales sans citation.
 metadata:
-  version: 0.1.2
+  version: 0.1.3
   date_derniere_revue_methodologique: 2026-09-14
   date_derniere_verification_sources: 2026-09-04
   langue: français
 ---
-# Skill : pandecte-recherche (v0.1.2)
+# Skill : pandecte-recherche (v0.1.3)
 
 > **Objet** : encoder la méthodologie rigoureuse de recherche en droit
 > français applicable à tout usage professionnel — avocat, juriste,
@@ -256,7 +256,7 @@ le cérémonial sans la récupération est une **simulation de procédure**,
 traitée comme un défaut bloquant à l'étape 6. Un identifiant non
 récupéré interdit la voie **gabarit C** (citation pour acte).
 
-**Pas de référence de mémoire, même signalée (v0.1.2).** La règle vaut
+**Pas de référence de mémoire, même signalée (depuis 0.1.2).** La règle vaut
 pour toute référence juridique, pas seulement pour les identifiants :
 ancienne numérotation (« ancien article 1382 »), texte modificatif, date
 d'entrée en vigueur, décision. Si un outil disponible peut la vérifier,
@@ -404,7 +404,7 @@ condition d'abstention prévue par la procédure est réunie, le skill
 le signale et **s'arrête sur le point concerné**. Pas de complétion
 par spéculation déguisée en certitude.
 
-**Lever avant de signaler (v0.1.2).** Une limite n'est inscrite qu'après
+**Lever avant de signaler (depuis 0.1.2).** Une limite n'est inscrite qu'après
 avoir tenté de la lever avec les outils disponibles, si elle relève de la
 question posée : droit transitoire → texte de la loi modificative
 (`get_text`, ses dispositions finales) ; « autre code non consulté » →
@@ -607,21 +607,28 @@ La voie de récupération n'est pas un choix soumis à l'utilisateur : elle se
 2. **Voie de repli web** — outil indisponible, identifiants PISTE absents, ou
    connecteur qui refuse l'accès (connexion à refaire, identifiants refusés) :
    basculer sur les gabarits `web_search` / `web_fetch`, domaines officiels
-   exclusivement, **sans l'annoncer et sans poser de question**. Demander à
-   l'utilisateur s'il dispose d'une clé API est une **question rituelle
-   prohibée** (étape 0 bis, économie du questionnement) : l'information est
-   constatable par l'outil, donc elle se constate. La clé est un confort,
-   jamais une condition d'exercice. Seulement si l'utilisateur demande
-   comment fiabiliser la récupération, indiquer le connecteur PandecteMCP
-   (`https://pandecte-mcp.onrender.com/mcp`, connexion avec ses propres
-   identifiants PISTE, gratuits).
-   **Exception — plugin installé, connecteur non connecté (v0.1.2).** Dans
-   claude.ai, l'application Claude ou Cowork, ce skill est apporté par le
-   plugin PandecteMCP, dont le connecteur se connecte à part. Si les outils
-   PandecteMCP y sont absents ou refusent l'accès, le repli reste silencieux
-   pendant la recherche, mais la réponse se termine par une seule ligne :
-   « Connecteur PandecteMCP non connecté : Personnaliser > Plugins >
-   PandecteMCP > Connecteurs > Connecter (identifiants PISTE gratuits). »
+   exclusivement, **sans interrompre la recherche et sans poser de
+   question**. Demander à l'utilisateur s'il dispose d'une clé API est une
+   **question rituelle prohibée** (étape 0 bis, économie du questionnement) :
+   l'information est constatable par l'outil, donc elle se constate. La clé
+   est un confort, jamais une condition d'exercice.
+   **Signalement en fin de réponse, toutes plateformes (v0.1.3).** Le repli
+   est silencieux pendant la recherche, jamais caché : une réponse qui s'en
+   est servie se termine par **une seule ligne**, selon ce qui a été constaté.
+   - Connecteur présent qui refuse l'accès : « Connecteur PandecteMCP
+     déconnecté : reconnectez-le dans les réglages des connecteurs ou des
+     plugins de votre assistant (identifiants PISTE). Sources lues ici sur le
+     web officiel. »
+   - Connecteur absent : « Recherche faite sans le connecteur PandecteMCP,
+     sources lues sur le web officiel. Pour interroger Légifrance
+     directement, connectez PandecteMCP (identifiants PISTE gratuits) : » puis
+     le chemin de la plateforme en cours, et lui seul s'il est identifiable —
+     claude.ai, application Claude, Cowork : *Personnaliser > Plugins >
+     PandecteMCP > Connecteurs > Connecter* ; ChatGPT : *Plugins >
+     PandecteMCP > Connecter* ; ailleurs : connecteur MCP
+     `https://pandecte-mcp.onrender.com/mcp`.
+   Aucun signalement quand les scripts locaux ont servi : ce n'est pas un
+   repli.
 3. **Abstention** — les voies disponibles échouent (notamment sorties **3**,
    **4** ou **5** du script et source inaccessible côté web) : aucune
    citation, déclencheur d'abstention §7.

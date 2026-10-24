@@ -6,6 +6,16 @@ serveur MCP, les plugins et le skill `pandecte-recherche`.
 
 ---
 
+### [0.1.3] — 2026-10-24
+
+#### Modifié
+- Repli web signalé sur toutes les plateformes, plus seulement dans
+  claude.ai : la recherche reste silencieuse, mais toute réponse fondée sur
+  le web se termine par une ligne qui dit si le connecteur est déconnecté ou
+  absent, et comment le connecter (chemin claude.ai, ChatGPT, ou adresse
+  MCP). Constaté dans ChatGPT : un plugin non connecté répondait comme s'il
+  fonctionnait (SKILL.md, méthode condensée et déclinaisons).
+
 ### [0.1.2] — 2026-10-18
 
 Réglages issus des premiers essais réels dans claude.ai.

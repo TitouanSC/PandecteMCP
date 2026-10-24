@@ -137,10 +137,16 @@ la page trouvée plutôt que de se fier au seul extrait de recherche.
 **3. Abstention** (P7) si aucune voie n'aboutit.
 
 Ne jamais inventer un appel d'outil ni supposer la disponibilité d'un outil
-non constaté dans la session. Seulement si l'utilisateur demande comment
-fiabiliser la récupération, indiquer le connecteur PandecteMCP
-(`https://pandecte-mcp.onrender.com/mcp`, connexion avec ses propres
-identifiants PISTE, gratuits).
+non constaté dans la session.
+
+**Signalement en fin de réponse.** Le repli est silencieux pendant la
+recherche, jamais caché : une réponse qui s'en est servie se termine par une
+seule ligne, sans question. Connecteur qui refuse l'accès : « Connecteur
+PandecteMCP déconnecté : reconnectez-le dans les réglages de votre assistant
+(identifiants PISTE). Sources lues ici sur le web officiel. » Connecteur
+absent : « Recherche faite sans le connecteur PandecteMCP, sources lues sur le
+web officiel. Pour interroger Légifrance directement : connecteur MCP
+`https://pandecte-mcp.onrender.com/mcp` (identifiants PISTE gratuits). »
 
 ### Étape 2 — Vérifier la version et l'applicabilité
 

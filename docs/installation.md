@@ -1,6 +1,6 @@
 # Installer et vérifier PandecteMCP
 
-État du guide : 18 octobre 2026. Version du skill et des plugins : 0.1.2.
+État du guide : 24 octobre 2026. Version du skill et des plugins : 0.1.3.
 
 **Qualifié le 17/10/2026** sur le serveur hébergé
 `https://pandecte-mcp.onrender.com/mcp` : connexion par la page « Connexion
@@ -74,7 +74,7 @@ codex plugin add pandecte@pandecte
 codex plugin list --json
 ~~~
 
-La version 0.1.2 et la description du plugin se trouvent dans
+La version 0.1.3 et la description du plugin se trouvent dans
 `.codex-plugin/plugin.json`, conformément aux exemples officiels OpenAI. Le
 chemin `./` est relatif à la racine de la marketplace, pas à
 `.agents/plugins/`.
